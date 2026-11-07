@@ -17,7 +17,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Phase Dash** | `[Spacebar]` | High-speed dash with invulnerability frames and ghost trails |
 | **Cycle Melee Weapon** | `[1] [2] [3] [4]` or `[Q]` | Swaps equipped Melee weapon on the fly |
 | **Cycle Far-Range Weapon**| `[5] [6] [7] [8]` or `[E]` | Swaps equipped Far-Range weapon on the fly |
-| **Super Nova Ultimate** | `[F]` | Screen-clearing gravitational EMP shockwave (charges with combos) |
+| **Super Nova Ultimate** | `[F]` | Screen-clearing gravitational EMP shockwave (charges with sustained combat, 25s tactical cadence) |
 | **Pause / Resume** | `[ESC]` or `[P]` | Suspends simulation with realtime debrief |
 
 ### Xbox Controller (Virtual Cursor System)
@@ -51,7 +51,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Primary Melee Slash** | [Slash Button (Cyan)] | Primary melee attack and parry bullet deflection |
 | **Far-Range Fire & Aim** | [Fire Button (Pink)] | Discharges active ranged weapon; drag thumb outward to manually steer your firing arc |
 | **Phase Dash Warp** | [Dash Button (Amber)] | Invulnerable warp in current flight / joystick vector with ghost trails |
-| **Super Nova Ultimate** | [Nova Button (Purple)] | Screen-clearing gravitational shockwave (activates and glows when meter is charged) |
+| **Super Nova Ultimate** | [Nova Button (Purple)] | Screen-clearing gravitational shockwave (activates and glows when charged, displays tactical cooldown timer) |
 | **Quick Weapon Cycle** | [Weapon Pills] | Quick-swap buttons for Melee (Katana/Lance/Hammer/Glaives) and Ranged (Beam/Seekers/Repeater/Flak/Void) |
 | **Touch Controls Toggle** | [Smartphone Icon Button]| Toggle touch overlay on/off anytime from the top action bar |
 
