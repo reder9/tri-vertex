@@ -9,6 +9,8 @@ class GameEngine {
     this.ctx = this.canvas.getContext('2d');
     this.width = window.innerWidth || 1920;
     this.height = window.innerHeight || 1080;
+    this.scale = 1.0;
+    this.dpr = 1.0;
 
     // Game state
     this.state = 'start'; // 'start', 'playing', 'upgrade', 'paused', 'gameover'
@@ -155,8 +157,6 @@ class GameEngine {
       touchRangedLabel: document.getElementById('touch-ranged-label')
     };
 
-    this.isForceLandscape = false;
-    this.orientationDismissed = false;
     this.toastTimeout = null;
     this.lastTime = performance.now();
 
@@ -185,15 +185,46 @@ class GameEngine {
   }
 
   resize() {
-    if (this.isForceLandscape) {
-      this.width = Math.max(window.innerWidth, window.innerHeight);
-      this.height = Math.min(window.innerWidth, window.innerHeight);
+    const vw = window.innerWidth || 1920;
+    const vh = window.innerHeight || 1080;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = dpr;
+
+    // Adaptive Virtual Arena Scaling:
+    // On mobile screens, 1:1 pixel rendering makes the arena feel claustrophobic and 'way too focused in'.
+    // By enforcing a tactical virtual arena view (760 units height in landscape, 720 units width in portrait),
+    // the camera is comfortably pulled back to give full situational awareness, dodge room, and spacious combat.
+    const isPortrait = vh > vw;
+    if (isPortrait) {
+      const targetWidth = 720;
+      this.scale = Math.min(1.0, vw / targetWidth);
     } else {
-      this.width = window.innerWidth || 1920;
-      this.height = window.innerHeight || 1080;
+      const targetHeight = 760;
+      this.scale = Math.min(1.0, vh / targetHeight);
     }
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
+    this.scale = Math.max(0.38, Math.min(1.0, this.scale));
+
+    // Logical game arena dimensions (entities move, spawn, and collide in this space)
+    this.width = Math.round(vw / this.scale);
+    this.height = Math.round(vh / this.scale);
+
+    // Physical canvas pixel resolution (crisp Retina / OLED scaling)
+    this.canvas.width = Math.round(vw * dpr);
+    this.canvas.height = Math.round(vh * dpr);
+    this.canvas.style.width = `${vw}px`;
+    this.canvas.style.height = `${vh}px`;
+
+    // Reposition / clamp player in new arena boundaries
+    if (this.player) {
+      if (this.state === 'start') {
+        this.player.x = this.width / 2;
+        this.player.y = this.height / 2;
+      } else {
+        const pad = 30;
+        this.player.x = Math.max(pad, Math.min(this.width - pad, this.player.x));
+        this.player.y = Math.max(pad, Math.min(this.height - pad, this.player.y));
+      }
+    }
   }
 
   setupInputHandlers() {
@@ -266,12 +297,10 @@ class GameEngine {
 
     window.addEventListener('mousemove', (e) => {
       this.input.usingGamepadCursor = false;
-      let mx = e.clientX;
-      let my = e.clientY;
-      if (this.isForceLandscape) {
-        mx = e.clientY;
-        my = window.innerWidth - e.clientX;
-      }
+      const rect = this.canvas.getBoundingClientRect();
+      const scale = this.scale || 1;
+      const mx = (e.clientX - rect.left) / scale;
+      const my = (e.clientY - rect.top) / scale;
       this.input.mouseX = mx;
       this.input.mouseY = my;
       this.input.cursorX = mx;
@@ -282,6 +311,12 @@ class GameEngine {
     });
 
     window.addEventListener('mousedown', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const scale = this.scale || 1;
+      const mx = (e.clientX - rect.left) / scale;
+      const my = (e.clientY - rect.top) / scale;
+      this.input.mouseX = mx;
+      this.input.mouseY = my;
       if (e.button === 0) {
         this.input.isMouseLeftHeld = true;
         this.input.leftMouseDown = true;
@@ -406,20 +441,8 @@ class GameEngine {
     };
 
     const updateJoystickPosition = (clientX, clientY) => {
-      let cx = clientX;
-      let cy = clientY;
-      let ox = joystickOriginX;
-      let oy = joystickOriginY;
-
-      if (this.isForceLandscape) {
-        cx = clientY;
-        cy = window.innerWidth - clientX;
-        ox = joystickOriginY;
-        oy = window.innerWidth - joystickOriginX;
-      }
-
-      const dx = cx - ox;
-      const dy = cy - oy;
+      const dx = clientX - joystickOriginX;
+      const dy = clientY - joystickOriginY;
       const distance = Math.hypot(dx, dy);
       const baseRect = this.ui.joystickBase ? this.ui.joystickBase.getBoundingClientRect() : null;
       const baseWidth = baseRect ? baseRect.width : 90;
@@ -551,18 +574,8 @@ class GameEngine {
         if (fireTouchId === null) return;
         const touch = getTouchById(e.changedTouches, fireTouchId);
         if (touch) {
-          let cx = touch.clientX;
-          let cy = touch.clientY;
-          let sx = fireStartX;
-          let sy = fireStartY;
-          if (this.isForceLandscape) {
-            cx = touch.clientY;
-            cy = window.innerWidth - touch.clientX;
-            sx = fireStartY;
-            sy = window.innerWidth - fireStartX;
-          }
-          const dx = cx - sx;
-          const dy = cy - sy;
+          const dx = touch.clientX - fireStartX;
+          const dy = touch.clientY - fireStartY;
           if (Math.hypot(dx, dy) > 12) {
             this.input.touchDragAiming = true;
             this.input.touchAimAngle = Math.atan2(dy, dx);
@@ -670,6 +683,7 @@ class GameEngine {
     // Detect device type to activate optimal tab by default
     const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024);
     if (hasTouch) {
+      this.setTouchControlsActive(true);
       const touchBtn = document.getElementById('tab-btn-touch');
       if (touchBtn) touchBtn.click();
     } else if (this.input.gamepadConnected) {
@@ -677,96 +691,51 @@ class GameEngine {
       if (gpBtn) gpBtn.click();
     }
 
-    // 2. Orientation Monitoring
-    const checkOrientation = () => {
-      const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 900);
-      const isPortrait = window.innerHeight > window.innerWidth;
-      if (this.ui.orientationPrompt) {
-        if (isMobile && isPortrait && !this.orientationDismissed && !this.isForceLandscape && this.state === 'start') {
-          this.ui.orientationPrompt.classList.remove('hidden');
-        } else {
-          this.ui.orientationPrompt.classList.add('hidden');
-        }
+    // Touch event listener to automatically activate touch controls upon first touch
+    window.addEventListener('touchstart', () => {
+      if (!this.input.touchControlsActive) {
+        this.setTouchControlsActive(true);
       }
+    }, { passive: true });
+
+    // Fullscreen / Landscape toggle handlers
+    const handleFullscreenToggle = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.toggleFullscreen();
     };
 
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    setTimeout(checkOrientation, 150);
-
-    // 3. Orientation buttons
-    if (this.ui.btnOrientationRotate) {
-      const handleOrientRotate = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.orientationDismissed = true;
-        if (this.ui.orientationPrompt) this.ui.orientationPrompt.classList.add('hidden');
-        this.toggleForceLandscape(true);
-      };
-      this.ui.btnOrientationRotate.addEventListener('click', handleOrientRotate);
-      this.ui.btnOrientationRotate.addEventListener('touchstart', handleOrientRotate, { passive: false });
-    }
-
-    if (this.ui.btnOrientationDismiss) {
-      const handleDismiss = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.orientationDismissed = true;
-        if (this.ui.orientationPrompt) this.ui.orientationPrompt.classList.add('hidden');
-      };
-      this.ui.btnOrientationDismiss.addEventListener('click', handleDismiss);
-      this.ui.btnOrientationDismiss.addEventListener('touchstart', handleDismiss, { passive: false });
-    }
-
     if (this.ui.btnRotateToggle) {
-      this.ui.btnRotateToggle.addEventListener('click', () => {
-        this.toggleForceLandscape();
-      });
+      this.ui.btnRotateToggle.addEventListener('click', handleFullscreenToggle);
     }
-
     if (this.ui.btnModalRotate) {
-      const handleModalRotate = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.toggleForceLandscape();
-      };
-      this.ui.btnModalRotate.addEventListener('click', handleModalRotate);
-      this.ui.btnModalRotate.addEventListener('touchstart', handleModalRotate, { passive: false });
+      this.ui.btnModalRotate.addEventListener('click', handleFullscreenToggle);
+      this.ui.btnModalRotate.addEventListener('touchstart', handleFullscreenToggle, { passive: false });
     }
   }
 
-  toggleForceLandscape(forceState) {
-    this.isForceLandscape = (forceState !== undefined) ? !!forceState : !this.isForceLandscape;
-    document.body.classList.toggle('force-landscape', this.isForceLandscape);
-
-    // Attempt browser fullscreen and orientation lock
-    if (this.isForceLandscape) {
+  toggleFullscreen() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
       const el = document.documentElement;
       const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-      if (requestFS && !document.fullscreenElement) {
+      if (requestFS) {
         requestFS.call(el).then(() => {
           if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(() => {});
           }
         }).catch(() => {});
       }
+      this.showToast('FULLSCREEN', 'Widescreen arcade arena active', '#00f0ff');
+    } else {
+      const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if (exitFS) {
+        exitFS.call(document).catch(() => {});
+      }
+      this.showToast('WINDOWED', 'Standard view restored', '#00f0ff');
     }
-
-    if (this.ui.btnRotateToggle) {
-      this.ui.btnRotateToggle.classList.toggle('active', this.isForceLandscape);
-    }
-    if (this.ui.orientationPrompt) {
-      this.ui.orientationPrompt.classList.add('hidden');
-    }
-
-    this.resize();
-    this.showToast('SIDEWAYS ARENA', this.isForceLandscape ? 'Sideways widescreen mode active' : 'Standard view restored', '#00f0ff');
+    setTimeout(() => this.resize(), 150);
   }
 
   setTouchControlsActive(active) {
@@ -1919,7 +1888,11 @@ class GameEngine {
   draw() {
     this.ctx.save();
 
-    // Screen shake transform
+    // High-DPI DPR + Adaptive Virtual Arena Zoom Transform
+    const totalScale = (this.dpr || 1) * (this.scale || 1);
+    this.ctx.setTransform(totalScale, 0, 0, totalScale, 0, 0);
+
+    // Screen shake transform (applied in virtual arena units)
     if (this.shakeMag > 0) {
       const sx = (Math.random() - 0.5) * this.shakeMag;
       const sy = (Math.random() - 0.5) * this.shakeMag;
