@@ -106,6 +106,7 @@ class GameEngine {
       xpText: document.getElementById('xp-text'),
       synergyBar: document.getElementById('synergy-bar'),
       synergyStatus: document.getElementById('synergy-status'),
+      mobileSynergyBar: document.getElementById('mobile-synergy-bar'),
       meleeSlots: document.getElementById('melee-slots'),
       rangedSlots: document.getElementById('ranged-slots'),
       ultCard: document.getElementById('ultimate-button'),
@@ -420,7 +421,10 @@ class GameEngine {
       const dx = cx - ox;
       const dy = cy - oy;
       const distance = Math.hypot(dx, dy);
-      const clampedDist = Math.min(distance, maxStickRadius);
+      const baseRect = this.ui.joystickBase ? this.ui.joystickBase.getBoundingClientRect() : null;
+      const baseWidth = baseRect ? baseRect.width : 90;
+      const dynamicMaxRadius = baseWidth * 0.36; // Scaled to current rendered base size
+      const clampedDist = Math.min(distance, dynamicMaxRadius);
       const nx = distance > 0 ? (dx / distance) * clampedDist : 0;
       const ny = distance > 0 ? (dy / distance) * clampedDist : 0;
 
@@ -447,6 +451,9 @@ class GameEngine {
       if (this.ui.joystickKnob) {
         this.ui.joystickKnob.style.transform = 'translate(0px, 0px)';
       }
+      if (this.ui.joystickBase) {
+        this.ui.joystickBase.style.opacity = '';
+      }
       this.input.touchMoveX = 0;
       this.input.touchMoveY = 0;
       this.input.touchMoveMagnitude = 0;
@@ -458,11 +465,17 @@ class GameEngine {
         const touch = e.changedTouches[0];
         joystickTouchId = touch.identifier;
 
-        // Anchor joystick origin to the center of the joystick base
         if (this.ui.joystickBase) {
+          this.ui.joystickBase.style.opacity = '1';
           const rect = this.ui.joystickBase.getBoundingClientRect();
-          joystickOriginX = rect.left + rect.width / 2;
-          joystickOriginY = rect.top + rect.height / 2;
+          const dFromBase = Math.hypot(touch.clientX - (rect.left + rect.width / 2), touch.clientY - (rect.top + rect.height / 2));
+          if (dFromBase < rect.width * 1.5) {
+            joystickOriginX = rect.left + rect.width / 2;
+            joystickOriginY = rect.top + rect.height / 2;
+          } else {
+            joystickOriginX = touch.clientX;
+            joystickOriginY = touch.clientY;
+          }
         } else {
           joystickOriginX = touch.clientX;
           joystickOriginY = touch.clientY;
@@ -1861,6 +1874,9 @@ class GameEngine {
 
     // Synergy
     this.ui.synergyBar.style.width = `${this.player.synergyMeter}%`;
+    if (this.ui.mobileSynergyBar) {
+      this.ui.mobileSynergyBar.style.width = `${this.player.synergyMeter}%`;
+    }
     if (this.player.synergyMeter >= 100) {
       this.ui.synergyStatus.innerText = 'OVERCHARGED // NEXT RANGED STRIKE DEALS 200% DAMAGE & EXPLODES';
       this.ui.synergyStatus.style.color = '#ffb700';
