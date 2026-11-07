@@ -69,7 +69,17 @@ class GameEngine {
       cursorX: this.width / 2,
       cursorY: this.height / 2,
       virtualCursorSpeed: 1050,
-      usingGamepadCursor: false
+      usingGamepadCursor: false,
+      // Mobile & Tablet Touch Controls
+      touchControlsActive: false,
+      touchMoveX: 0,
+      touchMoveY: 0,
+      touchMoveMagnitude: 0,
+      touchAiming: false,
+      touchDragAiming: false,
+      touchAimAngle: 0,
+      touchMeleeHeld: false,
+      touchRangedHeld: false
     };
 
     // Controller debouncing and menu navigation state
@@ -121,7 +131,22 @@ class GameEngine {
       toastBanner: document.getElementById('game-toast'),
       toastTitle: document.getElementById('toast-title'),
       toastMessage: document.getElementById('toast-message'),
-      toastIconWrap: document.getElementById('toast-icon-wrap')
+      toastIconWrap: document.getElementById('toast-icon-wrap'),
+      // Touch Controls Elements
+      btnTouchToggle: document.getElementById('btn-touch-toggle'),
+      touchControls: document.getElementById('touch-controls'),
+      touchZoneLeft: document.getElementById('touch-zone-left'),
+      joystickBase: document.getElementById('touch-joystick-base'),
+      joystickKnob: document.getElementById('touch-joystick-knob'),
+      touchZoneRight: document.getElementById('touch-zone-right'),
+      touchBtnSwapMelee: document.getElementById('touch-btn-swap-melee'),
+      touchBtnSwapRanged: document.getElementById('touch-btn-swap-ranged'),
+      touchBtnNova: document.getElementById('touch-btn-nova'),
+      touchBtnDash: document.getElementById('touch-btn-dash'),
+      touchBtnMelee: document.getElementById('touch-btn-melee'),
+      touchBtnRanged: document.getElementById('touch-btn-ranged'),
+      touchMeleeLabel: document.getElementById('touch-melee-label'),
+      touchRangedLabel: document.getElementById('touch-ranged-label')
     };
 
     this.toastTimeout = null;
@@ -142,6 +167,7 @@ class GameEngine {
     // Bind event listeners
     this.setupInputHandlers();
     this.setupGamepadListeners();
+    this.setupTouchControls();
     this.setupUIButtons();
     this.renderWeaponSlots();
 
@@ -308,6 +334,284 @@ class GameEngine {
         this.player.triggerUltimate(this);
       }
     });
+  }
+
+  setupTouchControls() {
+    if (!this.ui.touchControls) return;
+
+    // Detect if device has touch capability or is on mobile/tablet viewport
+    const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth <= 1024 && window.innerHeight <= 1366);
+    this.setTouchControlsActive(hasTouch);
+
+    // Audio unlock on user touch interaction anywhere
+    const unlockAudio = () => {
+      if (window.soundEngine) {
+        window.soundEngine.init();
+        window.soundEngine.resume();
+      }
+    };
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('touchend', unlockAudio, { passive: true });
+
+    // Toggle button in top action bar
+    if (this.ui.btnTouchToggle) {
+      this.ui.btnTouchToggle.addEventListener('click', () => {
+        unlockAudio();
+        const nextState = !this.input.touchControlsActive;
+        this.setTouchControlsActive(nextState);
+        this.showToast('TOUCH CONTROLS', nextState ? 'Touch controls active' : 'Touch controls hidden', '#00f0ff');
+      });
+    }
+
+    // Left Zone: Virtual Analog Movement Joystick
+    let joystickTouchId = null;
+    let joystickOriginX = 0;
+    let joystickOriginY = 0;
+    const maxStickRadius = 50; // Max knob excursion radius in px
+
+    const getTouchById = (touchList, id) => {
+      for (let i = 0; i < touchList.length; i++) {
+        if (touchList[i].identifier === id) return touchList[i];
+      }
+      return null;
+    };
+
+    const updateJoystickPosition = (clientX, clientY) => {
+      const dx = clientX - joystickOriginX;
+      const dy = clientY - joystickOriginY;
+      const distance = Math.hypot(dx, dy);
+      const clampedDist = Math.min(distance, maxStickRadius);
+      const nx = distance > 0 ? (dx / distance) * clampedDist : 0;
+      const ny = distance > 0 ? (dy / distance) * clampedDist : 0;
+
+      if (this.ui.joystickKnob) {
+        this.ui.joystickKnob.style.transform = 	ranslate(px, px);
+      }
+
+      const mag = Math.min(1, distance / maxStickRadius);
+      const deadzone = 0.08;
+      if (mag > deadzone) {
+        const scaledMag = (mag - deadzone) / (1 - deadzone);
+        this.input.touchMoveX = dx / (distance || 1);
+        this.input.touchMoveY = dy / (distance || 1);
+        this.input.touchMoveMagnitude = scaledMag;
+      } else {
+        this.input.touchMoveX = 0;
+        this.input.touchMoveY = 0;
+        this.input.touchMoveMagnitude = 0;
+      }
+    };
+
+    const resetJoystick = () => {
+      joystickTouchId = null;
+      if (this.ui.joystickKnob) {
+        this.ui.joystickKnob.style.transform = 'translate(0px, 0px)';
+      }
+      this.input.touchMoveX = 0;
+      this.input.touchMoveY = 0;
+      this.input.touchMoveMagnitude = 0;
+    };
+
+    if (this.ui.touchZoneLeft) {
+      this.ui.touchZoneLeft.addEventListener('touchstart', (e) => {
+        if (joystickTouchId !== null) return;
+        const touch = e.changedTouches[0];
+        joystickTouchId = touch.identifier;
+
+        // Anchor joystick origin to the center of the joystick base
+        if (this.ui.joystickBase) {
+          const rect = this.ui.joystickBase.getBoundingClientRect();
+          joystickOriginX = rect.left + rect.width / 2;
+          joystickOriginY = rect.top + rect.height / 2;
+        } else {
+          joystickOriginX = touch.clientX;
+          joystickOriginY = touch.clientY;
+        }
+
+        updateJoystickPosition(touch.clientX, touch.clientY);
+        e.preventDefault();
+      }, { passive: false });
+
+      this.ui.touchZoneLeft.addEventListener('touchmove', (e) => {
+        if (joystickTouchId === null) return;
+        const touch = getTouchById(e.changedTouches, joystickTouchId);
+        if (touch) {
+          updateJoystickPosition(touch.clientX, touch.clientY);
+        }
+        e.preventDefault();
+      }, { passive: false });
+
+      this.ui.touchZoneLeft.addEventListener('touchend', (e) => {
+        if (joystickTouchId === null) return;
+        const touch = getTouchById(e.changedTouches, joystickTouchId);
+        if (touch) {
+          resetJoystick();
+        }
+        e.preventDefault();
+      }, { passive: false });
+
+      this.ui.touchZoneLeft.addEventListener('touchcancel', (e) => {
+        resetJoystick();
+      }, { passive: false });
+    }
+
+    // Right Action Buttons: Melee Slash, Ranged Fire/Aim, Phase Dash, Super Nova, Weapon Swaps
+    if (this.ui.touchBtnMelee) {
+      this.ui.touchBtnMelee.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        unlockAudio();
+        this.input.touchMeleeHeld = true;
+        this.input.leftMouseDown = true;
+        this.input.isMouseLeftHeld = true;
+      }, { passive: false });
+
+      const endMelee = (e) => {
+        e.preventDefault();
+        this.input.touchMeleeHeld = false;
+        this.input.isMouseLeftHeld = false;
+        if (!this.input.gamepadSlashHeld && !this.input.gamepadRtHeld) {
+          this.input.leftMouseDown = false;
+        }
+      };
+      this.ui.touchBtnMelee.addEventListener('touchend', endMelee, { passive: false });
+      this.ui.touchBtnMelee.addEventListener('touchcancel', endMelee, { passive: false });
+    }
+
+    if (this.ui.touchBtnRanged) {
+      let fireTouchId = null;
+      let fireStartX = 0;
+      let fireStartY = 0;
+
+      this.ui.touchBtnRanged.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        unlockAudio();
+        const touch = e.changedTouches[0];
+        fireTouchId = touch.identifier;
+        fireStartX = touch.clientX;
+        fireStartY = touch.clientY;
+        this.input.touchRangedHeld = true;
+        this.input.rightMouseDown = true;
+        this.input.isMouseRightHeld = true;
+      }, { passive: false });
+
+      this.ui.touchBtnRanged.addEventListener('touchmove', (e) => {
+        if (fireTouchId === null) return;
+        const touch = getTouchById(e.changedTouches, fireTouchId);
+        if (touch) {
+          const dx = touch.clientX - fireStartX;
+          const dy = touch.clientY - fireStartY;
+          if (Math.hypot(dx, dy) > 12) {
+            this.input.touchDragAiming = true;
+            this.input.touchAimAngle = Math.atan2(dy, dx);
+          }
+        }
+        e.preventDefault();
+      }, { passive: false });
+
+      const endRanged = (e) => {
+        e.preventDefault();
+        fireTouchId = null;
+        this.input.touchRangedHeld = false;
+        this.input.touchDragAiming = false;
+        this.input.isMouseRightHeld = false;
+        if (!this.input.gamepadRangedHeld && !this.input.gamepadLtHeld) {
+          this.input.rightMouseDown = false;
+        }
+      };
+      this.ui.touchBtnRanged.addEventListener('touchend', endRanged, { passive: false });
+      this.ui.touchBtnRanged.addEventListener('touchcancel', endRanged, { passive: false });
+    }
+
+    if (this.ui.touchBtnDash) {
+      this.ui.touchBtnDash.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        unlockAudio();
+        this.input.dashPressed = true;
+        if (this.player && this.player.dashCooldown <= 0 && !this.player.isDashing) {
+          this.player.triggerDash(this.input);
+        }
+      }, { passive: false });
+
+      this.ui.touchBtnDash.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this.input.dashPressed = false;
+      }, { passive: false });
+      this.ui.touchBtnDash.addEventListener('touchcancel', (e) => {
+        this.input.dashPressed = false;
+      }, { passive: false });
+    }
+
+    if (this.ui.touchBtnNova) {
+      this.ui.touchBtnNova.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        unlockAudio();
+        if (this.player && this.player.ultimateCharge >= this.player.ultimateMax) {
+          this.player.triggerUltimate(this);
+        }
+      }, { passive: false });
+    }
+
+    if (this.ui.touchBtnSwapMelee) {
+      const handleSwapMelee = (e) => {
+        e.preventDefault();
+        unlockAudio();
+        if (this.player) {
+          const next = (this.player.activeMeleeIndex + 1) % this.player.meleeWeapons.length;
+          this.player.setMeleeIndex(next);
+          this.renderWeaponSlots();
+          this.updateTouchWeaponLabels();
+        }
+      };
+      this.ui.touchBtnSwapMelee.addEventListener('touchstart', handleSwapMelee, { passive: false });
+      this.ui.touchBtnSwapMelee.addEventListener('click', handleSwapMelee);
+    }
+
+    if (this.ui.touchBtnSwapRanged) {
+      const handleSwapRanged = (e) => {
+        e.preventDefault();
+        unlockAudio();
+        if (this.player) {
+          const next = (this.player.activeRangedIndex + 1) % this.player.rangedWeapons.length;
+          this.player.setRangedIndex(next);
+          this.renderWeaponSlots();
+          this.updateTouchWeaponLabels();
+        }
+      };
+      this.ui.touchBtnSwapRanged.addEventListener('touchstart', handleSwapRanged, { passive: false });
+      this.ui.touchBtnSwapRanged.addEventListener('click', handleSwapRanged);
+    }
+
+    this.updateTouchWeaponLabels();
+  }
+
+  setTouchControlsActive(active) {
+    this.input.touchControlsActive = !!active;
+    if (this.ui.touchControls) {
+      if (this.input.touchControlsActive) {
+        this.ui.touchControls.classList.remove('hidden');
+        document.body.classList.add('touch-controls-active');
+      } else {
+        this.ui.touchControls.classList.add('hidden');
+        document.body.classList.remove('touch-controls-active');
+      }
+    }
+    if (this.ui.btnTouchToggle) {
+      if (this.input.touchControlsActive) {
+        this.ui.btnTouchToggle.classList.add('active');
+      } else {
+        this.ui.btnTouchToggle.classList.remove('active');
+      }
+    }
+  }
+
+  updateTouchWeaponLabels() {
+    if (!this.player) return;
+    if (this.ui.touchMeleeLabel && this.player.equippedMelee) {
+      this.ui.touchMeleeLabel.innerText = this.player.equippedMelee.name.split(' ')[0].toUpperCase();
+    }
+    if (this.ui.touchRangedLabel && this.player.equippedRanged) {
+      this.ui.touchRangedLabel.innerText = this.player.equippedRanged.name.split(' ')[0].toUpperCase();
+    }
   }
 
   setupGamepadListeners() {
@@ -926,6 +1230,8 @@ class GameEngine {
       });
       this.ui.rangedSlots.appendChild(slot);
     });
+
+    this.updateTouchWeaponLabels();
   }
 
   showToast(title, message, color = '#00f0ff') {
@@ -1389,11 +1695,19 @@ class GameEngine {
 
     // Ultimate button
     const ultPct = Math.floor((this.player.ultimateCharge / this.player.ultimateMax) * 100);
-    this.ui.ultTag.innerText = ultPct >= 100 ? 'READY' : `${ultPct}%`;
+    this.ui.ultTag.innerText = ultPct >= 100 ? 'READY' : ${ultPct}%;
     if (ultPct >= 100) {
       this.ui.ultCard.classList.add('ready');
+      if (this.ui.touchBtnNova) {
+        this.ui.touchBtnNova.classList.remove('disabled');
+        this.ui.touchBtnNova.classList.add('ready');
+      }
     } else {
       this.ui.ultCard.classList.remove('ready');
+      if (this.ui.touchBtnNova) {
+        this.ui.touchBtnNova.classList.add('disabled');
+        this.ui.touchBtnNova.classList.remove('ready');
+      }
     }
 
     // Cooldown sweeps on weapon slots

@@ -42,6 +42,21 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 
 ---
 
+### Phones & Tablets (Touch Twin-Stick)
+
+| Action | Touch Control | Description |
+| :--- | :--- | :--- |
+| **360° Analog Thrusters** | [Left Virtual Stick] | Smooth 360-degree virtual analog flight stick with proportional speed sensitivity |
+| **Precision Aim & Auto-Lock** | [Touch / Drag / Tap] | Automatic smart target acquisition prioritizes closest hostiles; drag from Fire button for manual 360° aiming |
+| **Primary Melee Slash** | [Slash Button (Cyan)] | Primary melee attack and parry bullet deflection |
+| **Far-Range Fire & Aim** | [Fire Button (Pink)] | Discharges active ranged weapon; drag thumb outward to manually steer your firing arc |
+| **Phase Dash Warp** | [Dash Button (Amber)] | Invulnerable warp in current flight / joystick vector with ghost trails |
+| **Super Nova Ultimate** | [Nova Button (Purple)] | Screen-clearing gravitational shockwave (activates and glows when meter is charged) |
+| **Quick Weapon Cycle** | [Weapon Pills] | Quick-swap buttons for Melee (Katana/Lance/Hammer/Glaives) and Ranged (Beam/Seekers/Repeater/Flak/Void) |
+| **Touch Controls Toggle** | [Smartphone Icon Button]| Toggle touch overlay on/off anytime from the top action bar |
+
+---
+
 ## Weapons Arsenal
 
 ### Melee Weapons (Left Click)

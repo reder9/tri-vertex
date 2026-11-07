@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#07090e">
   <title>TRI-VERTEX // Melee & Ranged Geometric Arena</title>
   <link rel="icon" type="image/x-icon" href="icon.ico">
   <link rel="apple-touch-icon" href="icon.png">
@@ -119,6 +123,11 @@
         <path d="M4 7v6a8 8 0 0 0 16 0V7"></path>
         <path d="M8 7v6a4 4 0 0 0 8 0V7"></path>
       </g>
+      <!-- Smartphone (Touch / Mobile) -->
+      <g id="icon-smartphone">
+        <rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect>
+        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+      </g>
     </defs>
   </svg>
 
@@ -215,6 +224,9 @@
             <svg class="ui-icon icon-cyan"><use href="#icon-gamepad"></use></svg>
             <span class="gamepad-badge-text">GAMEPAD</span>
           </div>
+          <button id="btn-touch-toggle" class="action-btn" title="Toggle Touch Controls">
+            <svg class="ui-icon" id="touch-toggle-icon"><use href="#icon-smartphone"></use></svg>
+          </button>
           <button id="btn-audio" class="action-btn" title="Toggle Sound">
             <svg class="ui-icon" id="audio-icon"><use href="#icon-volume"></use></svg>
           </button>
@@ -340,6 +352,18 @@
           <div class="ctrl-row"><span>[BUTTON A / LB]</span> : Phase Dash &bull; Click Menu Buttons</div>
           <div class="ctrl-row"><span>[RB]</span> : Cycle Melee &bull; <span>[BUTTON B]</span> : Cycle Ranged</div>
           <div class="ctrl-row highlight-amber"><span>[BUTTON Y]</span> : Super Nova &bull; <span>[START]</span> : Pause / Select</div>
+
+          <div class="ctrl-header ctrl-header-pad">
+            <svg class="ui-icon icon-amber"><use href="#icon-smartphone"></use></svg>
+            <span>PHONES &amp; TABLETS (TOUCH TWIN-STICK)</span>
+          </div>
+          <div class="ctrl-row"><span>[LEFT VIRTUAL STICK]</span> : 360° Analog Thrusters &amp; Flight</div>
+          <div class="ctrl-row"><span>[RIGHT TOUCH PAD]</span> : Precision Touch Aim &amp; Auto-Lock</div>
+          <div class="ctrl-row highlight-cyan"><span>[SLASH BUTTON]</span> : Primary Melee Attack &amp; Parry Deflection</div>
+          <div class="ctrl-row highlight-pink"><span>[FIRE BUTTON]</span> : Far-Range Fire &amp; Drag-to-Aim</div>
+          <div class="ctrl-row"><span>[DASH BUTTON]</span> : Phase Dash Warp (Invulnerable)</div>
+          <div class="ctrl-row"><span>[WEAPON PILLS]</span> : Quick Cycle Melee &amp; Ranged</div>
+          <div class="ctrl-row highlight-amber"><span>[NOVA BUTTON]</span> : Full-Screen Super Nova Shockwave</div>
         </div>
 
         <button id="btn-start" class="cta-button">
@@ -428,6 +452,75 @@
           <svg class="ui-icon"><use href="#icon-rotate"></use></svg>
           <span>REBOOT COMBAT PROTOCOL</span>
         </button>
+      </div>
+    </div>
+
+    <!-- Mobile & Tablet Touch Controls Overlay -->
+    <div id="touch-controls" class="touch-controls-layer hidden">
+      <!-- Left Zone: Movement Thumbstick -->
+      <div id="touch-zone-left" class="touch-zone touch-zone-left">
+        <div id="touch-joystick-base" class="touch-joystick-base">
+          <div class="joystick-ring"></div>
+          <div id="touch-joystick-knob" class="touch-joystick-knob"></div>
+          <div class="joystick-guide-arrows">
+            <span class="j-arrow j-up"></span>
+            <span class="j-arrow j-right"></span>
+            <span class="j-arrow j-down"></span>
+            <span class="j-arrow j-left"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Zone: Aiming & Action Pad -->
+      <div id="touch-zone-right" class="touch-zone touch-zone-right">
+        <!-- Quick Weapon Switcher Row -->
+        <div class="touch-weapon-switches">
+          <button id="touch-btn-swap-melee" class="touch-swap-btn touch-swap-melee" title="Cycle Melee Weapon">
+            <svg class="ui-icon icon-cyan"><use href="#icon-sword"></use></svg>
+            <span id="touch-melee-label">KATANA</span>
+          </button>
+          <button id="touch-btn-swap-ranged" class="touch-swap-btn touch-swap-ranged" title="Cycle Ranged Weapon">
+            <svg class="ui-icon icon-pink"><use href="#icon-crosshair"></use></svg>
+            <span id="touch-ranged-label">BEAM</span>
+          </button>
+        </div>
+
+        <!-- Action Buttons Cluster -->
+        <div class="touch-actions-cluster">
+          <!-- Ultimate Nova Button -->
+          <button id="touch-btn-nova" class="touch-action-btn touch-btn-nova disabled" title="Super Nova Ultimate">
+            <div class="touch-btn-inner">
+              <svg class="ui-icon icon-purple"><use href="#icon-sparkles"></use></svg>
+              <span class="touch-btn-lbl">NOVA</span>
+            </div>
+            <div class="touch-nova-ring"></div>
+          </button>
+
+          <!-- Phase Dash Button -->
+          <button id="touch-btn-dash" class="touch-action-btn touch-btn-dash" title="Phase Dash">
+            <div class="touch-btn-inner">
+              <svg class="ui-icon icon-amber"><use href="#icon-zap"></use></svg>
+              <span class="touch-btn-lbl">DASH</span>
+            </div>
+          </button>
+
+          <!-- Melee Slash Button -->
+          <button id="touch-btn-melee" class="touch-action-btn touch-btn-melee" title="Melee Slash">
+            <div class="touch-btn-inner">
+              <svg class="ui-icon icon-cyan"><use href="#icon-sword"></use></svg>
+              <span class="touch-btn-lbl">SLASH</span>
+            </div>
+          </button>
+
+          <!-- Far-Range Fire Button -->
+          <button id="touch-btn-ranged" class="touch-action-btn touch-btn-ranged" title="Far-Range Fire & Aim">
+            <div class="touch-btn-inner">
+              <svg class="ui-icon icon-pink"><use href="#icon-crosshair"></use></svg>
+              <span class="touch-btn-lbl">FIRE</span>
+            </div>
+            <div class="touch-aim-ring"></div>
+          </button>
+        </div>
       </div>
     </div>
 

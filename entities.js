@@ -153,11 +153,50 @@ class Player {
   update(dt, input, arenaWidth, arenaHeight, game) {
     this.game = game;
 
-    // 1. Rotation: Aim directly at the Cursor (Xbox Virtual Cursor or PC Mouse Cursor)
+    // 1. Rotation: Touch auto-aim, drag aim, or Cursor (Xbox Virtual Cursor / PC Mouse Cursor)
     let rawTargetAngle = Math.atan2(input.mouseY - this.y, input.mouseX - this.x);
-    const isRangedFiring = input.gamepadRangedHeld || input.gamepadLtHeld;
+    const isRangedFiring = input.gamepadRangedHeld || input.gamepadLtHeld || input.touchRangedHeld;
 
     let targetAngle = rawTargetAngle;
+
+    // Mobile & Tablet Touch Aim Handling (Drag-to-Aim or Smart Auto-Aim)
+    if (input.touchControlsActive) {
+      if (input.touchDragAiming) {
+        rawTargetAngle = input.touchAimAngle;
+        targetAngle = input.touchAimAngle;
+        input.mouseX = this.x + Math.cos(targetAngle) * 260;
+        input.mouseY = this.y + Math.sin(targetAngle) * 260;
+      } else if (game && game.enemies && game.enemies.length > 0) {
+        // Nearest enemy auto-aim priority
+        let bestTarget = null;
+        let bestDistSq = 900 * 900;
+        for (let i = 0; i < game.enemies.length; i++) {
+          const e = game.enemies[i];
+          if (!e || e.hp <= 0 || e.isDying) continue;
+          const d2 = distSq(this.x, this.y, e.x, e.y);
+          if (d2 < bestDistSq) {
+            bestDistSq = d2;
+            bestTarget = e;
+          }
+        }
+        if (bestTarget) {
+          rawTargetAngle = Math.atan2(bestTarget.y - this.y, bestTarget.x - this.x);
+          targetAngle = rawTargetAngle;
+          input.mouseX = bestTarget.x;
+          input.mouseY = bestTarget.y;
+        } else if (input.touchMoveMagnitude > 0.1) {
+          rawTargetAngle = Math.atan2(input.touchMoveY, input.touchMoveX);
+          targetAngle = rawTargetAngle;
+          input.mouseX = this.x + Math.cos(targetAngle) * 220;
+          input.mouseY = this.y + Math.sin(targetAngle) * 220;
+        }
+      } else if (input.touchMoveMagnitude > 0.1) {
+        rawTargetAngle = Math.atan2(input.touchMoveY, input.touchMoveX);
+        targetAngle = rawTargetAngle;
+        input.mouseX = this.x + Math.cos(targetAngle) * 220;
+        input.mouseY = this.y + Math.sin(targetAngle) * 220;
+      }
+    }
 
     // Smart Soft Aim-Assist / Target Magnetism for Xbox Controller Ranged Weapons
     if (input.gamepadConnected && game && game.enemies) {
@@ -293,6 +332,13 @@ class Player {
         len = input.gamepadMoveMagnitude;
       }
 
+      // Blend / override with Mobile & Tablet Virtual Analog Joystick input
+      if (input.touchMoveMagnitude > 0.05) {
+        moveX = input.touchMoveX;
+        moveY = input.touchMoveY;
+        len = input.touchMoveMagnitude;
+      }
+
       if (len > 0.1) {
         // Proportional analog speed factor for silky controller sensitivity
         const speedFactor = Math.min(1, len);
@@ -419,6 +465,9 @@ class Player {
     if (input.gamepadMoveMagnitude > 0.2) {
       dx = input.gamepadMoveX;
       dy = input.gamepadMoveY;
+    } else if (input.touchMoveMagnitude > 0.15) {
+      dx = input.touchMoveX;
+      dy = input.touchMoveY;
     }
 
     if (dx === 0 && dy === 0) {
