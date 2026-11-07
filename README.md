@@ -34,7 +34,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Menu Cursor & Select**| `[Left/Right Stick] + [Button A / RT]` | Move virtual cursor over any UI button or upgrade card and click directly |
 | **Cycle Melee Weapon** | `[Right Bumper (RB)]` | Cycles Melee arsenal (Katana, Lance, Hammer, Glaives) |
 | **Cycle Far-Range Weapon**| `[Button B]` | Cycles Far-Range arsenal (Beam, Seekers, Repeater, Flak, Void) |
-| **Super Nova Ultimate** | `[Button Y]` | Detonates full-screen gravitational blast when meter is charged |
+| **Super Nova Ultimate** | `[Button Y]` | Detonates full-screen gravitational blast when charged and off cooldown |
 | **Pause / Menu / Start** | `[Menu / Start Button]` | Starts combat from title screen, or pauses/resumes simulation |
 | **Toggle Audio Mute** | `[View / Back Button]` | Instantly toggles synthesized Web Audio sound |
 | **Upgrade Card Navigation**| `[D-Pad Left/Right]` or `[Virtual Cursor]` | Seamlessly highlights and equips level-up augments |
