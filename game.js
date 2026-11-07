@@ -133,6 +133,11 @@ class GameEngine {
       toastMessage: document.getElementById('toast-message'),
       toastIconWrap: document.getElementById('toast-icon-wrap'),
       // Touch Controls Elements
+      btnRotateToggle: document.getElementById('btn-rotate-toggle'),
+      btnModalRotate: document.getElementById('btn-modal-rotate'),
+      orientationPrompt: document.getElementById('orientation-prompt'),
+      btnOrientationRotate: document.getElementById('btn-orientation-rotate'),
+      btnOrientationDismiss: document.getElementById('btn-orientation-dismiss'),
       btnTouchToggle: document.getElementById('btn-touch-toggle'),
       touchControls: document.getElementById('touch-controls'),
       touchZoneLeft: document.getElementById('touch-zone-left'),
@@ -149,6 +154,8 @@ class GameEngine {
       touchRangedLabel: document.getElementById('touch-ranged-label')
     };
 
+    this.isForceLandscape = false;
+    this.orientationDismissed = false;
     this.toastTimeout = null;
     this.lastTime = performance.now();
 
@@ -168,6 +175,7 @@ class GameEngine {
     this.setupInputHandlers();
     this.setupGamepadListeners();
     this.setupTouchControls();
+    this.setupOrientationAndTabs();
     this.setupUIButtons();
     this.renderWeaponSlots();
 
@@ -176,8 +184,13 @@ class GameEngine {
   }
 
   resize() {
-    this.width = window.innerWidth || 1920;
-    this.height = window.innerHeight || 1080;
+    if (this.isForceLandscape) {
+      this.width = Math.max(window.innerWidth, window.innerHeight);
+      this.height = Math.min(window.innerWidth, window.innerHeight);
+    } else {
+      this.width = window.innerWidth || 1920;
+      this.height = window.innerHeight || 1080;
+    }
     this.canvas.width = this.width;
     this.canvas.height = this.height;
   }
@@ -252,10 +265,16 @@ class GameEngine {
 
     window.addEventListener('mousemove', (e) => {
       this.input.usingGamepadCursor = false;
-      this.input.mouseX = e.clientX;
-      this.input.mouseY = e.clientY;
-      this.input.cursorX = e.clientX;
-      this.input.cursorY = e.clientY;
+      let mx = e.clientX;
+      let my = e.clientY;
+      if (this.isForceLandscape) {
+        mx = e.clientY;
+        my = window.innerWidth - e.clientX;
+      }
+      this.input.mouseX = mx;
+      this.input.mouseY = my;
+      this.input.cursorX = mx;
+      this.input.cursorY = my;
       if (this.ui.virtualCursor) {
         this.ui.virtualCursor.classList.add('hidden');
       }
@@ -290,12 +309,21 @@ class GameEngine {
   }
 
   setupUIButtons() {
-    // Start button
-    document.getElementById('btn-start').addEventListener('click', () => {
-      window.soundEngine.init();
-      window.soundEngine.resume();
-      this.startGame();
-    });
+    // Start button (Supports both tap and click for zero delay on mobile)
+    const btnStart = document.getElementById('btn-start');
+    if (btnStart) {
+      const handleStart = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        window.soundEngine.init();
+        window.soundEngine.resume();
+        this.startGame();
+      };
+      btnStart.addEventListener('click', handleStart);
+      btnStart.addEventListener('touchstart', handleStart, { passive: false });
+    }
 
     // Audio toggle button
     this.ui.audioBtn.addEventListener('click', () => {
@@ -377,8 +405,20 @@ class GameEngine {
     };
 
     const updateJoystickPosition = (clientX, clientY) => {
-      const dx = clientX - joystickOriginX;
-      const dy = clientY - joystickOriginY;
+      let cx = clientX;
+      let cy = clientY;
+      let ox = joystickOriginX;
+      let oy = joystickOriginY;
+
+      if (this.isForceLandscape) {
+        cx = clientY;
+        cy = window.innerWidth - clientX;
+        ox = joystickOriginY;
+        oy = window.innerWidth - joystickOriginX;
+      }
+
+      const dx = cx - ox;
+      const dy = cy - oy;
       const distance = Math.hypot(dx, dy);
       const clampedDist = Math.min(distance, maxStickRadius);
       const nx = distance > 0 ? (dx / distance) * clampedDist : 0;
@@ -498,8 +538,18 @@ class GameEngine {
         if (fireTouchId === null) return;
         const touch = getTouchById(e.changedTouches, fireTouchId);
         if (touch) {
-          const dx = touch.clientX - fireStartX;
-          const dy = touch.clientY - fireStartY;
+          let cx = touch.clientX;
+          let cy = touch.clientY;
+          let sx = fireStartX;
+          let sy = fireStartY;
+          if (this.isForceLandscape) {
+            cx = touch.clientY;
+            cy = window.innerWidth - touch.clientX;
+            sx = fireStartY;
+            sy = window.innerWidth - fireStartX;
+          }
+          const dx = cx - sx;
+          const dy = cy - sy;
           if (Math.hypot(dx, dy) > 12) {
             this.input.touchDragAiming = true;
             this.input.touchAimAngle = Math.atan2(dy, dx);
@@ -582,6 +632,128 @@ class GameEngine {
     }
 
     this.updateTouchWeaponLabels();
+  }
+
+  setupOrientationAndTabs() {
+    // 1. Controls Guide Tabs
+    const tabBtns = document.querySelectorAll('.ctrl-tab-btn');
+    tabBtns.forEach(btn => {
+      const switchTab = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        tabBtns.forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.ctrl-tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-tab');
+        const targetPane = document.getElementById(targetId);
+        if (targetPane) targetPane.classList.add('active');
+      };
+      btn.addEventListener('click', switchTab);
+      btn.addEventListener('touchstart', switchTab, { passive: false });
+    });
+
+    // Detect device type to activate optimal tab by default
+    const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024);
+    if (hasTouch) {
+      const touchBtn = document.getElementById('tab-btn-touch');
+      if (touchBtn) touchBtn.click();
+    } else if (this.input.gamepadConnected) {
+      const gpBtn = document.getElementById('tab-btn-gamepad');
+      if (gpBtn) gpBtn.click();
+    }
+
+    // 2. Orientation Monitoring
+    const checkOrientation = () => {
+      const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 900);
+      const isPortrait = window.innerHeight > window.innerWidth;
+      if (this.ui.orientationPrompt) {
+        if (isMobile && isPortrait && !this.orientationDismissed && !this.isForceLandscape && this.state === 'start') {
+          this.ui.orientationPrompt.classList.remove('hidden');
+        } else {
+          this.ui.orientationPrompt.classList.add('hidden');
+        }
+      }
+    };
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    setTimeout(checkOrientation, 150);
+
+    // 3. Orientation buttons
+    if (this.ui.btnOrientationRotate) {
+      const handleOrientRotate = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.orientationDismissed = true;
+        if (this.ui.orientationPrompt) this.ui.orientationPrompt.classList.add('hidden');
+        this.toggleForceLandscape(true);
+      };
+      this.ui.btnOrientationRotate.addEventListener('click', handleOrientRotate);
+      this.ui.btnOrientationRotate.addEventListener('touchstart', handleOrientRotate, { passive: false });
+    }
+
+    if (this.ui.btnOrientationDismiss) {
+      const handleDismiss = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.orientationDismissed = true;
+        if (this.ui.orientationPrompt) this.ui.orientationPrompt.classList.add('hidden');
+      };
+      this.ui.btnOrientationDismiss.addEventListener('click', handleDismiss);
+      this.ui.btnOrientationDismiss.addEventListener('touchstart', handleDismiss, { passive: false });
+    }
+
+    if (this.ui.btnRotateToggle) {
+      this.ui.btnRotateToggle.addEventListener('click', () => {
+        this.toggleForceLandscape();
+      });
+    }
+
+    if (this.ui.btnModalRotate) {
+      const handleModalRotate = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.toggleForceLandscape();
+      };
+      this.ui.btnModalRotate.addEventListener('click', handleModalRotate);
+      this.ui.btnModalRotate.addEventListener('touchstart', handleModalRotate, { passive: false });
+    }
+  }
+
+  toggleForceLandscape(forceState) {
+    this.isForceLandscape = (forceState !== undefined) ? !!forceState : !this.isForceLandscape;
+    document.body.classList.toggle('force-landscape', this.isForceLandscape);
+
+    // Attempt browser fullscreen and orientation lock
+    if (this.isForceLandscape) {
+      const el = document.documentElement;
+      const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (requestFS && !document.fullscreenElement) {
+        requestFS.call(el).then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    }
+
+    if (this.ui.btnRotateToggle) {
+      this.ui.btnRotateToggle.classList.toggle('active', this.isForceLandscape);
+    }
+    if (this.ui.orientationPrompt) {
+      this.ui.orientationPrompt.classList.add('hidden');
+    }
+
+    this.resize();
+    this.showToast('SIDEWAYS ARENA', this.isForceLandscape ? 'Sideways widescreen mode active' : 'Standard view restored', '#00f0ff');
   }
 
   setTouchControlsActive(active) {
@@ -957,6 +1129,9 @@ class GameEngine {
     this.state = 'playing';
     this.wave = 1;
     this.waveTimer = 0;
+    if (this.ui.orientationPrompt) {
+      this.ui.orientationPrompt.classList.add('hidden');
+    }
     this.enemiesDefeated = 0;
     this.totalScore = 0;
 

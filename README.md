@@ -54,6 +54,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Super Nova Ultimate** | [Nova Button (Purple)] | Screen-clearing gravitational shockwave (charges +4% per defeated enemy, glows neon purple when fully primed at 100%) |
 | **Quick Weapon Cycle** | [Weapon Pills] | Quick-swap buttons for Melee (Katana/Lance/Hammer/Glaives) and Ranged (Beam/Seekers/Repeater/Flak/Void) |
 | **Touch Controls Toggle** | [Smartphone Icon Button]| Toggle touch overlay on/off anytime from the top action bar |
+| **Sideways Widescreen Mode** | [Landscape Icon Button] | Locks/rotates display into 16:9 widescreen landscape matching PC arena dimensions |
 
 ---
 

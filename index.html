@@ -128,6 +128,18 @@
         <rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect>
         <line x1="12" y1="18" x2="12.01" y2="18"></line>
       </g>
+      <!-- Landscape Mode (Sideways Screen) -->
+      <g id="icon-landscape">
+        <rect width="20" height="14" x="2" y="5" rx="2" ry="2"></rect>
+        <line x1="18" y1="12" x2="18.01" y2="12"></line>
+      </g>
+      <!-- Maximize / Fullscreen -->
+      <g id="icon-maximize">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+        <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+        <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+      </g>
     </defs>
   </svg>
 
@@ -224,6 +236,9 @@
             <svg class="ui-icon icon-cyan"><use href="#icon-gamepad"></use></svg>
             <span class="gamepad-badge-text">GAMEPAD</span>
           </div>
+          <button id="btn-rotate-toggle" class="action-btn" title="Toggle Sideways Widescreen Mode">
+            <svg class="ui-icon" id="rotate-screen-icon"><use href="#icon-landscape"></use></svg>
+          </button>
           <button id="btn-touch-toggle" class="action-btn" title="Toggle Touch Controls">
             <svg class="ui-icon" id="touch-toggle-icon"><use href="#icon-smartphone"></use></svg>
           </button>
@@ -306,70 +321,135 @@
     <!-- Start / Title Screen Overlay -->
     <div id="screen-start" class="screen-overlay">
       <div class="modal-card title-card">
-        <div class="triangle-logo-anim">
-          <div class="glow-triangle"></div>
+        <!-- Top branding row -->
+        <div class="title-header-row">
+          <div class="triangle-logo-anim">
+            <div class="glow-triangle"></div>
+          </div>
+          <div class="title-titles">
+            <h1 class="game-title">TRI-VERTEX</h1>
+            <p class="game-subtitle">HIGH-OCTANE MELEE &amp; RANGED GEOMETRIC ARENA</p>
+          </div>
         </div>
-        <h1 class="game-title">TRI-VERTEX</h1>
-        <p class="game-subtitle">HIGH-OCTANE MELEE & RANGED GEOMETRIC ARENA</p>
 
+        <!-- Primary Start Call to Action: Prominently placed right under the title! -->
+        <div class="start-cta-cluster">
+          <button id="btn-start" class="cta-button btn-start-hero">
+            <svg class="ui-icon icon-play-lg"><use href="#icon-play"></use></svg>
+            <span>INITIATE COMBAT SEQUENCE</span>
+          </button>
+          <div class="start-sub-hints">
+            <span class="sub-hint-tag">Tap to start &bull; Spacebar &bull; Gamepad [A]</span>
+            <button id="btn-modal-rotate" class="modal-rotate-pill" type="button" title="Toggle Sideways Widescreen Mode">
+              <svg class="ui-icon"><use href="#icon-landscape"></use></svg>
+              <span>SIDEWAYS WIDESCREEN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Combat Overview Pill Cards (Compact & Responsive) -->
         <div class="combat-overview">
           <div class="overview-box">
             <div class="box-icon icon-cyan">
               <svg class="ui-icon"><use href="#icon-sword"></use></svg>
             </div>
-            <h3>MELEE ARSENAL</h3>
-            <p>Slash with Plasma Blade, impale with Hyper-Lance, crush with Titan Hammer, or shred with Orbiting Glaives. Deflects incoming shots!</p>
+            <div class="box-content">
+              <h3>MELEE ARSENAL</h3>
+              <p>Slash with Plasma Blade, impale with Lance, crush with Hammer, shred with Glaives. Parries and deflects bullets!</p>
+            </div>
           </div>
           <div class="overview-box">
             <div class="box-icon icon-pink">
               <svg class="ui-icon"><use href="#icon-crosshair"></use></svg>
             </div>
-            <h3>FAR-RANGE GUNS</h3>
-            <p>Snipe through legions with Pulse Railgun, lock on with Swarm Seekers, shred with Tri-Laser, or control crowds with Void Vortex!</p>
+            <div class="box-content">
+              <h3>FAR-RANGE GUNS</h3>
+              <p>Snipe with Railgun, lock on with Seekers, shred with Tri-Laser, control crowds with Void Vortex!</p>
+            </div>
           </div>
         </div>
 
-        <div class="controls-guide">
-          <div class="ctrl-header">
-            <span>KEYBOARD & MOUSE</span>
+        <!-- Interactive Controls Guide with Tabs for Touch, Controller, PC -->
+        <div class="controls-guide-tabs">
+          <div class="ctrl-tabs-header">
+            <button class="ctrl-tab-btn active" data-tab="tab-touch" id="tab-btn-touch" type="button">
+              <svg class="ui-icon icon-amber"><use href="#icon-smartphone"></use></svg>
+              <span>TOUCH (PHONES &amp; TABLETS)</span>
+            </button>
+            <button class="ctrl-tab-btn" data-tab="tab-gamepad" id="tab-btn-gamepad" type="button">
+              <svg class="ui-icon icon-cyan"><use href="#icon-gamepad"></use></svg>
+              <span>XBOX CONTROLLER</span>
+            </button>
+            <button class="ctrl-tab-btn" data-tab="tab-keyboard" id="tab-btn-keyboard" type="button">
+              <svg class="ui-icon icon-pink"><use href="#icon-crosshair"></use></svg>
+              <span>KEYBOARD &amp; MOUSE</span>
+            </button>
           </div>
-          <div class="ctrl-row"><span>[W][A][S][D] / Arrows</span> : Drift & Thruster Flight</div>
-          <div class="ctrl-row"><span>[MOUSE AIM]</span> : Aim Point of Triangle</div>
-          <div class="ctrl-row highlight-cyan"><span>[LEFT CLICK]</span> : Attack with Equipped MELEE Weapon</div>
-          <div class="ctrl-row highlight-pink"><span>[RIGHT CLICK]</span> : Fire Equipped FAR-RANGE Weapon</div>
-          <div class="ctrl-row"><span>[SPACEBAR]</span> : Phase Dash (Dodges & Slashes through Foes)</div>
-          <div class="ctrl-row"><span>[1-4 / Q]</span> : Swap Melee &bull; <span>[5-8 / E]</span> : Swap Ranged</div>
-          <div class="ctrl-row highlight-amber"><span>[F]</span> : Super Nova Ultimate (Charge with Combos)</div>
 
-          <div class="ctrl-header ctrl-header-pad">
-            <svg class="ui-icon icon-cyan"><use href="#icon-gamepad"></use></svg>
-            <span>XBOX CONTROLLER (VIRTUAL CURSOR SYSTEM)</span>
-          </div>
-          <div class="ctrl-row"><span>[LEFT STICK / D-PAD]</span> : 360° Analog Flight & Velocity</div>
-          <div class="ctrl-row"><span>[RIGHT STICK]</span> : Sleek Virtual Cursor (Unobstructed Vision)</div>
-          <div class="ctrl-row highlight-cyan"><span>[RIGHT TRIGGER (RT / R2) / X]</span> : Primary MELEE Slash</div>
-          <div class="ctrl-row highlight-pink"><span>[LEFT TRIGGER (LT / L2)]</span> : Far-Range BEAM Fire (Aim Magnetism)</div>
-          <div class="ctrl-row"><span>[BUTTON A / LB]</span> : Phase Dash &bull; Click Menu Buttons</div>
-          <div class="ctrl-row"><span>[RB]</span> : Cycle Melee &bull; <span>[BUTTON B]</span> : Cycle Ranged</div>
-          <div class="ctrl-row highlight-amber"><span>[BUTTON Y]</span> : Super Nova &bull; <span>[START]</span> : Pause / Select</div>
+          <div class="ctrl-tab-contents">
+            <!-- Touch Tab Pane -->
+            <div id="tab-touch" class="ctrl-tab-pane active">
+              <div class="ctrl-grid">
+                <div class="ctrl-row"><span>[LEFT VIRTUAL STICK]</span> : 360° Analog Thrusters &amp; Flight</div>
+                <div class="ctrl-row"><span>[RIGHT TOUCH PAD]</span> : Precision Aim &amp; Auto-Lock</div>
+                <div class="ctrl-row highlight-cyan"><span>[SLASH BUTTON]</span> : Primary Melee Attack &amp; Parry Deflection</div>
+                <div class="ctrl-row highlight-pink"><span>[FIRE BUTTON]</span> : Far-Range Fire &amp; Drag-to-Aim</div>
+                <div class="ctrl-row"><span>[DASH BUTTON]</span> : Phase Dash Warp (Invulnerable)</div>
+                <div class="ctrl-row highlight-amber"><span>[NOVA BUTTON]</span> : Super Nova (Charges +4% per defeated enemy)</div>
+                <div class="ctrl-row"><span>[WEAPON PILLS]</span> : Quick-swap Melee &amp; Ranged arsenals</div>
+                <div class="ctrl-row"><span>[SIDEWAYS LAYOUT]</span> : Rotate device sideways for PC widescreen arena</div>
+              </div>
+            </div>
 
-          <div class="ctrl-header ctrl-header-pad">
-            <svg class="ui-icon icon-amber"><use href="#icon-smartphone"></use></svg>
-            <span>PHONES &amp; TABLETS (TOUCH TWIN-STICK)</span>
+            <!-- Gamepad Tab Pane -->
+            <div id="tab-gamepad" class="ctrl-tab-pane">
+              <div class="ctrl-grid">
+                <div class="ctrl-row"><span>[LEFT STICK / D-PAD]</span> : 360° Analog Flight &amp; Velocity</div>
+                <div class="ctrl-row"><span>[RIGHT STICK]</span> : Virtual Cursor (Precision Aiming &amp; Menus)</div>
+                <div class="ctrl-row highlight-cyan"><span>[RIGHT TRIGGER (RT) / X]</span> : Primary MELEE Slash</div>
+                <div class="ctrl-row highlight-pink"><span>[LEFT TRIGGER (LT)]</span> : Far-Range BEAM Fire (Aim Magnetism)</div>
+                <div class="ctrl-row"><span>[BUTTON A / LB]</span> : Phase Dash Warp &bull; Click Menu Buttons</div>
+                <div class="ctrl-row"><span>[RB]</span> : Cycle Melee &bull; <span>[BUTTON B]</span> : Cycle Ranged</div>
+                <div class="ctrl-row highlight-amber"><span>[BUTTON Y]</span> : Super Nova (+4% per kill)</div>
+                <div class="ctrl-row"><span>[START / MENU]</span> : Pause / Resume combat</div>
+              </div>
+            </div>
+
+            <!-- Keyboard Tab Pane -->
+            <div id="tab-keyboard" class="ctrl-tab-pane">
+              <div class="ctrl-grid">
+                <div class="ctrl-row"><span>[W][A][S][D] / Arrows</span> : Drift &amp; Thruster Flight</div>
+                <div class="ctrl-row"><span>[MOUSE AIM]</span> : Aim Point of Triangle</div>
+                <div class="ctrl-row highlight-cyan"><span>[LEFT CLICK]</span> : Attack with Equipped MELEE Weapon</div>
+                <div class="ctrl-row highlight-pink"><span>[RIGHT CLICK]</span> : Fire Equipped FAR-RANGE Weapon</div>
+                <div class="ctrl-row"><span>[SPACEBAR]</span> : Phase Dash (Dodges &amp; Slashes through Foes)</div>
+                <div class="ctrl-row highlight-amber"><span>[F]</span> : Super Nova Ultimate (+4% per kill)</div>
+                <div class="ctrl-row"><span>[1-4 / Q] &amp; [5-8 / E]</span> : Swap Weapon Loadout</div>
+                <div class="ctrl-row"><span>[ESC / P]</span> : Pause / Resume combat</div>
+              </div>
+            </div>
           </div>
-          <div class="ctrl-row"><span>[LEFT VIRTUAL STICK]</span> : 360° Analog Thrusters &amp; Flight</div>
-          <div class="ctrl-row"><span>[RIGHT TOUCH PAD]</span> : Precision Touch Aim &amp; Auto-Lock</div>
-          <div class="ctrl-row highlight-cyan"><span>[SLASH BUTTON]</span> : Primary Melee Attack &amp; Parry Deflection</div>
-          <div class="ctrl-row highlight-pink"><span>[FIRE BUTTON]</span> : Far-Range Fire &amp; Drag-to-Aim</div>
-          <div class="ctrl-row"><span>[DASH BUTTON]</span> : Phase Dash Warp (Invulnerable)</div>
-          <div class="ctrl-row"><span>[WEAPON PILLS]</span> : Quick Cycle Melee &amp; Ranged</div>
-          <div class="ctrl-row highlight-amber"><span>[NOVA BUTTON]</span> : Full-Screen Super Nova Shockwave</div>
         </div>
+      </div>
+    </div>
 
-        <button id="btn-start" class="cta-button">
-          <svg class="ui-icon"><use href="#icon-play"></use></svg>
-          <span>INITIATE COMBAT SEQUENCE</span>
-        </button>
+    <!-- Orientation Recommendation Overlay (Portrait detection on mobile) -->
+    <div id="orientation-prompt" class="orientation-prompt hidden">
+      <div class="orientation-card">
+        <div class="rotate-phone-anim">
+          <svg class="ui-icon rotate-device-icon"><use href="#icon-landscape"></use></svg>
+        </div>
+        <h3 class="orientation-title">ROTATE FOR WIDESCREEN PC ARENA</h3>
+        <p class="orientation-desc">Tri-Vertex is designed for sideways widescreen combat. Turn your device sideways for the dual-stick controls, or lock into sideways mode!</p>
+        <div class="orientation-actions">
+          <button id="btn-orientation-rotate" class="cta-button-sm" type="button">
+            <svg class="ui-icon"><use href="#icon-landscape"></use></svg>
+            <span>LOCK SIDEWAYS (LANDSCAPE)</span>
+          </button>
+          <button id="btn-orientation-dismiss" class="secondary-button-sm" type="button">
+            <span>PLAY IN CURRENT VIEW</span>
+          </button>
+        </div>
       </div>
     </div>
 
