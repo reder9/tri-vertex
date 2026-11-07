@@ -84,11 +84,9 @@ class Player {
     this.synergyMeter = 0;
     this.isOvercharged = false;
 
-    // Ultimate Ability (Super Nova) - Tuned for tactical rarity
+    // Ultimate Ability (Super Nova) - Charges +4% per defeated enemy (25 kills to prime)
     this.ultimateCharge = 0;
     this.ultimateMax = 100;
-    this.ultimateCooldown = 0;
-    this.ultimateCooldownMax = 25; // 25s tactical lockout to prevent rapid spamming
 
     // Upgrades modifiers
     this.meleeRangeMult = 1;
@@ -449,13 +447,8 @@ class Player {
       this.performRangedAttack(game);
     }
 
-    // Ultimate cooldown decay
-    if (this.ultimateCooldown > 0) {
-      this.ultimateCooldown -= dt;
-    }
-
     // Ultimate trigger
-    if (input.keys['KeyF'] && this.ultimateCharge >= this.ultimateMax && this.ultimateCooldown <= 0) {
+    if (input.keys['KeyF'] && this.ultimateCharge >= this.ultimateMax) {
       this.triggerUltimate(game);
     }
   }
@@ -641,7 +634,6 @@ class Player {
     if (hitCount > 0) {
       this.addSynergy(18 * hitCount);
       this.addCombo(hitCount);
-      this.addUltimate(1.2 * Math.min(2, hitCount)); // Controlled ultimate charge generation
       // Melee hits siphon kinetic energy back to player
       this.energy = Math.min(this.maxEnergy, this.energy + (12 * hitCount));
     }
@@ -790,7 +782,6 @@ class Player {
 
       if (hits > 0) {
         this.addCombo(hits);
-        this.addUltimate(1.5 * Math.min(2, hits)); // Controlled ultimate charge generation
       }
 
       // Hyper Discharge: spawn electric plasma trail along beam line
@@ -880,9 +871,8 @@ class Player {
   }
 
   triggerUltimate(game) {
-    if (this.ultimateCharge < this.ultimateMax || this.ultimateCooldown > 0) return;
+    if (this.ultimateCharge < this.ultimateMax) return;
     this.ultimateCharge = 0;
-    this.ultimateCooldown = this.ultimateCooldownMax;
     window.soundEngine.playUltimateBlast();
     game.screenShake(14, 0.45);
     if (game && game.rumble) {
@@ -945,8 +935,7 @@ class Player {
     }
   }
 
-  addUltimate(amount) {
-    if (this.ultimateCooldown > 0) return;
+  addUltimate(amount = 4) {
     this.ultimateCharge = Math.min(this.ultimateMax, this.ultimateCharge + amount);
   }
 
@@ -1370,6 +1359,8 @@ class Enemy {
     // Vulnerability status (applied by ranged weapons)
     this.vulnerableTimer = 0;
 
+    this.isEliminated = false;
+
     // Setup by type
     this.setupType();
   }
@@ -1515,6 +1506,16 @@ class Enemy {
   }
 
   die(game) {
+    if (this.isEliminated) return;
+    this.isEliminated = true;
+
+    if (!game) game = window.gameInstance;
+
+    // Charge Player's Ultimate: +4% per defeated enemy (+20% for apex bosses)
+    if (game && game.player) {
+      game.player.addUltimate(this.isBoss ? 20 : 4);
+    }
+
     window.soundEngine.playExplosion(this.isBoss);
 
     // Spawn scrap / XP gem drops

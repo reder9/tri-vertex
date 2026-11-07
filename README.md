@@ -17,7 +17,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Phase Dash** | `[Spacebar]` | High-speed dash with invulnerability frames and ghost trails |
 | **Cycle Melee Weapon** | `[1] [2] [3] [4]` or `[Q]` | Swaps equipped Melee weapon on the fly |
 | **Cycle Far-Range Weapon**| `[5] [6] [7] [8]` or `[E]` | Swaps equipped Far-Range weapon on the fly |
-| **Super Nova Ultimate** | `[F]` | Screen-clearing gravitational EMP shockwave (charges with sustained combat, 25s tactical cadence) |
+| **Super Nova Ultimate** | `[F]` | Screen-clearing gravitational EMP shockwave (charges +4% per defeated enemy; 25 kills to prime) |
 | **Pause / Resume** | `[ESC]` or `[P]` | Suspends simulation with realtime debrief |
 
 ### Xbox Controller (Virtual Cursor System)
@@ -34,7 +34,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Menu Cursor & Select**| `[Left/Right Stick] + [Button A / RT]` | Move virtual cursor over any UI button or upgrade card and click directly |
 | **Cycle Melee Weapon** | `[Right Bumper (RB)]` | Cycles Melee arsenal (Katana, Lance, Hammer, Glaives) |
 | **Cycle Far-Range Weapon**| `[Button B]` | Cycles Far-Range arsenal (Beam, Seekers, Repeater, Flak, Void) |
-| **Super Nova Ultimate** | `[Button Y]` | Detonates full-screen gravitational blast when charged and off cooldown |
+| **Super Nova Ultimate** | `[Button Y]` | Detonates full-screen gravitational blast (charges +4% per defeated enemy; 25 kills to prime) |
 | **Pause / Menu / Start** | `[Menu / Start Button]` | Starts combat from title screen, or pauses/resumes simulation |
 | **Toggle Audio Mute** | `[View / Back Button]` | Instantly toggles synthesized Web Audio sound |
 | **Upgrade Card Navigation**| `[D-Pad Left/Right]` or `[Virtual Cursor]` | Seamlessly highlights and equips level-up augments |
@@ -51,7 +51,7 @@ A sleek, cyber-neon HTML5 canvas combat arena game where you pilot an agile comb
 | **Primary Melee Slash** | [Slash Button (Cyan)] | Primary melee attack and parry bullet deflection |
 | **Far-Range Fire & Aim** | [Fire Button (Pink)] | Discharges active ranged weapon; drag thumb outward to manually steer your firing arc |
 | **Phase Dash Warp** | [Dash Button (Amber)] | Invulnerable warp in current flight / joystick vector with ghost trails |
-| **Super Nova Ultimate** | [Nova Button (Purple)] | Screen-clearing gravitational shockwave (activates and glows when charged, displays tactical cooldown timer) |
+| **Super Nova Ultimate** | [Nova Button (Purple)] | Screen-clearing gravitational shockwave (charges +4% per defeated enemy, glows neon purple when fully primed at 100%) |
 | **Quick Weapon Cycle** | [Weapon Pills] | Quick-swap buttons for Melee (Katana/Lance/Hammer/Glaives) and Ranged (Beam/Seekers/Repeater/Flak/Void) |
 | **Touch Controls Toggle** | [Smartphone Icon Button]| Toggle touch overlay on/off anytime from the top action bar |
 
