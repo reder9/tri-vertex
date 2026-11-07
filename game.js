@@ -14,7 +14,7 @@ class GameEngine {
     this.state = 'start'; // 'start', 'playing', 'upgrade', 'paused', 'gameover'
     this.wave = 1;
     this.waveTimer = 0;
-    this.waveDuration = 35; // seconds per wave before clearing & next wave
+    this.waveDuration = 20; // seconds per wave before clearing & next wave
     this.enemiesDefeated = 0;
     this.totalScore = 0;
     this.highScore = parseInt(localStorage.getItem('trivertex_highscore') || '0', 10);
@@ -330,7 +330,7 @@ class GameEngine {
 
     // Ultimate button click
     this.ui.ultCard.addEventListener('click', () => {
-      if (this.player && this.player.ultimateCharge >= this.player.ultimateMax) {
+      if (this.player && this.player.ultimateCharge >= this.player.ultimateMax && this.player.ultimateCooldown <= 0) {
         this.player.triggerUltimate(this);
       }
     });
@@ -545,7 +545,7 @@ class GameEngine {
       this.ui.touchBtnNova.addEventListener('touchstart', (e) => {
         e.preventDefault();
         unlockAudio();
-        if (this.player && this.player.ultimateCharge >= this.player.ultimateMax) {
+        if (this.player && this.player.ultimateCharge >= this.player.ultimateMax && this.player.ultimateCooldown <= 0) {
           this.player.triggerUltimate(this);
         }
       }, { passive: false });
@@ -892,7 +892,7 @@ class GameEngine {
 
       // Button Y (3): Super Nova Ultimate
       if (isJustPressed(3)) {
-        if (this.player && this.player.ultimateCharge >= this.player.ultimateMax) {
+        if (this.player && this.player.ultimateCharge >= this.player.ultimateMax && this.player.ultimateCooldown <= 0) {
           this.player.triggerUltimate(this);
         }
       }
@@ -1366,8 +1366,9 @@ class GameEngine {
     }
 
     // Advance wave (ensure boss is neutralized first before advancing sector)
-    const currentWaveDuration = this.wave === 1 ? 25 : (this.wave === 2 ? 28 : 35);
-    if (!hasBossActive && this.waveTimer >= currentWaveDuration && this.enemies.length <= (this.wave <= 2 ? 1 : 2)) {
+    // Shorter, fast-paced stage duration: 15s for Sector 1, 16s for Sector 2, 18s for Sector 3, 20s thereafter
+    const currentWaveDuration = this.wave === 1 ? 15 : (this.wave === 2 ? 16 : (this.wave === 3 ? 18 : 20));
+    if (!hasBossActive && this.waveTimer >= currentWaveDuration) {
       this.wave++;
       this.waveTimer = 0;
       this.bossSpawned = false;
@@ -1693,20 +1694,30 @@ class GameEngine {
       this.ui.synergyStatus.style.color = '#8b9bb4';
     }
 
-    // Ultimate button
-    const ultPct = Math.floor((this.player.ultimateCharge / this.player.ultimateMax) * 100);
-    this.ui.ultTag.innerText = ultPct >= 100 ? 'READY' : ${ultPct}%;
-    if (ultPct >= 100) {
-      this.ui.ultCard.classList.add('ready');
-      if (this.ui.touchBtnNova) {
-        this.ui.touchBtnNova.classList.remove('disabled');
-        this.ui.touchBtnNova.classList.add('ready');
-      }
-    } else {
+    // Ultimate button & Nova cooldown status
+    if (this.player.ultimateCooldown > 0) {
+      const cdSecs = Math.ceil(this.player.ultimateCooldown);
+      this.ui.ultTag.innerText = `${cdSecs}s`;
       this.ui.ultCard.classList.remove('ready');
       if (this.ui.touchBtnNova) {
         this.ui.touchBtnNova.classList.add('disabled');
         this.ui.touchBtnNova.classList.remove('ready');
+      }
+    } else {
+      const ultPct = Math.floor((this.player.ultimateCharge / this.player.ultimateMax) * 100);
+      this.ui.ultTag.innerText = ultPct >= 100 ? 'READY' : `${ultPct}%`;
+      if (ultPct >= 100) {
+        this.ui.ultCard.classList.add('ready');
+        if (this.ui.touchBtnNova) {
+          this.ui.touchBtnNova.classList.remove('disabled');
+          this.ui.touchBtnNova.classList.add('ready');
+        }
+      } else {
+        this.ui.ultCard.classList.remove('ready');
+        if (this.ui.touchBtnNova) {
+          this.ui.touchBtnNova.classList.add('disabled');
+          this.ui.touchBtnNova.classList.remove('ready');
+        }
       }
     }
 
