@@ -385,7 +385,7 @@ class GameEngine {
       const ny = distance > 0 ? (dy / distance) * clampedDist : 0;
 
       if (this.ui.joystickKnob) {
-        this.ui.joystickKnob.style.transform = 	ranslate(px, px);
+        this.ui.joystickKnob.style.transform = `translate(${nx}px, ${ny}px)`;
       }
 
       const mag = Math.min(1, distance / maxStickRadius);
