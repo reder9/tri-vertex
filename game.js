@@ -7,10 +7,17 @@ class GameEngine {
   constructor() {
     this.canvas = document.getElementById('gameCanvas');
     this.ctx = this.canvas.getContext('2d');
-    this.width = window.innerWidth || 1920;
-    this.height = window.innerHeight || 1080;
+    // Cosmic Arena & Virtual Camera System
+    this.arenaWidth = 3200;
+    this.arenaHeight = 2400;
+    this.width = this.arenaWidth;
+    this.height = this.arenaHeight;
+    this.viewportWidth = window.innerWidth || 1920;
+    this.viewportHeight = window.innerHeight || 1080;
+    this.camera = { x: 0, y: 0, targetX: 0, targetY: 0 };
     this.scale = 1.0;
     this.dpr = 1.0;
+    this.autoCombat = true;
 
     // Game state
     this.state = 'start'; // 'start', 'playing', 'upgrade', 'paused', 'gameover'
@@ -20,6 +27,7 @@ class GameEngine {
     this.enemiesDefeated = 0;
     this.totalScore = 0;
     this.highScore = parseInt(localStorage.getItem('trivertex_highscore') || '0', 10);
+    this.bestSector = parseInt(localStorage.getItem('trivertex_bestsector') || '1', 10);
 
     // Entity lists
     this.player = new Player(this.width / 2, this.height / 2);
@@ -120,6 +128,7 @@ class GameEngine {
       virtualCursor: document.getElementById('gamepad-virtual-cursor'),
       // Screens
       screenStart: document.getElementById('screen-start'),
+      screenControlsGuide: document.getElementById('screen-controls-guide'),
       screenUpgrade: document.getElementById('screen-upgrade'),
       screenPause: document.getElementById('screen-pause'),
       screenGameOver: document.getElementById('screen-gameover'),
@@ -185,45 +194,26 @@ class GameEngine {
   }
 
   resize() {
-    const vw = window.innerWidth || 1920;
-    const vh = window.innerHeight || 1080;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.dpr = dpr;
+    this.viewportWidth = window.innerWidth || 1920;
+    this.viewportHeight = window.innerHeight || 1080;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    // Adaptive Virtual Arena Scaling:
-    // On mobile screens, 1:1 pixel rendering makes the arena feel claustrophobic and 'way too focused in'.
-    // By enforcing a tactical virtual arena view (760 units height in landscape, 720 units width in portrait),
-    // the camera is comfortably pulled back to give full situational awareness, dodge room, and spacious combat.
-    const isPortrait = vh > vw;
-    if (isPortrait) {
-      const targetWidth = 720;
-      this.scale = Math.min(1.0, vw / targetWidth);
-    } else {
-      const targetHeight = 760;
-      this.scale = Math.min(1.0, vh / targetHeight);
-    }
-    this.scale = Math.max(0.38, Math.min(1.0, this.scale));
+    // Physical canvas buffer scaling for high-resolution Retina & OLED displays
+    this.canvas.width = Math.round(this.viewportWidth * this.dpr);
+    this.canvas.height = Math.round(this.viewportHeight * this.dpr);
+    this.canvas.style.width = `${this.viewportWidth}px`;
+    this.canvas.style.height = `${this.viewportHeight}px`;
 
-    // Logical game arena dimensions (entities move, spawn, and collide in this space)
-    this.width = Math.round(vw / this.scale);
-    this.height = Math.round(vh / this.scale);
+    // World arena boundaries remain expansive (3200 x 2400)
+    this.width = this.arenaWidth;
+    this.height = this.arenaHeight;
 
-    // Physical canvas pixel resolution (crisp Retina / OLED scaling)
-    this.canvas.width = Math.round(vw * dpr);
-    this.canvas.height = Math.round(vh * dpr);
-    this.canvas.style.width = `${vw}px`;
-    this.canvas.style.height = `${vh}px`;
-
-    // Reposition / clamp player in new arena boundaries
+    // Center camera on player immediately to avoid jump
     if (this.player) {
-      if (this.state === 'start') {
-        this.player.x = this.width / 2;
-        this.player.y = this.height / 2;
-      } else {
-        const pad = 30;
-        this.player.x = Math.max(pad, Math.min(this.width - pad, this.player.x));
-        this.player.y = Math.max(pad, Math.min(this.height - pad, this.player.y));
-      }
+      this.camera.targetX = this.player.x - this.viewportWidth / 2;
+      this.camera.targetY = this.player.y - this.viewportHeight / 2;
+      this.camera.x = Math.max(0, Math.min(this.arenaWidth - this.viewportWidth, this.camera.targetX));
+      this.camera.y = Math.max(0, Math.min(this.arenaHeight - this.viewportHeight, this.camera.targetY));
     }
   }
 
@@ -298,13 +288,13 @@ class GameEngine {
     window.addEventListener('mousemove', (e) => {
       this.input.usingGamepadCursor = false;
       const rect = this.canvas.getBoundingClientRect();
-      const scale = this.scale || 1;
-      const mx = (e.clientX - rect.left) / scale;
-      const my = (e.clientY - rect.top) / scale;
+      // Translate screen pointer to arena world coordinates via camera offset
+      const mx = (e.clientX - rect.left) + this.camera.x;
+      const my = (e.clientY - rect.top) + this.camera.y;
       this.input.mouseX = mx;
       this.input.mouseY = my;
-      this.input.cursorX = mx;
-      this.input.cursorY = my;
+      this.input.cursorX = e.clientX - rect.left;
+      this.input.cursorY = e.clientY - rect.top;
       if (this.ui.virtualCursor) {
         this.ui.virtualCursor.classList.add('hidden');
       }
@@ -312,9 +302,8 @@ class GameEngine {
 
     window.addEventListener('mousedown', (e) => {
       const rect = this.canvas.getBoundingClientRect();
-      const scale = this.scale || 1;
-      const mx = (e.clientX - rect.left) / scale;
-      const my = (e.clientY - rect.top) / scale;
+      const mx = (e.clientX - rect.left) + this.camera.x;
+      const my = (e.clientY - rect.top) + this.camera.y;
       this.input.mouseX = mx;
       this.input.mouseY = my;
       if (e.button === 0) {
@@ -345,6 +334,28 @@ class GameEngine {
   }
 
   setupUIButtons() {
+    // Update Main Menu Personal Record Badge
+    const updateMenuBadges = () => {
+      const recordText = document.getElementById('menu-record-text');
+      if (recordText) {
+        const hsFormatted = this.highScore.toLocaleString();
+        recordText.innerText = `BEST RECORD: SECTOR ${this.bestSector} • ${hsFormatted} PTS`;
+      }
+
+      const hintText = document.getElementById('hero-hint-text');
+      if (hintText) {
+        const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024);
+        if (hasTouch) {
+          hintText.innerText = 'TOUCH: LEFT THUMB FLIGHT • AUTO-COMBAT ACTIVE';
+        } else if (this.input.gamepadConnected) {
+          hintText.innerText = 'XBOX CONTROLLER DETECTED • PRESS [A] TO DEPLOY';
+        } else {
+          hintText.innerText = 'KEYBOARD: WASD FLIGHT • MOUSE AIM • SPACE DASH';
+        }
+      }
+    };
+    updateMenuBadges();
+
     // Start button (Supports both tap and click for zero delay on mobile)
     const btnStart = document.getElementById('btn-start');
     if (btnStart) {
@@ -361,7 +372,53 @@ class GameEngine {
       btnStart.addEventListener('touchstart', handleStart, { passive: false });
     }
 
-    // Audio toggle button
+    // How to play guide open/close handlers
+    const btnOpenGuide = document.getElementById('btn-open-guide');
+    const btnCloseGuide = document.getElementById('btn-close-guide');
+    const btnGuideStart = document.getElementById('btn-guide-start');
+
+    if (btnOpenGuide) {
+      btnOpenGuide.addEventListener('click', () => {
+        if (this.ui.screenControlsGuide) this.ui.screenControlsGuide.classList.remove('hidden');
+      });
+    }
+    if (btnCloseGuide) {
+      btnCloseGuide.addEventListener('click', () => {
+        if (this.ui.screenControlsGuide) this.ui.screenControlsGuide.classList.add('hidden');
+      });
+    }
+    if (btnGuideStart) {
+      btnGuideStart.addEventListener('click', () => {
+        if (this.ui.screenControlsGuide) this.ui.screenControlsGuide.classList.add('hidden');
+        window.soundEngine.init();
+        window.soundEngine.resume();
+        this.startGame();
+      });
+    }
+
+    // Menu Audio Toggle
+    const btnMenuAudio = document.getElementById('btn-menu-audio');
+    const menuAudioLabel = document.getElementById('menu-audio-label');
+    if (btnMenuAudio) {
+      btnMenuAudio.addEventListener('click', () => {
+        window.soundEngine.init();
+        const enabled = window.soundEngine.toggle();
+        if (menuAudioLabel) {
+          menuAudioLabel.innerText = enabled ? 'SOUND: ON' : 'SOUND: MUTED';
+        }
+        this.showToast('AUDIO', enabled ? 'Sound FX and Music active' : 'Sound muted', '#ffb700');
+      });
+    }
+
+    // Menu Fullscreen Toggle
+    const btnMenuFullscreen = document.getElementById('btn-menu-fullscreen');
+    if (btnMenuFullscreen) {
+      btnMenuFullscreen.addEventListener('click', () => {
+        this.toggleFullscreen();
+      });
+    }
+
+    // Top HUD Audio toggle button
     this.ui.audioBtn.addEventListener('click', () => {
       window.soundEngine.init();
       window.soundEngine.resume();
@@ -427,11 +484,10 @@ class GameEngine {
       });
     }
 
-    // Left Zone: Virtual Analog Movement Joystick
+    // Dynamic Floating Joystick (Anchors under left thumb anywhere on screen)
     let joystickTouchId = null;
     let joystickOriginX = 0;
     let joystickOriginY = 0;
-    const maxStickRadius = 50; // Max knob excursion radius in px
 
     const getTouchById = (touchList, id) => {
       for (let i = 0; i < touchList.length; i++) {
@@ -446,7 +502,7 @@ class GameEngine {
       const distance = Math.hypot(dx, dy);
       const baseRect = this.ui.joystickBase ? this.ui.joystickBase.getBoundingClientRect() : null;
       const baseWidth = baseRect ? baseRect.width : 90;
-      const dynamicMaxRadius = baseWidth * 0.36; // Scaled to current rendered base size
+      const dynamicMaxRadius = baseWidth * 0.42;
       const clampedDist = Math.min(distance, dynamicMaxRadius);
       const nx = distance > 0 ? (dx / distance) * clampedDist : 0;
       const ny = distance > 0 ? (dy / distance) * clampedDist : 0;
@@ -455,7 +511,7 @@ class GameEngine {
         this.ui.joystickKnob.style.transform = `translate(${nx}px, ${ny}px)`;
       }
 
-      const mag = Math.min(1, distance / maxStickRadius);
+      const mag = Math.min(1, distance / dynamicMaxRadius);
       const deadzone = 0.08;
       if (mag > deadzone) {
         const scaledMag = (mag - deadzone) / (1 - deadzone);
@@ -475,38 +531,39 @@ class GameEngine {
         this.ui.joystickKnob.style.transform = 'translate(0px, 0px)';
       }
       if (this.ui.joystickBase) {
-        this.ui.joystickBase.style.opacity = '';
+        this.ui.joystickBase.classList.remove('active');
+        this.ui.joystickBase.style.transform = '';
       }
       this.input.touchMoveX = 0;
       this.input.touchMoveY = 0;
       this.input.touchMoveMagnitude = 0;
     };
 
+    // Full left half of screen supports dynamic floating joystick placement
+    const handleTouchStartLeft = (e) => {
+      if (joystickTouchId !== null) return;
+      const touch = e.changedTouches[0];
+      joystickTouchId = touch.identifier;
+
+      joystickOriginX = touch.clientX;
+      joystickOriginY = touch.clientY;
+
+      if (this.ui.joystickBase) {
+        this.ui.joystickBase.classList.add('active');
+        // Center the joystick visual base right under player's thumb
+        const rect = this.ui.touchZoneLeft.getBoundingClientRect();
+        const relX = touch.clientX - rect.left;
+        const relY = touch.clientY - rect.top;
+        this.ui.joystickBase.style.left = `${relX}px`;
+        this.ui.joystickBase.style.top = `${relY}px`;
+      }
+
+      updateJoystickPosition(touch.clientX, touch.clientY);
+      e.preventDefault();
+    };
+
     if (this.ui.touchZoneLeft) {
-      this.ui.touchZoneLeft.addEventListener('touchstart', (e) => {
-        if (joystickTouchId !== null) return;
-        const touch = e.changedTouches[0];
-        joystickTouchId = touch.identifier;
-
-        if (this.ui.joystickBase) {
-          this.ui.joystickBase.style.opacity = '1';
-          const rect = this.ui.joystickBase.getBoundingClientRect();
-          const dFromBase = Math.hypot(touch.clientX - (rect.left + rect.width / 2), touch.clientY - (rect.top + rect.height / 2));
-          if (dFromBase < rect.width * 1.5) {
-            joystickOriginX = rect.left + rect.width / 2;
-            joystickOriginY = rect.top + rect.height / 2;
-          } else {
-            joystickOriginX = touch.clientX;
-            joystickOriginY = touch.clientY;
-          }
-        } else {
-          joystickOriginX = touch.clientX;
-          joystickOriginY = touch.clientY;
-        }
-
-        updateJoystickPosition(touch.clientX, touch.clientY);
-        e.preventDefault();
-      }, { passive: false });
+      this.ui.touchZoneLeft.addEventListener('touchstart', handleTouchStartLeft, { passive: false });
 
       this.ui.touchZoneLeft.addEventListener('touchmove', (e) => {
         if (joystickTouchId === null) return;
@@ -1165,6 +1222,10 @@ class GameEngine {
       this.highScore = finalScore;
       localStorage.setItem('trivertex_highscore', this.highScore.toString());
     }
+    if (this.wave > this.bestSector) {
+      this.bestSector = this.wave;
+      localStorage.setItem('trivertex_bestsector', this.bestSector.toString());
+    }
 
     this.ui.finalScore.innerText = finalScore.toLocaleString();
     this.ui.finalWave.innerText = `WAVE ${this.wave}`;
@@ -1534,29 +1595,40 @@ class GameEngine {
   }
 
   spawnBoss(type) {
-    const x = this.width / 2;
-    const y = -100;
+    // Spawn boss directly above player within active camera view
+    const x = Math.max(80, Math.min(this.arenaWidth - 80, this.player ? this.player.x : this.arenaWidth / 2));
+    const y = Math.max(50, this.camera.y - 120);
     this.enemies.push(new Enemy(x, y, type, this.wave));
   }
 
   spawnRandomEnemy() {
-    // Choose spawn location outside canvas edge
-    let x, y;
+    // Spawn hostiles just outside the active camera viewport so they enter combat seamlessly
+    const camLeft = this.camera.x;
+    const camRight = this.camera.x + this.viewportWidth;
+    const camTop = this.camera.y;
+    const camBottom = this.camera.y + this.viewportHeight;
+
+    const pad = 65;
     const edge = Math.floor(Math.random() * 4);
-    const pad = 40;
-    if (edge === 0) { // Top
-      x = Math.random() * this.width;
-      y = -pad;
-    } else if (edge === 1) { // Right
-      x = this.width + pad;
-      y = Math.random() * this.height;
-    } else if (edge === 2) { // Bottom
-      x = Math.random() * this.width;
-      y = this.height + pad;
-    } else { // Left
-      x = -pad;
-      y = Math.random() * this.height;
+    let x, y;
+
+    if (edge === 0) { // Top of screen
+      x = camLeft + Math.random() * this.viewportWidth;
+      y = camTop - pad;
+    } else if (edge === 1) { // Right of screen
+      x = camRight + pad;
+      y = camTop + Math.random() * this.viewportHeight;
+    } else if (edge === 2) { // Bottom of screen
+      x = camLeft + Math.random() * this.viewportWidth;
+      y = camBottom + pad;
+    } else { // Left of screen
+      x = camLeft - pad;
+      y = camTop + Math.random() * this.viewportHeight;
     }
+
+    // Clamp coordinates safely within the expansive arena perimeter
+    x = Math.max(30, Math.min(this.arenaWidth - 30, x));
+    y = Math.max(30, Math.min(this.arenaHeight - 30, y));
 
     // Determine type by wave unlocked with smooth weighting:
     // Sector 1: 100% Scouts
@@ -1583,7 +1655,7 @@ class GameEngine {
     let dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
 
-    // Poll Xbox Gamepad on every frame across all states (Start, Playing, Upgrade, Pause, GameOver)
+    // Poll Xbox Gamepad on every frame across all states
     this.pollGamepad(dt);
 
     if (this.timeDilation !== 1.0) {
@@ -1592,6 +1664,28 @@ class GameEngine {
 
     if (this.state === 'playing') {
       this.update(dt);
+    }
+
+    // Smooth Camera Follow: Tracks Player Ship in Cosmic Arena
+    if (this.player) {
+      this.camera.targetX = this.player.x - this.viewportWidth / 2;
+      this.camera.targetY = this.player.y - this.viewportHeight / 2;
+      const camLerp = Math.min(1.0, dt * 8.5);
+      this.camera.x += (this.camera.targetX - this.camera.x) * camLerp;
+      this.camera.y += (this.camera.targetY - this.camera.y) * camLerp;
+
+      // Clamp camera within arena boundaries
+      if (this.arenaWidth > this.viewportWidth) {
+        this.camera.x = Math.max(0, Math.min(this.arenaWidth - this.viewportWidth, this.camera.x));
+      } else {
+        this.camera.x = (this.arenaWidth - this.viewportWidth) / 2;
+      }
+
+      if (this.arenaHeight > this.viewportHeight) {
+        this.camera.y = Math.max(0, Math.min(this.arenaHeight - this.viewportHeight, this.camera.y));
+      } else {
+        this.camera.y = (this.arenaHeight - this.viewportHeight) / 2;
+      }
     }
 
     this.draw();
@@ -1888,22 +1982,23 @@ class GameEngine {
   draw() {
     this.ctx.save();
 
-    // High-DPI DPR + Adaptive Virtual Arena Zoom Transform
-    const totalScale = (this.dpr || 1) * (this.scale || 1);
-    this.ctx.setTransform(totalScale, 0, 0, totalScale, 0, 0);
+    // High-DPI DPR Canvas Transform
+    const dpr = this.dpr || 1;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Screen shake transform (applied in virtual arena units)
-    if (this.shakeMag > 0) {
-      const sx = (Math.random() - 0.5) * this.shakeMag;
-      const sy = (Math.random() - 0.5) * this.shakeMag;
-      this.ctx.translate(sx, sy);
-    }
+    // Screen shake transform (screen space)
+    const sx = this.shakeMag > 0 ? (Math.random() - 0.5) * this.shakeMag : 0;
+    const sy = this.shakeMag > 0 ? (Math.random() - 0.5) * this.shakeMag : 0;
 
-    // Clear background
+    // Clear visible viewport background
     this.ctx.fillStyle = '#07090e';
-    this.ctx.fillRect(0, 0, this.width, this.height);
+    this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
 
-    // Subtle Cyber Grid & Stars
+    // World Camera Translation Transform
+    this.ctx.save();
+    this.ctx.translate(-Math.round(this.camera.x) + sx, -Math.round(this.camera.y) + sy);
+
+    // Subtle Cyber Grid & Perimeter Fence Boundaries
     this.drawGrid();
 
     // Draw Beams (Railgun tracer beams)
@@ -2015,24 +2110,104 @@ class GameEngine {
     // Draw Floating Texts
     this.floatingTexts.forEach(ft => ft.draw(this.ctx));
 
+    // Restore World Camera Transform
+    this.ctx.restore();
+
+    // Draw Screen-Space Offscreen Threat Radar Indicators
+    this.drawThreatRadar();
+
     this.ctx.restore();
   }
 
-  drawGrid() {
-    this.ctx.strokeStyle = 'rgba(70, 95, 140, 0.08)';
-    this.ctx.lineWidth = 1;
-    const gridSize = 60;
+  drawThreatRadar() {
+    if (!this.player || !this.enemies || this.state !== 'playing') return;
 
-    this.ctx.beginPath();
-    for (let x = 0; x < this.width; x += gridSize) {
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, this.height);
+    const pad = 24;
+    const minX = pad;
+    const maxX = this.viewportWidth - pad;
+    const minY = 50; // Under top HUD
+    const maxY = this.viewportHeight - pad;
+
+    for (let i = 0; i < this.enemies.length; i++) {
+      const e = this.enemies[i];
+      if (!e || e.health <= 0 || e.isDying) continue;
+      const isBoss = e.type === 'apex' || e.type === 'titan' || e.type === 'monolith';
+      const isDangerous = isBoss || e.type === 'sniper' || e.type === 'rhombus';
+
+      const sx = e.x - this.camera.x;
+      const sy = e.y - this.camera.y;
+
+      const isOffscreen = sx < 0 || sx > this.viewportWidth || sy < 0 || sy > this.viewportHeight;
+      if (isOffscreen && isDangerous) {
+        const dx = e.x - this.player.x;
+        const dy = e.y - this.player.y;
+        const angle = Math.atan2(dy, dx);
+
+        const edgeX = Math.max(minX, Math.min(maxX, this.viewportWidth / 2 + Math.cos(angle) * (this.viewportWidth / 2 - 35)));
+        const edgeY = Math.max(minY, Math.min(maxY, this.viewportHeight / 2 + Math.sin(angle) * (this.viewportHeight / 2 - 35)));
+
+        this.ctx.save();
+        this.ctx.translate(edgeX, edgeY);
+        this.ctx.rotate(angle);
+
+        const color = isBoss ? '#ff007b' : '#ffb700';
+        this.ctx.fillStyle = color;
+        this.ctx.shadowColor = color;
+        this.ctx.shadowBlur = 10;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(10, 0);
+        this.ctx.lineTo(-7, -7);
+        this.ctx.lineTo(-3, 0);
+        this.ctx.lineTo(-7, 7);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.restore();
+      }
     }
-    for (let y = 0; y < this.height; y += gridSize) {
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(this.width, y);
+  }
+
+  drawGrid() {
+    const camLeft = this.camera.x;
+    const camRight = this.camera.x + this.viewportWidth;
+    const camTop = this.camera.y;
+    const camBottom = this.camera.y + this.viewportHeight;
+
+    const gridSize = 80;
+    const startX = Math.floor(Math.max(0, camLeft) / gridSize) * gridSize;
+    const endX = Math.min(this.arenaWidth, camRight + gridSize);
+    const startY = Math.floor(Math.max(0, camTop) / gridSize) * gridSize;
+    const endY = Math.min(this.arenaHeight, camBottom + gridSize);
+
+    // Efficient viewport-culled cyber grid
+    this.ctx.strokeStyle = 'rgba(70, 95, 140, 0.12)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    for (let x = startX; x <= endX; x += gridSize) {
+      this.ctx.moveTo(x, Math.max(0, camTop));
+      this.ctx.lineTo(x, Math.min(this.arenaHeight, camBottom));
+    }
+    for (let y = startY; y <= endY; y += gridSize) {
+      this.ctx.moveTo(Math.max(0, camLeft), y);
+      this.ctx.lineTo(Math.min(this.arenaWidth, camRight), y);
     }
     this.ctx.stroke();
+
+    // Glowing Arena Perimeter Fences (Neon Cyber Barriers)
+    const pulse = 0.5 + Math.sin(Date.now() * 0.003) * 0.25;
+    this.ctx.save();
+    this.ctx.strokeStyle = `rgba(0, 240, 255, ${pulse})`;
+    this.ctx.lineWidth = 4;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.shadowBlur = 18;
+    this.ctx.strokeRect(0, 0, this.arenaWidth, this.arenaHeight);
+
+    // Hazard warning outer perimeter line
+    this.ctx.strokeStyle = 'rgba(255, 0, 123, 0.45)';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(-10, -10, this.arenaWidth + 20, this.arenaHeight + 20);
+    this.ctx.restore();
   }
 }
 

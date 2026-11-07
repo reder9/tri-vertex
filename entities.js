@@ -438,13 +438,54 @@ class Player {
     // Thruster visual flicker
     this.thrusterFlicker = Math.sin(Date.now() * 0.02) * 4;
 
-    // Handle Attacks
+    // Handle Attacks (Supports Manual Input + Smart Auto-Combat on Mobile)
+    let performedManualMelee = false;
+    let performedManualRanged = false;
+
     if (input.leftMouseDown && this.meleeCooldown <= 0) {
       this.performMeleeAttack(game);
+      performedManualMelee = true;
     }
 
     if (input.rightMouseDown && this.rangedCooldown <= 0) {
       this.performRangedAttack(game);
+      performedManualRanged = true;
+    }
+
+    // Smart Auto-Combat (Active on Touch / Mobile for silky, one-thumb dodging & automatic weapon engagement)
+    if (input.touchControlsActive && game && game.enemies && game.enemies.length > 0) {
+      let nearestMeleeTarget = null;
+      let minMeleeDist = (this.equippedMelee ? this.equippedMelee.range : 115) * 1.35;
+      let nearestRangedTarget = null;
+      let minRangedDist = 650;
+
+      for (let i = 0; i < game.enemies.length; i++) {
+        const e = game.enemies[i];
+        if (!e || e.health <= 0 || e.isDying) continue;
+        const d = dist(this.x, this.y, e.x, e.y);
+
+        if (d < minMeleeDist) {
+          minMeleeDist = d;
+          nearestMeleeTarget = e;
+        }
+        if (d < minRangedDist) {
+          minRangedDist = d;
+          nearestRangedTarget = e;
+        }
+      }
+
+      // Auto-Melee strike when enemy breaches close perimeter
+      if (!performedManualMelee && this.meleeCooldown <= 0 && nearestMeleeTarget) {
+        this.angle = Math.atan2(nearestMeleeTarget.y - this.y, nearestMeleeTarget.x - this.x);
+        this.performMeleeAttack(game);
+      }
+
+      // Auto-Ranged discharge towards nearest threat
+      if (!performedManualRanged && this.rangedCooldown <= 0 && nearestRangedTarget && !input.touchDragAiming) {
+        input.mouseX = nearestRangedTarget.x;
+        input.mouseY = nearestRangedTarget.y;
+        this.performRangedAttack(game);
+      }
     }
 
     // Ultimate trigger
