@@ -233,6 +233,13 @@
       this.keys = {};
       this.player.targetPos = null;
 
+      // Xbox Controller State
+      this.gamepadConnected = false;
+      this.prevGamepadButtons = {};
+      this.gamepadMoveX = 0;
+      this.gamepadMoveY = 0;
+      this.lastInputSource = 'keyboard'; // 'keyboard', 'mouse', or 'gamepad'
+
       // Positions of Grandma and Key Structures on Farm
       this.cottagePos = { x: 12 * TILE_SIZE, y: 4 * TILE_SIZE };
       this.grandmaPos = { x: 17 * TILE_SIZE + 8, y: 7 * TILE_SIZE };
@@ -598,8 +605,25 @@
 
     // --- Input Binding ---
     bindInputs() {
+      // Gamepad connection events
+      window.addEventListener('gamepadconnected', (e) => {
+        this.gamepadConnected = true;
+        this.lastInputSource = 'gamepad';
+        const gpName = e.gamepad ? (e.gamepad.id || 'Xbox Controller') : 'Xbox Controller';
+        this.showToast(`Controller Connected: ${gpName.substring(0, 28)}! Controls active.`);
+        this.rumble(60, 0.3, 0.5);
+        this.updateGamepadBadge(true);
+      });
+
+      window.addEventListener('gamepaddisconnected', () => {
+        this.gamepadConnected = false;
+        this.showToast('Controller Disconnected.');
+        this.updateGamepadBadge(false);
+      });
+
       // Keyboard input
       window.addEventListener('keydown', (e) => {
+        this.lastInputSource = 'keyboard';
         this.keys[e.key.toLowerCase()] = true;
 
         // Number keys 1-8 for hotbar
@@ -639,6 +663,7 @@
 
       // Precise Mouse Tracking with resolution scaling
       const updateMouse = (e) => {
+        this.lastInputSource = 'mouse';
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = rect.width ? (this.canvas.width / rect.width) : 1;
         const scaleY = rect.height ? (this.canvas.height / rect.height) : 1;
@@ -756,6 +781,314 @@
       }
     }
 
+    // --- Xbox Controller & HTML5 Gamepad Polling ---
+    pollGamepad(dt) {
+      if (!navigator.getGamepads) return;
+      let gamepads;
+      try {
+        gamepads = navigator.getGamepads();
+      } catch (e) {
+        return;
+      }
+      if (!gamepads) return;
+
+      let gp = null;
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] && gamepads[i].connected) {
+          gp = gamepads[i];
+          break;
+        }
+      }
+
+      if (!gp) {
+        if (this.gamepadConnected) {
+          this.gamepadConnected = false;
+          this.updateGamepadBadge(false);
+        }
+        this.gamepadMoveX = 0;
+        this.gamepadMoveY = 0;
+        return;
+      }
+
+      if (!this.gamepadConnected) {
+        this.gamepadConnected = true;
+        this.updateGamepadBadge(true);
+      }
+
+      // Helper for debounced button press
+      const isJustPressed = (btnIdx) => {
+        const btn = gp.buttons[btnIdx];
+        const isDown = btn && (btn.pressed || btn.value > 0.5);
+        const wasDown = !!this.prevGamepadButtons[btnIdx];
+        return isDown && !wasDown;
+      };
+
+      // Left Thumbstick (Axes 0, 1) + D-Pad (12=Up, 13=Down, 14=Left, 15=Right)
+      let lx = gp.axes[0] || 0;
+      let ly = gp.axes[1] || 0;
+      if (gp.buttons[12] && (gp.buttons[12].pressed || gp.buttons[12].value > 0.5)) ly = -1;
+      if (gp.buttons[13] && (gp.buttons[13].pressed || gp.buttons[13].value > 0.5)) ly = 1;
+      if (gp.buttons[14] && (gp.buttons[14].pressed || gp.buttons[14].value > 0.5)) lx = -1;
+      if (gp.buttons[15] && (gp.buttons[15].pressed || gp.buttons[15].value > 0.5)) lx = 1;
+
+      // Check if any modal is currently visible/active
+      const activeModal = document.querySelector('.game-modal.active');
+
+      if (activeModal) {
+        // When modal is open: Left Stick or D-Pad scrolls modal content
+        this.gamepadMoveX = 0;
+        this.gamepadMoveY = 0;
+
+        const scrollTarget = activeModal.querySelector('.modal-body') ||
+                             activeModal.querySelector('#inventoryGrid') ||
+                             activeModal.querySelector('#shopContent') ||
+                             activeModal.querySelector('.modal-card') ||
+                             activeModal;
+        if (scrollTarget) {
+          if (ly < -0.35) {
+            scrollTarget.scrollTop -= 14;
+          } else if (ly > 0.35) {
+            scrollTarget.scrollTop += 14;
+          }
+        }
+
+        // LB (4) / RB (5): Switch tabs inside active modal
+        if (isJustPressed(4) || isJustPressed(5)) {
+          this.lastInputSource = 'gamepad';
+          // Check if in Shop modal
+          if (activeModal.id === 'shopModal') {
+            const btnBuy = document.getElementById('tabBtnBuy');
+            const btnSell = document.getElementById('tabBtnSell');
+            if (btnBuy && btnSell) {
+              if (btnBuy.classList.contains('active')) btnSell.click();
+              else btnBuy.click();
+              this.rumble(25, 0.2, 0.1);
+            }
+          }
+          // Check if in Inventory modal
+          else if (activeModal.id === 'inventoryModal') {
+            const tabs = Array.from(document.querySelectorAll('#invFilterTabs .shop-tab-btn'));
+            if (tabs.length > 0) {
+              const currentActiveIdx = tabs.findIndex(t => t.classList.contains('active'));
+              const dir = isJustPressed(5) ? 1 : -1;
+              const nextIdx = (currentActiveIdx + dir + tabs.length) % tabs.length;
+              tabs[nextIdx].click();
+              this.rumble(25, 0.2, 0.1);
+            }
+          }
+        }
+
+        // Button A (0): Primary action / proceed in modal
+        if (isJustPressed(0)) {
+          this.lastInputSource = 'gamepad';
+          // 1. If in Sleep modal: click primary sleep confirm
+          if (activeModal.id === 'sleepModal') {
+            this.sleepAndAdvanceDay();
+            activeModal.classList.remove('active');
+            this.rumble(70, 0.4, 0.6);
+          }
+          // 2. If in Summary modal: dismiss and start day
+          else if (activeModal.id === 'summaryModal') {
+            activeModal.classList.remove('active');
+            this.rumble(30, 0.2, 0.2);
+          }
+          // 3. Dialogue or NPC modal
+          else if (activeModal.id === 'dialogueModal' || activeModal.id === 'cityNpcModal') {
+            activeModal.classList.remove('active');
+            this.rumble(25, 0.2, 0.1);
+          }
+          // 4. Other modals: click primary button or first actionable button
+          else {
+            const primaryBtn = activeModal.querySelector('.btn-primary') ||
+                               activeModal.querySelector('.modal-actions button') ||
+                               activeModal.querySelector('.modal-close-btn');
+            if (primaryBtn) {
+              primaryBtn.click();
+              this.rumble(30, 0.2, 0.2);
+            }
+          }
+        }
+
+        // Button B (1): Dismiss / Close Modal
+        if (isJustPressed(1)) {
+          this.lastInputSource = 'gamepad';
+          activeModal.classList.remove('active');
+          this.rumble(25, 0.2, 0.1);
+        }
+
+      } else {
+        // --- Normal In-Game Exploration & Farming ---
+        const rawMag = Math.hypot(lx, ly);
+        const DEADZONE = 0.16;
+        if (rawMag > DEADZONE) {
+          this.lastInputSource = 'gamepad';
+          const normMag = Math.min(1.0, (rawMag - DEADZONE) / (0.94 - DEADZONE));
+          this.gamepadMoveX = (lx / rawMag) * normMag;
+          this.gamepadMoveY = (ly / rawMag) * normMag;
+        } else {
+          this.gamepadMoveX = 0;
+          this.gamepadMoveY = 0;
+        }
+
+        // Right Thumbstick (Axes 2, 3) for optional aim / facing override
+        let rx = gp.axes[2] || 0;
+        let ry = gp.axes[3] || 0;
+        const rightMag = Math.hypot(rx, ry);
+        if (rightMag > 0.45) {
+          this.lastInputSource = 'gamepad';
+          if (Math.abs(rx) > Math.abs(ry)) {
+            this.player.dir = rx > 0 ? 3 : 2;
+          } else {
+            this.player.dir = ry > 0 ? 0 : 1;
+          }
+        }
+
+        // Button A (0) & Right Trigger (7): Primary Action / Use Active Tool / Interact
+        if (isJustPressed(0) || isJustPressed(7)) {
+          this.lastInputSource = 'gamepad';
+          if (window.soundSystem) {
+            window.soundSystem.init();
+            if (!window.soundSystem.isMuted) window.soundSystem.startMusic();
+          }
+          this.interactFacingTile();
+        }
+
+        // Button X (2): Quick Eat Food / Energy Restore
+        if (isJustPressed(2)) {
+          this.lastInputSource = 'gamepad';
+          this.quickEatFood();
+        }
+
+        // Button Y (3): Open Full Backpack / Inventory
+        if (isJustPressed(3)) {
+          this.lastInputSource = 'gamepad';
+          this.toggleInventoryModal();
+          this.rumble(30, 0.2, 0.2);
+        }
+
+        // LB (4): Previous Hotbar Slot
+        if (isJustPressed(4)) {
+          this.lastInputSource = 'gamepad';
+          this.cycleHotbar(-1);
+        }
+
+        // RB (5): Next Hotbar Slot
+        if (isJustPressed(5)) {
+          this.lastInputSource = 'gamepad';
+          this.cycleHotbar(1);
+        }
+
+        // Button B (1): Quick Cancel or clear navigation target
+        if (isJustPressed(1)) {
+          this.lastInputSource = 'gamepad';
+          this.player.targetPos = null;
+        }
+
+        // Left Trigger LT (6): Travel between Farm and City
+        if (isJustPressed(6)) {
+          this.lastInputSource = 'gamepad';
+          if (this.currentLocation === 'farm') {
+            this.transitionTo('city');
+          } else {
+            this.transitionTo('farm');
+          }
+          this.rumble(50, 0.3, 0.4);
+        }
+
+        // Start / Menu (9): Toggle Field Guide & Almanac
+        if (isJustPressed(9)) {
+          this.lastInputSource = 'gamepad';
+          const guideModal = document.getElementById('helpGuideModal');
+          if (guideModal && guideModal.classList.contains('active')) {
+            guideModal.classList.remove('active');
+          } else {
+            this.openHelpGuideModal();
+          }
+          this.rumble(30, 0.2, 0.2);
+        }
+
+        // View / Back (8): Toggle Tutorial & Quests Modal
+        if (isJustPressed(8)) {
+          this.lastInputSource = 'gamepad';
+          const tutModal = document.getElementById('tutorialModal');
+          if (tutModal && tutModal.classList.contains('active')) {
+            tutModal.classList.remove('active');
+          } else {
+            this.openTutorialModal();
+          }
+          this.rumble(30, 0.2, 0.2);
+        }
+      }
+
+      // Record button states for debounce
+      for (let i = 0; i < 17; i++) {
+        this.prevGamepadButtons[i] = gp.buttons[i] ? (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) : false;
+      }
+    }
+
+    cycleHotbar(direction) {
+      const maxSlots = Math.min(8, Math.max(1, this.inventory.length));
+      let nextSlot = (this.activeSlot + direction) % maxSlots;
+      if (nextSlot < 0) nextSlot += maxSlots;
+      this.selectHotbarSlot(nextSlot);
+      window.soundSystem?.playDialogue();
+      this.rumble(20, 0.15, 0.1);
+    }
+
+    quickEatFood() {
+      // 1. Check if current equipped slot is food
+      const activeItem = this.inventory[this.activeSlot];
+      if (activeItem && activeItem.type === 'food') {
+        this.consumeFoodItem(this.activeSlot);
+        this.rumble(45, 0.3, 0.4);
+        return;
+      }
+
+      // 2. Otherwise search entire backpack for any food
+      const foodIdx = this.inventory.findIndex(it => it.type === 'food');
+      if (foodIdx !== -1) {
+        this.consumeFoodItem(foodIdx);
+        this.rumble(45, 0.3, 0.4);
+      } else {
+        this.showToast('No food in backpack! Buy tasty tarts & bread at Hazelwood Bakery.');
+        this.rumble(20, 0.15, 0.1);
+      }
+    }
+
+    rumble(duration = 50, weak = 0.25, strong = 0.35) {
+      if (!navigator.getGamepads) return;
+      try {
+        const gamepads = navigator.getGamepads();
+        if (!gamepads) return;
+        for (let i = 0; i < gamepads.length; i++) {
+          const gp = gamepads[i];
+          if (gp && gp.connected && gp.vibrationActuator && typeof gp.vibrationActuator.playEffect === 'function') {
+            gp.vibrationActuator.playEffect('dual-rumble', {
+              startDelay: 0,
+              duration: duration,
+              weakMagnitude: Math.min(1, Math.max(0, weak)),
+              strongMagnitude: Math.min(1, Math.max(0, strong))
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        // Silently ignore if haptics unsupported
+      }
+    }
+
+    updateGamepadBadge(isConnected) {
+      const badge = document.getElementById('gamepadBadge');
+      if (badge) {
+        if (isConnected) {
+          badge.classList.add('active');
+          badge.setAttribute('title', 'Xbox Controller Connected & Ready');
+        } else {
+          badge.classList.remove('active');
+          badge.setAttribute('title', 'Connect an Xbox Controller to play with gamepad');
+        }
+      }
+    }
+
     // --- Game Loop ---
     loop(currentTime) {
       const dt = (currentTime - this.lastTime) / 1000;
@@ -777,6 +1110,9 @@
         this.sleepAndAdvanceDay();
       }
 
+      // Poll Xbox / HTML5 Gamepad
+      this.pollGamepad(dt);
+
       // 2. Player Movement
       let dx = 0;
       let dy = 0;
@@ -791,13 +1127,36 @@
       }
 
       const isKeyboardMoving = (dx !== 0 || dy !== 0);
+      let isGamepadMoving = false;
+      let moveSpeed = this.player.speed;
+
       if (isKeyboardMoving) {
         this.player.targetPos = null; // Keyboard cancels click navigation
+        this.lastInputSource = 'keyboard';
+      } else if (this.gamepadMoveX !== 0 || this.gamepadMoveY !== 0) {
+        isGamepadMoving = true;
+        const mag = Math.hypot(this.gamepadMoveX, this.gamepadMoveY);
+        dx = this.gamepadMoveX;
+        dy = this.gamepadMoveY;
+        moveSpeed = this.player.speed * Math.min(1.0, mag);
+        this.player.targetPos = null;
+        this.lastInputSource = 'gamepad';
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+          this.player.dir = dx > 0 ? 3 : 2;
+        } else {
+          this.player.dir = dy > 0 ? 0 : 1;
+        }
+
+        if (mag > 0.001) {
+          dx /= mag;
+          dy /= mag;
+        }
       }
 
-      let isMoving = isKeyboardMoving;
+      let isMoving = isKeyboardMoving || isGamepadMoving;
 
-      if (!isKeyboardMoving && this.player.targetPos) {
+      if (!isKeyboardMoving && !isGamepadMoving && this.player.targetPos) {
         const tdx = this.player.targetPos.x - this.player.x;
         const tdy = this.player.targetPos.y - this.player.y;
         const tdist = Math.hypot(tdx, tdy);
@@ -818,8 +1177,8 @@
       this.player.isMoving = isMoving;
 
       if (isMoving) {
-        const nextX = this.player.x + dx * this.player.speed;
-        const nextY = this.player.y + dy * this.player.speed;
+        const nextX = this.player.x + dx * moveSpeed;
+        const nextY = this.player.y + dy * moveSpeed;
 
         let moved = false;
         // Collision check
@@ -836,7 +1195,7 @@
           this.player.targetPos = null; // Stopped by obstacle
         }
 
-        this.player.walkFrame += dt * 15;
+        this.player.walkFrame += dt * 15 * (moveSpeed / this.player.speed);
         // Periodic footstep audio
         if (Math.floor(this.player.walkFrame) % 6 === 0) {
           window.soundSystem?.playFootstep();
@@ -1203,6 +1562,7 @@
             const staminaCost = this.player.hasCopperHoe ? 1 : 2;
             this.player.stamina = Math.max(0, this.player.stamina - staminaCost);
             window.soundSystem?.playHoe();
+            this.rumble(50, 0.35, 0.5);
             this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#8b5a2b', 6);
             this.progressQuest('till_soil');
             this.updateHUD();
@@ -1233,6 +1593,7 @@
           this.player.toolTimer = 0.25;
           this.player.stamina = Math.max(0, this.player.stamina - 1);
           window.soundSystem?.playWater();
+          this.rumble(30, 0.2, 0.35);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#38bdf8', 8);
           this.progressQuest('water_crops');
           this.updateHUD();
@@ -1249,11 +1610,13 @@
         if (obj === 'weed') {
           delete this.objects[key];
           window.soundSystem?.playNoise(0.12, 1400, 0.2);
+          this.rumble(45, 0.35, 0.45);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#4ade80', 8);
           this.showFloatingText('+1 Fiber', tx * TILE_SIZE + 16, ty * TILE_SIZE + 8, '#86efac');
           this.progressQuest('clear_debris');
         } else {
           window.soundSystem?.playNoise(0.1, 1600, 0.15);
+          this.rumble(25, 0.15, 0.2);
         }
         this.updateHUD();
         return;
@@ -1269,6 +1632,7 @@
           const chopDmg = this.player.hasSteelAxe ? 2 : 1;
           this.debrisHealth[key] = (this.debrisHealth[key] || 3) - chopDmg;
           window.soundSystem?.playHit();
+          this.rumble(60, 0.45, 0.65);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#ad723b', 6);
 
           if (this.debrisHealth[key] <= 0) {
@@ -1294,6 +1658,7 @@
           const breakDmg = this.player.hasSteelPickaxe ? 2 : 1;
           this.debrisHealth[key] = (this.debrisHealth[key] || 2) - breakDmg;
           window.soundSystem?.playHit();
+          this.rumble(60, 0.5, 0.7);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#94a3b8', 6);
 
           if (this.debrisHealth[key] <= 0) {
@@ -1320,6 +1685,7 @@
           this.plantCrop(tx, ty, activeItem.crop);
           this.useItem(this.activeSlot);
           window.soundSystem?.playPlant();
+          this.rumble(35, 0.2, 0.3);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#a16207', 4);
           this.progressQuest('plant_seeds');
           this.updateHUD();
@@ -1335,6 +1701,7 @@
           tile.isFertilized = true;
           this.useItem(this.activeSlot);
           window.soundSystem?.playPlant();
+          this.rumble(35, 0.2, 0.3);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#38bdf8', 6);
           this.showToast('Soil enriched with Speed-Gro Fertilizer!');
           this.updateHUD();
@@ -1348,6 +1715,7 @@
         this.player.stamina = Math.min(this.player.maxStamina, this.player.stamina + heal);
         this.useItem(this.activeSlot);
         window.soundSystem?.playCoin();
+        this.rumble(45, 0.3, 0.4);
         this.showFloatingText(`+${heal} Energy!`, this.player.x + 16, this.player.y, '#4ade80');
         this.showToast(`Yummy! Restored ${heal} Energy.`);
         this.updateHUD();
@@ -1360,6 +1728,7 @@
           this.objects[key] = 'sprinkler';
           this.useItem(this.activeSlot);
           window.soundSystem?.playHit();
+          this.rumble(45, 0.3, 0.4);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#ecc94b', 8);
           this.showToast('Installed Farm Sprinkler! Adjacent tiles will be auto-watered daily.');
           this.updateHUD();
@@ -1389,6 +1758,7 @@
       delete this.crops[key];
       this.addItem(crop.type, 1);
       window.soundSystem?.playHarvest();
+      this.rumble(55, 0.4, 0.55);
 
       this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#facc15', 12);
       this.showFloatingText(`+1 ${cropName}!`, tx * TILE_SIZE + 16, ty * TILE_SIZE, '#fde047');
@@ -1399,6 +1769,7 @@
     refillWateringCan() {
       this.player.water = this.player.waterCapacity;
       window.soundSystem?.playWater();
+      this.rumble(50, 0.25, 0.45);
       this.spawnParticles(this.player.x + 16, this.player.y + 16, '#38bdf8', 12);
       this.showFloatingText(`Can Refilled! (${this.player.waterCapacity}/${this.player.waterCapacity})`, this.player.x + 16, this.player.y, '#38bdf8');
       this.showToast('Watering can refilled to full capacity!');
@@ -1585,6 +1956,7 @@
     sleepAndAdvanceDay() {
       // Close sleep confirm modal if open
       document.getElementById('sleepModal')?.classList.remove('active');
+      this.rumble(80, 0.4, 0.6);
 
       // 1. Advance Day Count
       this.day++;
@@ -2970,15 +3342,93 @@
     }
 
     drawCursorHighlight(ctx) {
-      const tx = this.mouse.tileX;
-      const ty = this.mouse.tileY;
+      // 1. Mouse / Touch Hover Cursor (when mouse was used)
+      if (this.lastInputSource !== 'gamepad') {
+        const tx = this.mouse.tileX;
+        const ty = this.mouse.tileY;
 
-      if (tx >= 0 && tx < this.mapCols && ty >= 0 && ty < this.mapRows) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-        ctx.fillRect(tx * TILE_SIZE, ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(tx * TILE_SIZE + 0.5, ty * TILE_SIZE + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+        if (tx >= 0 && tx < this.mapCols && ty >= 0 && ty < this.mapRows) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+          ctx.fillRect(tx * TILE_SIZE, ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(tx * TILE_SIZE + 0.5, ty * TILE_SIZE + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+        }
+      }
+
+      // 2. Controller Target Reticle (when gamepad is connected or active)
+      if (this.gamepadConnected || this.lastInputSource === 'gamepad') {
+        const playerTileX = Math.floor((this.player.x + 16) / TILE_SIZE);
+        const playerTileY = Math.floor((this.player.y + 16) / TILE_SIZE);
+
+        let targetX = playerTileX;
+        let targetY = playerTileY;
+        if (this.player.dir === 0) targetY += 1;
+        if (this.player.dir === 1) targetY -= 1;
+        if (this.player.dir === 2) targetX -= 1;
+        if (this.player.dir === 3) targetX += 1;
+
+        if (targetX >= 0 && targetX < this.mapCols && targetY >= 0 && targetY < this.mapRows) {
+          const gx = targetX * TILE_SIZE;
+          const gy = targetY * TILE_SIZE;
+
+          // Gentle animated golden pulse
+          const pulse = (Math.sin(performance.now() / 220) + 1) * 0.5;
+          const alpha = 0.16 + pulse * 0.14;
+
+          ctx.fillStyle = `rgba(250, 204, 21, ${alpha})`;
+          ctx.fillRect(gx, gy, TILE_SIZE, TILE_SIZE);
+
+          // Stylized Corner Brackets
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2.5;
+          const cornerLen = 7;
+
+          // Top-Left corner
+          ctx.beginPath();
+          ctx.moveTo(gx + 1, gy + 1 + cornerLen);
+          ctx.lineTo(gx + 1, gy + 1);
+          ctx.lineTo(gx + 1 + cornerLen, gy + 1);
+          ctx.stroke();
+
+          // Top-Right corner
+          ctx.beginPath();
+          ctx.moveTo(gx + TILE_SIZE - 1 - cornerLen, gy + 1);
+          ctx.lineTo(gx + TILE_SIZE - 1, gy + 1);
+          ctx.lineTo(gx + TILE_SIZE - 1, gy + 1 + cornerLen);
+          ctx.stroke();
+
+          // Bottom-Left corner
+          ctx.beginPath();
+          ctx.moveTo(gx + 1, gy + TILE_SIZE - 1 - cornerLen);
+          ctx.lineTo(gx + 1, gy + TILE_SIZE - 1);
+          ctx.lineTo(gx + 1 + cornerLen, gy + TILE_SIZE - 1);
+          ctx.stroke();
+
+          // Bottom-Right corner
+          ctx.beginPath();
+          ctx.moveTo(gx + TILE_SIZE - 1 - cornerLen, gy + TILE_SIZE - 1);
+          ctx.lineTo(gx + TILE_SIZE - 1, gy + TILE_SIZE - 1);
+          ctx.lineTo(gx + TILE_SIZE - 1, gy + TILE_SIZE - 1 - cornerLen);
+          ctx.stroke();
+
+          // Subtle (A) button prompt icon above tile
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.beginPath();
+          ctx.arc(gx + TILE_SIZE / 2, gy - 6, 7.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('A', gx + TILE_SIZE / 2, gy - 6);
+          ctx.restore();
+        }
       }
     }
 

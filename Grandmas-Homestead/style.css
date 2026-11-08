@@ -354,6 +354,34 @@ body {
   letter-spacing: 0.3px;
 }
 
+.gamepad-hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.gamepad-badge-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.73rem;
+  color: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+.gamepad-badge-indicator.active {
+  background: rgba(22, 101, 52, 0.45);
+  border-color: #22c55e;
+  color: #86efac;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+}
+
 /* --- Stylized Feedback Modals --- */
 .game-modal {
   position: fixed;
