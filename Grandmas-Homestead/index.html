@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Grandma's Homestead - Farming Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation & Farm Status Bar -->
+  <header id="gameHeader">
+    <div class="brand-section">
+      <svg class="ui-icon game-logo" style="color: #4ade80; width: 22px; height: 22px;" viewBox="0 0 24 24">
+        <path d="M7 20h10"/>
+        <path d="M10 20c5.5-2.5.8-6.4 3-10"/>
+        <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4.1 5.5.8z"/>
+        <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>
+      </svg>
+      <div class="brand-text-col">
+        <div class="farm-title">Grandma's Homestead</div>
+        <div class="location-badge">
+          <svg class="ui-icon" style="width: 11px; height: 11px; color: #38bdf8;" viewBox="0 0 24 24">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span id="hudLocation">Grandma's Farm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live HUD Meters -->
+    <div class="hud-meters">
+      <!-- Day & Season -->
+      <div class="hud-badge">
+        <svg class="ui-icon" style="color: #fb923c;" viewBox="0 0 24 24">
+          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+          <line x1="16" x2="16" y1="2" y2="6"/>
+          <line x1="8" x2="8" y1="2" y2="6"/>
+          <line x1="3" x2="21" y1="10" y2="10"/>
+        </svg>
+        <span id="hudDay">Day 1 (Spring)</span>
+      </div>
+
+      <!-- Time & Weather -->
+      <div class="hud-badge">
+        <svg class="ui-icon" style="color: #38bdf8;" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span id="hudTime">6:00 AM</span>
+        <span style="color: #94a3b8; font-size: 0.8rem; margin-left: 2px;">•</span>
+        <span id="hudWeather" style="color: #cbd5e1; font-size: 0.82rem;">Sunny Skies</span>
+      </div>
+
+      <!-- Gold Balance -->
+      <div class="hud-badge gold-badge">
+        <svg class="ui-icon" style="color: #f59e0b;" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 7v10"/>
+        </svg>
+        <span id="hudGold">150 G</span>
+      </div>
+
+      <!-- Stamina / Energy Bar -->
+      <div class="stat-bar-container" title="Energy / Stamina (Refills upon sleep or eating pie)">
+        <svg class="ui-icon" style="color: #34d399;" viewBox="0 0 24 24">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <div class="stat-bar">
+          <div id="staminaFill" class="stat-bar-fill stamina-fill" style="width: 100%;"></div>
+        </div>
+        <span id="staminaText" class="stat-label">100 / 100</span>
+      </div>
+
+      <!-- Water Bar -->
+      <div class="stat-bar-container" title="Watering Can (Refills at well or pond)">
+        <svg class="ui-icon" style="color: #38bdf8;" viewBox="0 0 24 24">
+          <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+        </svg>
+        <div class="stat-bar">
+          <div id="waterFill" class="stat-bar-fill water-fill" style="width: 100%;"></div>
+        </div>
+        <span id="waterText" class="stat-label">20 / 20</span>
+      </div>
+    </div>
+
+    <!-- Quick Action Navigation Buttons -->
+    <div class="header-actions">
+      <!-- Full Backpack / Inventory -->
+      <button id="btnInventory" class="btn-header" title="Open Full Backpack Inventory (Hotkey: I)">
+        <svg class="ui-icon" style="color: #f59e0b;" viewBox="0 0 24 24">
+          <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9Z"/>
+          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+          <circle cx="12" cy="13" r="2"/>
+        </svg>
+        <span>Inventory (I)</span>
+      </button>
+
+      <!-- Village Shop -->
+      <button id="btnShop" class="btn-header" title="Open the Countryside Merchant Shop (Hotkey: B)">
+        <svg class="ui-icon" viewBox="0 0 24 24">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+          <path d="M3 6h18"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        <span>Shop (B)</span>
+      </button>
+
+      <!-- Travel between Farm and City -->
+      <button id="btnTravel" class="btn-header" title="Travel to Oakhaven City or return to Farm">
+        <svg class="ui-icon" style="color: #38bdf8;" viewBox="0 0 24 24">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span id="btnTravelText">Visit City</span>
+      </button>
+
+      <!-- Tutorial Quests -->
+      <button id="btnTutorial" class="btn-header highlight" title="Grandma's Farming Tutorial & Quests">
+        <svg class="ui-icon" viewBox="0 0 24 24">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        <span>Tutorial</span>
+      </button>
+
+      <!-- Talk to Grandma -->
+      <button id="btnGrandma" class="btn-header" title="Talk to Grandma Hazel on the porch">
+        <svg class="ui-icon" style="color: #f472b6;" viewBox="0 0 24 24">
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </svg>
+        <span>Grandma</span>
+      </button>
+
+      <!-- Field Guide -->
+      <button id="btnHelpGuide" class="btn-header" title="Farming Field Guide & Crop Times">
+        <svg class="ui-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <path d="M12 17h.01"/>
+        </svg>
+        <span>Guide</span>
+      </button>
+
+      <!-- Sleep / Rest -->
+      <button id="btnSleep" class="btn-header" title="Rest in cottage bed & grow crops">
+        <svg class="ui-icon" style="color: #a78bfa;" viewBox="0 0 24 24">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        </svg>
+        <span>Rest</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btnAudio" class="btn-header" title="Toggle Sound & Acoustic Melodies">
+        <svg class="ui-icon" viewBox="0 0 24 24">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Interactive World Viewport -->
+  <main id="canvasContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Floating Active Quest Banner -->
+    <div id="floatingQuestBox" onclick="window.game.openTutorialModal()" title="Click to open Grandma's Questbook">
+      <div class="quest-header-row">
+        <svg class="ui-icon" style="width: 14px; height: 14px; color: #facc15;" viewBox="0 0 24 24">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        <span>Active Tutorial Quest</span>
+      </div>
+      <div id="activeQuestText">Loading tutorial...</div>
+    </div>
+  </main>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toastContainer"></div>
+
+  <!-- Bottom Hotbar & Key Controls -->
+  <footer id="gameFooter">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <div id="hotbarSlots">
+        <!-- Rendered dynamically by game.js -->
+      </div>
+      <button id="btnOpenBackpack" class="btn-header" style="height: 60px; padding: 4px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #4a2e2b; border: 2px solid #8d6e63; border-radius: 8px; cursor: pointer;" title="Open Backpack (I)">
+        <svg class="ui-icon" style="color: #facc15; width: 20px; height: 20px;" viewBox="0 0 24 24">
+          <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9Z"/>
+          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+          <circle cx="12" cy="13" r="2"/>
+        </svg>
+        <span style="font-size: 0.72rem; font-weight: bold; color: #fef08a;">All Items (I)</span>
+      </button>
+    </div>
+    <div class="controls-hint">
+      WASD to Move • 1-8 Hotbar • <strong>[I] Full Backpack</strong> • [B] Shop • Click / Space to Use Tool or Plant • E Interact
+    </div>
+  </footer>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. Countryside Shop Modal -->
+  <div id="shopModal" class="game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>Countryside Merchant Shop</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Shop">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="shopContent">
+        <!-- Injected by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Grandma's Tutorial & Questbook Modal -->
+  <div id="tutorialModal" class="game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #facc15;" viewBox="0 0 24 24">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          <span>Grandma's Farming Tutorial & Quests</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Tutorial">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: #475569;">
+          Follow Grandma Hazel's guided homestead milestones to learn tilling, watering, crop cultivation, debris clearing, and selling produce!
+        </p>
+        <div id="tutorialList" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Injected by game.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Grandma Hazel's Dialogue Modal -->
+  <div id="dialogueModal" class="game-modal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #f472b6;" viewBox="0 0 24 24">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+          </svg>
+          <span>Grandma Hazel</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Dialogue">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="dialogue-avatar-row">
+          <div class="grandma-portrait">
+            <!-- Grandma Pixel Icon SVG -->
+            <svg class="ui-icon" style="width: 34px; height: 34px; color: #be185d;" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="5"/>
+              <path d="M20 21a8 8 0 1 0-16 0"/>
+            </svg>
+          </div>
+          <div>
+            <div class="dialogue-name">Grandma Hazel</div>
+            <div class="dialogue-role">Founder of the Homestead • Porch Tea Master</div>
+          </div>
+        </div>
+        <div class="dialogue-bubble" id="dialogueText">
+          "Hello sweetheart! It warms my heart so much to see you out in the fresh countryside air."
+        </div>
+        <div class="modal-actions" id="dialogueActions">
+          <button class="btn-primary" onclick="document.getElementById('dialogueModal').classList.remove('active')">
+            Thank you, Grandma!
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Sleep & Rest Confirmation Modal -->
+  <div id="sleepModal" class="game-modal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #a78bfa;" viewBox="0 0 24 24">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+          <span>Rest for the Night</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Sleep Modal">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.95rem; line-height: 1.4; color: #334155;">
+          Ready to curl up in Grandma's cozy cottage and rest until 6:00 AM?
+        </p>
+        <ul style="font-size: 0.88rem; color: #475569; padding-left: 20px; line-height: 1.6;">
+          <li>Restores full Stamina & Energy</li>
+          <li>Advances crop growth by 1 day</li>
+          <li>Automatic sprinklers and gentle rains will water soil</li>
+        </ul>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="document.getElementById('sleepModal').classList.remove('active')">
+            Stay Awake
+          </button>
+          <button class="btn-primary" onclick="window.game.sleepAndAdvanceDay()">
+            Sleep & Wake Up at 6 AM
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Day Summary Report Modal -->
+  <div id="summaryModal" class="game-modal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #facc15;" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="m4.93 4.93 1.41 1.41"/>
+            <path d="m17.66 17.66 1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="m6.34 17.66-1.41 1.41"/>
+            <path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+          <span id="summaryDayTitle">Day 2 Complete!</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Summary">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="summaryDetails" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Injected by game.js -->
+        </div>
+        <div class="modal-actions">
+          <button class="btn-primary" onclick="document.getElementById('summaryModal').classList.remove('active')">
+            Start the Day!
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Field Guide & Crop Almanac Modal -->
+  <div id="helpGuideModal" class="game-modal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <path d="M12 17h.01"/>
+          </svg>
+          <span>Grandma's Farming Field Guide</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Guide">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section">
+          <div class="guide-heading">Farming Fundamentals</div>
+          <ol style="padding-left: 20px; font-size: 0.88rem; line-height: 1.5; color: #334155;">
+            <li><strong>Till the Soil:</strong> Equip the Hoe (1) and click on grass or dirt.</li>
+            <li><strong>Plant Seeds:</strong> Select any seed packet (Turnip, Carrot, Strawberry, etc.) and click tilled soil.</li>
+            <li><strong>Water Daily:</strong> Equip your Watering Can (2). Seeds only grow on days they are watered!</li>
+            <li><strong>Refill Water:</strong> Click on the stone well or the pond on the east side to fill your can to 20/20.</li>
+            <li><strong>Clear Debris:</strong> Use Scythe (3) for weeds, Axe (4) for wood logs, and Pickaxe (5) for stone boulders.</li>
+            <li><strong>Harvest & Sell:</strong> When crops shimmer with a golden sparkle, click them to harvest. Sell them at the Village Shop or Shipping Bin for Gold!</li>
+          </ol>
+        </div>
+
+        <div class="guide-section">
+          <div class="guide-heading">Crop Almanac & Profits</div>
+          <table class="guide-table">
+            <thead>
+              <tr>
+                <th>Crop</th>
+                <th>Seed Cost</th>
+                <th>Growth Time</th>
+                <th>Sell Price</th>
+                <th>Profit / Day</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Turnip</td>
+                <td>20 G</td>
+                <td>2 Days</td>
+                <td>48 G</td>
+                <td>+14.0 G/day</td>
+              </tr>
+              <tr>
+                <td>Carrot</td>
+                <td>35 G</td>
+                <td>3 Days</td>
+                <td>85 G</td>
+                <td>+16.6 G/day</td>
+              </tr>
+              <tr>
+                <td>Strawberry</td>
+                <td>60 G</td>
+                <td>4 Days</td>
+                <td>150 G</td>
+                <td>+22.5 G/day</td>
+              </tr>
+              <tr>
+                <td>Tomato</td>
+                <td>80 G</td>
+                <td>4 Days</td>
+                <td>200 G</td>
+                <td>+30.0 G/day</td>
+              </tr>
+              <tr>
+                <td>Golden Corn</td>
+                <td>120 G</td>
+                <td>5 Days</td>
+                <td>310 G</td>
+                <td>+38.0 G/day</td>
+              </tr>
+              <tr>
+                <td>Pumpkin</td>
+                <td>150 G</td>
+                <td>6 Days</td>
+                <td>420 G</td>
+                <td>+45.0 G/day</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Town Bulletin Notice Board Modal -->
+  <div id="bulletinModal" class="game-modal">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #facc15;" viewBox="0 0 24 24">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M9 21V9"/>
+          </svg>
+          <span>Oakhaven Community Notice Board</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Notice Board">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="bulletinContent">
+        <!-- Injected by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. City NPC Dialogue Modal -->
+  <div id="cityNpcModal" class="game-modal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #38bdf8;" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="5"/>
+            <path d="M20 21a8 8 0 1 0-16 0"/>
+          </svg>
+          <span id="cityNpcName">Town Citizen</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close NPC Dialogue">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="dialogue-avatar-row">
+          <div class="grandma-portrait" id="cityNpcPortrait" style="background: #e0f2fe;">
+            <svg class="ui-icon" style="width: 32px; height: 32px; color: #0284c7;" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="5"/>
+              <path d="M20 21a8 8 0 1 0-16 0"/>
+            </svg>
+          </div>
+          <div>
+            <div class="dialogue-name" id="cityNpcTitle">Mayor Clara</div>
+            <div class="dialogue-role" id="cityNpcSubtitle">Oakhaven City Leader</div>
+          </div>
+        </div>
+        <div class="dialogue-bubble" id="cityNpcText">
+          "Welcome to Oakhaven!"
+        </div>
+        <div class="modal-actions" id="cityNpcActions">
+          <button class="btn-primary" onclick="document.getElementById('cityNpcModal').classList.remove('active')">
+            Farewell!
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Hazelwood Bakery & Cafe Modal -->
+  <div id="bakeryModal" class="game-modal">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #ea580c;" viewBox="0 0 24 24">
+            <path d="M12 2a5 5 0 0 1 5 5v1a4 4 0 0 1 4 4v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a4 4 0 0 1 4-4V7a5 5 0 0 1 5-5Z"/>
+            <path d="M7 11h10"/>
+          </svg>
+          <span>Hazelwood Bakery &amp; Café</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Bakery">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="bakeryContent">
+        <!-- Injected by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Garth's Blacksmith Forge Modal -->
+  <div id="blacksmithModal" class="game-modal">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #64748b;" viewBox="0 0 24 24">
+            <path d="m14 12-8.5 8.5a2.12 2.12 0 1 1-3-3L11 9"/>
+            <path d="M15 13 9 7l4-4 6 6h3l-2 5-5-1Z"/>
+          </svg>
+          <span>Garth's Blacksmith Forge &amp; Toolworks</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Blacksmith">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="blacksmithContent">
+        <!-- Injected by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. Full Player Backpack & Inventory Modal -->
+  <div id="inventoryModal" class="game-modal">
+    <div class="modal-card" style="max-width: 740px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #f59e0b;" viewBox="0 0 24 24">
+            <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9Z"/>
+            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+            <circle cx="12" cy="13" r="2"/>
+          </svg>
+          <span>Player Backpack &amp; Inventory</span>
+          <span id="invItemCountBadge" class="location-badge" style="background: #78350f; color: #fef08a; font-size: 0.76rem;">0 Items</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Inventory">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Quick Hotbar Slots Preview -->
+        <div style="background: #e2d9cc; border: 2px solid #bcaaa4; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #3e2723; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Current Hotbar Slots (1 – 8):</span>
+            <span style="font-size: 0.76rem; color: #64748b; font-weight: normal;">Click an item card below to assign it to any hotbar slot</span>
+          </div>
+          <div id="invHotbarPreview" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;">
+            <!-- Rendered by game.js -->
+          </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="shop-tabs" style="margin-bottom: 12px;" id="invFilterTabs">
+          <button class="shop-tab-btn active" data-inv-tab="all">All Items</button>
+          <button class="shop-tab-btn" data-inv-tab="tool">Tools</button>
+          <button class="shop-tab-btn" data-inv-tab="seed">Seeds &amp; Crops</button>
+          <button class="shop-tab-btn" data-inv-tab="food">Food &amp; Energy</button>
+          <button class="shop-tab-btn" data-inv-tab="material">Materials</button>
+        </div>
+
+        <!-- Inventory Items Grid -->
+        <div id="inventoryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+          <!-- Injected by game.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="audio.js"></script>
+  <script src="sprites.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
