@@ -153,7 +153,7 @@ class Player {
   update(dt, input, arenaWidth, arenaHeight, game) {
     this.game = game;
 
-    // 1. Rotation: Touch auto-aim, drag aim, or Cursor (Xbox Virtual Cursor / PC Mouse Cursor)
+    // 1. Rotation: Direct twin-stick orientation (Xbox), Touch Auto-Aim / Drag Aim, or Mouse Cursor
     let rawTargetAngle = Math.atan2(input.mouseY - this.y, input.mouseX - this.x);
     const isRangedFiring = input.gamepadRangedHeld || input.gamepadLtHeld || input.touchRangedHeld;
 
@@ -196,13 +196,22 @@ class Player {
         input.mouseX = this.x + Math.cos(targetAngle) * 220;
         input.mouseY = this.y + Math.sin(targetAngle) * 220;
       }
+    } else if (input.gamepadConnected && input.usingGamepadCursor) {
+      // Xbox Controller Direct Twin-Stick Aiming / Flight Steering Orientation
+      if (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15) {
+        rawTargetAngle = input.gamepadAimAngle;
+        targetAngle = input.gamepadAimAngle;
+      } else {
+        targetAngle = this.angle;
+      }
     }
 
     // Smart Soft Aim-Assist / Target Magnetism for Xbox Controller Ranged Weapons
-    if (input.gamepadConnected && game && game.enemies) {
+    // Only engages while actively firing ranged weapon so spinning and general flight are 100% free and unhindered!
+    if (input.gamepadConnected && input.usingGamepadCursor && game && game.enemies && isRangedFiring) {
       this.aimReticleActive = true;
       const maxLockDist = 750;
-      const maxConeAngle = 0.46; // ~26.4 degrees cone
+      const maxConeAngle = 0.42; // ~24 degrees cone
       let bestCandidate = null;
       let bestScore = Infinity;
 
@@ -240,7 +249,7 @@ class Player {
         // Smart soft magnetism blend: smoothly draw firing arc towards target center
         const enemyAng = Math.atan2(bestCandidate.y - this.y, bestCandidate.x - this.x);
         const isSeekers = this.equippedRanged && this.equippedRanged.id === 'seekers';
-        const magnetStrength = isSeekers ? 0.28 : (isRangedFiring ? 0.68 : 0.46);
+        const magnetStrength = isSeekers ? 0.28 : 0.65;
         const offset = normalizeAngle(enemyAng - rawTargetAngle);
         targetAngle = rawTargetAngle + offset * magnetStrength;
       } else {
@@ -254,17 +263,26 @@ class Player {
     }
 
     // Always maintain full cursor visibility when gamepad is connected
-    if (input.gamepadConnected) {
+    if (input.gamepadConnected && input.usingGamepadCursor) {
       this.aimReticleAlpha = 1.0;
       this.aimReticleActive = true;
-    } else {
+    } else if (!input.touchControlsActive) {
       this.aimReticleAlpha = Math.max(0, this.aimReticleAlpha - dt * 4);
     }
 
-    // Smooth angle interpolation towards cursor
+    // High-Speed Angular Tracking & Rotation
     let diff = normalizeAngle(targetAngle - this.angle);
-    const turnSpeed = input.gamepadConnected ? 26 : 22;
-    this.angle += diff * Math.min(1, dt * turnSpeed);
+    if (input.gamepadConnected && input.usingGamepadCursor) {
+      if (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15) {
+        // Direct 1:1 instantaneous angular response on Xbox Controller:
+        // When spinning or flicking the analog stick, triangle tracks at the exact speed of the stick with zero lag
+        this.angle = targetAngle;
+      }
+    } else {
+      // Smooth interpolation for mouse / touch aiming
+      const turnSpeed = input.touchControlsActive ? 38 : 42;
+      this.angle += diff * Math.min(1, dt * turnSpeed);
+    }
 
     // Reticle coordinates are directly anchored to the Cursor!
     this.reticleX = input.mouseX;

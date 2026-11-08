@@ -944,29 +944,53 @@ class GameEngine {
       this.input.gamepadMoveMagnitude = 0;
     }
 
-    // 2. Right Analog Stick (Axes 2, 3) (Xbox Virtual Cursor & Precision Aiming)
+    // 2. Right Analog Stick (Axes 2, 3) (Xbox Direct Twin-Stick Aiming / High-Speed Rotations & Menu Pointer)
     const rx = applyDeadzone(gp.axes[2]);
     const ry = applyDeadzone(gp.axes[3]);
     const rMag = Math.hypot(rx, ry);
 
-    if (rMag > 0.12) {
-      this.input.usingGamepadCursor = true;
-      this.input.gamepadAiming = true;
-      const speed = this.input.virtualCursorSpeed * Math.pow(rMag, 1.45);
-      this.input.cursorX += (rx / rMag) * speed * dt;
-      this.input.cursorY += (ry / rMag) * speed * dt;
+    if (this.state === 'playing') {
+      const vWidth = this.viewportWidth || window.innerWidth || 1280;
+      const vHeight = this.viewportHeight || window.innerHeight || 720;
+      const playerX = this.player ? this.player.x : this.width / 2;
+      const playerY = this.player ? this.player.y : this.height / 2;
+
+      if (rMag > 0.12) {
+        // Direct twin-stick weapon aiming: stick angle maps directly to world coordinates
+        const stickAimAngle = Math.atan2(ry, rx);
+        this.input.usingGamepadCursor = true;
+        this.input.gamepadAiming = true;
+        this.input.gamepadAimAngle = stickAimAngle;
+
+        const aimDist = 260 + rMag * 80;
+        this.input.mouseX = playerX + Math.cos(stickAimAngle) * aimDist;
+        this.input.mouseY = playerY + Math.sin(stickAimAngle) * aimDist;
+        this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
+        this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
+      } else if (this.input.gamepadMoveMagnitude > 0.15) {
+        // Flight steering: when right stick is idle, triangle faces movement vector
+        const moveAngle = Math.atan2(ly, lx);
+        this.input.usingGamepadCursor = true;
+        this.input.gamepadAiming = false;
+        this.input.gamepadAimAngle = moveAngle;
+
+        this.input.mouseX = playerX + Math.cos(moveAngle) * 240;
+        this.input.mouseY = playerY + Math.sin(moveAngle) * 240;
+        this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
+        this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
+      } else {
+        this.input.gamepadAiming = false;
+        if (this.player) {
+          this.input.mouseX = playerX + Math.cos(this.player.angle) * 240;
+          this.input.mouseY = playerY + Math.sin(this.player.angle) * 240;
+          this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
+          this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
+        }
+      }
     } else {
-      this.input.gamepadAiming = false;
-    }
-
-    // In gameplay: carry cursor along with player flight velocity so aim relative to ship is preserved
-    if (this.state === 'playing' && this.player && (Math.abs(this.player.vx) > 2 || Math.abs(this.player.vy) > 2)) {
-      this.input.cursorX += this.player.vx * dt;
-      this.input.cursorY += this.player.vy * dt;
-    }
-
-    // In menus (start, upgrade, pause, gameover): Left Stick or D-Pad also navigates the virtual cursor
-    if (this.state !== 'playing') {
+      // In menus (start, upgrade, pause, gameover): Sticks / D-Pad navigate the virtual cursor pointer
+      const vWidth = this.viewportWidth || window.innerWidth || 1280;
+      const vHeight = this.viewportHeight || window.innerHeight || 720;
       const mx = Math.abs(rx) > 0.12 ? rx : lx;
       const my = Math.abs(ry) > 0.12 ? ry : ly;
       const mMag = Math.hypot(mx, my);
@@ -976,19 +1000,10 @@ class GameEngine {
         this.input.cursorX += (mx / mMag) * speed * dt;
         this.input.cursorY += (my / mMag) * speed * dt;
       }
-    }
-
-    // Clamp virtual cursor coordinates within window viewport
-    this.input.cursorX = Math.max(14, Math.min(this.width - 14, this.input.cursorX));
-    this.input.cursorY = Math.max(14, Math.min(this.height - 14, this.input.cursorY));
-
-    // When playing with controller, sync mouseX / mouseY to cursor coordinates
-    if (this.input.gamepadConnected && this.input.usingGamepadCursor) {
+      this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.cursorX));
+      this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.cursorY));
       this.input.mouseX = this.input.cursorX;
       this.input.mouseY = this.input.cursorY;
-      const playerX = this.player ? this.player.x : this.width / 2;
-      const playerY = this.player ? this.player.y : this.height / 2;
-      this.input.gamepadAimAngle = Math.atan2(this.input.cursorY - playerY, this.input.cursorX - playerX);
     }
 
     // Update Virtual Cursor DOM element position and hover interaction
