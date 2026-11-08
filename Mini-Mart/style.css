@@ -1,0 +1,419 @@
+/* =====================================================================
+   PIXEL MINI MART - STYLING & RESPONSIVE UI
+   ===================================================================== */
+
+:root {
+  --bg-color: #090d16;
+  --hud-bg: rgba(15, 23, 42, 0.88);
+  --hud-border: rgba(56, 189, 248, 0.28);
+  --primary: #10b981;
+  --primary-glow: rgba(16, 185, 129, 0.4);
+  --accent: #38bdf8;
+  --accent-glow: rgba(56, 189, 248, 0.4);
+  --danger: #ef4444;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--text-main);
+}
+
+#gameCanvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* =====================================================================
+   HEADS-UP DISPLAY (HUD)
+   ===================================================================== */
+
+#ui-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+/* Top Navigation Bar */
+.top-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  gap: 12px;
+}
+
+.hud-card {
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 14px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.brand-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mart-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #f8fafc;
+}
+
+.mart-tier {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+  letter-spacing: 0.08em;
+}
+
+/* Money Counter */
+.money-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-color: rgba(74, 222, 128, 0.45);
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.15);
+}
+
+.money-icon {
+  color: #4ade80;
+}
+
+.money-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #4ade80;
+  text-shadow: 0 0 12px rgba(74, 222, 128, 0.35);
+}
+
+/* Top Buttons */
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-btn {
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  color: #f8fafc;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.hud-btn:hover {
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.18);
+  transform: translateY(-2px);
+}
+
+.hud-btn.icon-only {
+  padding: 8px;
+}
+
+/* Bottom Bar */
+.bottom-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.stack-card {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stack-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.stack-val {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+/* Turbo Sprint Button (Touch / Mouse) */
+.turbo-button {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border: 2px solid #ffffff;
+  color: #070b14;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.45);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.turbo-button:active {
+  transform: scale(0.92);
+  filter: brightness(1.2);
+}
+
+.turbo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+/* Virtual Touch Joystick Container */
+#joystick-container {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  margin-left: -55px;
+  margin-top: -55px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(56, 189, 248, 0.35);
+  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+#joystick-knob {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  border: 2px solid #ffffff;
+  pointer-events: none;
+}
+
+/* =====================================================================
+   STYLIZED MODAL DIALOGS (PAUSE & UPGRADES)
+   ===================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 11, 20, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+  transition: opacity 0.25s ease;
+}
+
+.modal-card {
+  background: #0f172a;
+  border: 1px solid var(--hud-border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 14px;
+}
+
+.modal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Upgrade Cards */
+.upgrade-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.upgrade-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.upgrade-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #f8fafc;
+}
+
+.upgrade-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.upgrade-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.upgrade-btn:hover {
+  transform: scale(1.04);
+  filter: brightness(1.15);
+}
+
+.upgrade-btn:active {
+  transform: scale(0.96);
+}
+
+.action-btn-main {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  color: #070b14;
+  border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.action-btn-main:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .mart-title {
+    font-size: 0.9rem;
+  }
+  .money-val {
+    font-size: 1.15rem;
+  }
+  .hud-btn span {
+    display: none;
+  }
+  .hud-btn {
+    padding: 8px;
+  }
+}
