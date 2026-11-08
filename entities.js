@@ -196,19 +196,26 @@ class Player {
         input.mouseX = this.x + Math.cos(targetAngle) * 220;
         input.mouseY = this.y + Math.sin(targetAngle) * 220;
       }
-    } else if (input.gamepadConnected && input.usingGamepadCursor) {
+    } else if (input.gamepadConnected && (input.usingGamepadCursor || input.gamepadAiming || input.gamepadMoveMagnitude > 0.15)) {
       // Xbox Controller Direct Twin-Stick Aiming / Flight Steering Orientation
       if (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15) {
         rawTargetAngle = input.gamepadAimAngle;
         targetAngle = input.gamepadAimAngle;
       } else {
+        rawTargetAngle = this.angle;
         targetAngle = this.angle;
       }
     }
 
+    // Measure angular velocity: suspend soft aim-assist if spinning fast to guarantee 100% fluid, glitch-free rotation!
+    const angularDiffFromPrev = Math.abs(normalizeAngle(targetAngle - (this.prevTargetAngle !== undefined ? this.prevTargetAngle : targetAngle)));
+    const spinAngularVelocity = angularDiffFromPrev / Math.max(0.001, dt);
+    this.prevTargetAngle = targetAngle;
+    const isSpinningFast = spinAngularVelocity > 2.8; // > ~160 deg/sec
+
     // Smart Soft Aim-Assist / Target Magnetism for Xbox Controller Ranged Weapons
-    // Only engages while actively firing ranged weapon so spinning and general flight are 100% free and unhindered!
-    if (input.gamepadConnected && input.usingGamepadCursor && game && game.enemies && isRangedFiring) {
+    // Only engages while actively firing ranged weapon AND tracking steadily (never while spinning/sweeping!)
+    if (input.gamepadConnected && game && game.enemies && isRangedFiring && !isSpinningFast) {
       this.aimReticleActive = true;
       const maxLockDist = 750;
       const maxConeAngle = 0.42; // ~24 degrees cone
@@ -263,7 +270,7 @@ class Player {
     }
 
     // Always maintain full cursor visibility when gamepad is connected
-    if (input.gamepadConnected && input.usingGamepadCursor) {
+    if (input.gamepadConnected) {
       this.aimReticleAlpha = 1.0;
       this.aimReticleActive = true;
     } else if (!input.touchControlsActive) {
@@ -272,17 +279,16 @@ class Player {
 
     // High-Speed Angular Tracking & Rotation
     let diff = normalizeAngle(targetAngle - this.angle);
-    if (input.gamepadConnected && input.usingGamepadCursor) {
-      if (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15) {
-        // Direct 1:1 instantaneous angular response on Xbox Controller:
-        // When spinning or flicking the analog stick, triangle tracks at the exact speed of the stick with zero lag
-        this.angle = targetAngle;
-      }
+    if (input.gamepadConnected && (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15)) {
+      // Direct 1:1 instantaneous angular response on Xbox Controller:
+      // When spinning or flicking the analog stick, triangle tracks smoothly at full stick speed with zero lag
+      this.angle = targetAngle;
     } else {
       // Smooth interpolation for mouse / touch aiming
       const turnSpeed = input.touchControlsActive ? 38 : 42;
       this.angle += diff * Math.min(1, dt * turnSpeed);
     }
+    this.angle = normalizeAngle(this.angle);
 
     // Reticle coordinates are directly anchored to the Cursor!
     this.reticleX = input.mouseX;

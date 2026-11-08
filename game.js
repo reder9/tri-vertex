@@ -286,6 +286,11 @@ class GameEngine {
     });
 
     window.addEventListener('mousemove', (e) => {
+      // Ignore micro-vibrations from controller rumble or desk bumps while playing with gamepad
+      const moveDelta = Math.hypot(e.movementX || 0, e.movementY || 0);
+      if (this.input.gamepadConnected && moveDelta < 3.5) {
+        return;
+      }
       this.input.usingGamepadCursor = false;
       const rect = this.canvas.getBoundingClientRect();
       // Translate screen pointer to arena world coordinates via camera offset
@@ -924,30 +929,50 @@ class GameEngine {
       return (val - Math.sign(val) * deadzone) / (1 - deadzone);
     };
 
-    // 1. Left Analog Stick (Axes 0, 1) & D-Pad (Flight & Nav)
-    let lx = gp.axes[0] || 0;
-    let ly = gp.axes[1] || 0;
+    // 1. Left Analog Stick (Axes 0, 1) & D-Pad (Flight & Nav) with Pure Radial Deadzone
+    let rawLx = gp.axes[0] || 0;
+    let rawLy = gp.axes[1] || 0;
     // D-Pad buttons: 12=Up, 13=Down, 14=Left, 15=Right
-    if (gp.buttons[12] && gp.buttons[12].pressed) ly = -1;
-    if (gp.buttons[13] && gp.buttons[13].pressed) ly = 1;
-    if (gp.buttons[14] && gp.buttons[14].pressed) lx = -1;
-    if (gp.buttons[15] && gp.buttons[15].pressed) lx = 1;
+    if (gp.buttons[12] && gp.buttons[12].pressed) rawLy = -1;
+    if (gp.buttons[13] && gp.buttons[13].pressed) rawLy = 1;
+    if (gp.buttons[14] && gp.buttons[14].pressed) rawLx = -1;
+    if (gp.buttons[15] && gp.buttons[15].pressed) rawLx = 1;
 
-    const lMag = Math.hypot(lx, ly);
-    if (lMag > 0.15) {
+    const rawLMag = Math.hypot(rawLx, rawLy);
+    const L_DEADZONE = 0.16;
+    let lx = 0;
+    let ly = 0;
+    let lMag = 0;
+    if (rawLMag > L_DEADZONE) {
+      lMag = Math.min(1.0, (rawLMag - L_DEADZONE) / (0.94 - L_DEADZONE));
+      lx = (rawLx / rawLMag) * lMag;
+      ly = (rawLy / rawLMag) * lMag;
       this.input.gamepadMoveX = lx;
       this.input.gamepadMoveY = ly;
-      this.input.gamepadMoveMagnitude = Math.min(1, lMag);
+      this.input.gamepadMoveMagnitude = lMag;
     } else {
       this.input.gamepadMoveX = 0;
       this.input.gamepadMoveY = 0;
       this.input.gamepadMoveMagnitude = 0;
     }
 
-    // 2. Right Analog Stick (Axes 2, 3) (Xbox Direct Twin-Stick Aiming / High-Speed Rotations & Menu Pointer)
-    const rx = applyDeadzone(gp.axes[2]);
-    const ry = applyDeadzone(gp.axes[3]);
-    const rMag = Math.hypot(rx, ry);
+    // 2. Right Analog Stick (Axes 2, 3) (Pure Radial Deadzone - Zero Cardinal Snapping)
+    const rawRx = gp.axes[2] || 0;
+    const rawRy = gp.axes[3] || 0;
+    const rawRMag = Math.hypot(rawRx, rawRy);
+    const R_DEADZONE = 0.16;
+    let rMag = 0;
+    let rx = 0;
+    let ry = 0;
+    let stickAimAngle = null;
+
+    if (rawRMag > R_DEADZONE) {
+      rMag = Math.min(1.0, (rawRMag - R_DEADZONE) / (0.94 - R_DEADZONE));
+      // Continuous raw trigonometric arc: never clamps to 0 or snaps at 0, 90, 180, 270 deg
+      stickAimAngle = Math.atan2(rawRy, rawRx);
+      rx = (rawRx / rawRMag) * rMag;
+      ry = (rawRy / rawRMag) * rMag;
+    }
 
     if (this.state === 'playing') {
       const vWidth = this.viewportWidth || window.innerWidth || 1280;
@@ -955,44 +980,48 @@ class GameEngine {
       const playerX = this.player ? this.player.x : this.width / 2;
       const playerY = this.player ? this.player.y : this.height / 2;
 
-      if (rMag > 0.12) {
-        // Direct twin-stick weapon aiming: stick angle maps directly to world coordinates
-        const stickAimAngle = Math.atan2(ry, rx);
+      // Aim Hysteresis: prevents flickering between right-stick aim and left-stick movement
+      if (this.rightStickTimer === undefined) this.rightStickTimer = 0;
+      if (this.lastGamepadAimAngle === undefined) this.lastGamepadAimAngle = this.player ? this.player.angle : 0;
+
+      if (stickAimAngle !== null) {
+        // Actively aiming with right stick (absolute priority)
+        this.rightStickTimer = 0.22; // 220ms persistence prevents deadzone jitter
+        this.lastGamepadAimAngle = stickAimAngle;
         this.input.usingGamepadCursor = true;
         this.input.gamepadAiming = true;
         this.input.gamepadAimAngle = stickAimAngle;
-
-        const aimDist = 260 + rMag * 80;
-        this.input.mouseX = playerX + Math.cos(stickAimAngle) * aimDist;
-        this.input.mouseY = playerY + Math.sin(stickAimAngle) * aimDist;
-        this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
-        this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
+      } else if (this.rightStickTimer > 0) {
+        // Holding orientation during quick spin/flick or thumb shift
+        this.rightStickTimer -= dt;
+        this.input.usingGamepadCursor = true;
+        this.input.gamepadAiming = true;
+        this.input.gamepadAimAngle = this.lastGamepadAimAngle;
       } else if (this.input.gamepadMoveMagnitude > 0.15) {
-        // Flight steering: when right stick is idle, triangle faces movement vector
+        // Flight steering: only active when right stick has been completely released
         const moveAngle = Math.atan2(ly, lx);
         this.input.usingGamepadCursor = true;
         this.input.gamepadAiming = false;
         this.input.gamepadAimAngle = moveAngle;
-
-        this.input.mouseX = playerX + Math.cos(moveAngle) * 240;
-        this.input.mouseY = playerY + Math.sin(moveAngle) * 240;
-        this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
-        this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
+        this.lastGamepadAimAngle = moveAngle;
       } else {
+        // Idle
         this.input.gamepadAiming = false;
-        if (this.player) {
-          this.input.mouseX = playerX + Math.cos(this.player.angle) * 240;
-          this.input.mouseY = playerY + Math.sin(this.player.angle) * 240;
-          this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
-          this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
-        }
       }
+
+      // Position crosshair and aim coordinates smoothly along active vector
+      const currentAim = this.input.gamepadAimAngle !== undefined ? this.input.gamepadAimAngle : (this.player ? this.player.angle : 0);
+      const aimDist = 260 + (rMag > 0 ? rMag * 80 : 0);
+      this.input.mouseX = playerX + Math.cos(currentAim) * aimDist;
+      this.input.mouseY = playerY + Math.sin(currentAim) * aimDist;
+      this.input.cursorX = Math.max(14, Math.min(vWidth - 14, this.input.mouseX - this.camera.x));
+      this.input.cursorY = Math.max(14, Math.min(vHeight - 14, this.input.mouseY - this.camera.y));
     } else {
       // In menus (start, upgrade, pause, gameover): Sticks / D-Pad navigate the virtual cursor pointer
       const vWidth = this.viewportWidth || window.innerWidth || 1280;
       const vHeight = this.viewportHeight || window.innerHeight || 720;
-      const mx = Math.abs(rx) > 0.12 ? rx : lx;
-      const my = Math.abs(ry) > 0.12 ? ry : ly;
+      const mx = rMag > 0.1 ? rx : lx;
+      const my = rMag > 0.1 ? ry : ly;
       const mMag = Math.hypot(mx, my);
       if (mMag > 0.12) {
         this.input.usingGamepadCursor = true;
