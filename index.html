@@ -3,22 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Leyten's Games - Game Hub</title>
+  <title>Leyten's Games - Retro Pixel Arcade Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #070b14;
-      --card-bg: rgba(13, 20, 36, 0.85);
-      --card-border: rgba(56, 189, 248, 0.22);
-      --card-hover: rgba(56, 189, 248, 0.45);
-      --tri-color: #00f0ff;
-      --tri-glow: rgba(0, 240, 255, 0.35);
-      --farm-color: #4ade80;
-      --farm-glow: rgba(74, 222, 128, 0.35);
-      --text-main: #f8fafc;
-      --text-sub: #94a3b8;
+      --bg-dark: #0a0c16;
+      --panel-bg: #121626;
+      --pixel-border: #1e2538;
+      --tri-neon: #00f0ff;
+      --tri-glow: rgba(0, 240, 255, 0.4);
+      --mart-amber: #f59e0b;
+      --mart-glow: rgba(245, 158, 11, 0.4);
+      --farm-green: #34d399;
+      --farm-glow: rgba(52, 211, 153, 0.4);
+      --hero-purple: #a855f7;
+      --hero-glow: rgba(168, 85, 247, 0.4);
+      --sling-orange: #f97316;
+      --sling-glow: rgba(249, 115, 22, 0.4);
+      --text-white: #f8fafc;
+      --text-gray: #94a3b8;
     }
 
     * {
@@ -30,15 +35,9 @@
     }
 
     body {
-      background-color: var(--bg);
-      background-image: 
-        radial-gradient(circle at 20% 15%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 80% 85%, rgba(74, 222, 128, 0.08) 0%, transparent 40%),
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
-      color: var(--text-main);
-      font-family: 'Rajdhani', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      font-family: 'Silkscreen', 'Courier New', monospace;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -46,57 +45,159 @@
       justify-content: center;
       padding: 24px 16px;
       overflow-x: hidden;
+      position: relative;
     }
 
-    .hub-container {
+    /* Pixel Starfield Background Canvas */
+    #pixelCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      max-width: 980px;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Optional CRT Scanline Overlay */
+    .crt-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%);
+      background-size: 100% 4px;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.75;
+      transition: opacity 0.2s ease;
+    }
+    .crt-overlay.off {
+      opacity: 0;
+    }
+
+    /* Main Container */
+    .hub-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1100px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 32px;
+      gap: 26px;
     }
 
-    /* Header */
-    .hub-header {
+    /* Top Controls Bar */
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: rgba(18, 22, 38, 0.85);
+      border: 3px solid #232b42;
+      box-shadow: 0 4px 0 #0b0e18;
+      padding: 8px 16px;
+    }
+
+    .top-left-status {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      color: #94a3b8;
+    }
+
+    .blinking-dot {
+      width: 8px;
+      height: 8px;
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+      display: inline-block;
+      animation: pixelBlink 1s infinite steps(1);
+    }
+
+    @keyframes pixelBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .top-btn {
+      font-family: 'Silkscreen', monospace;
+      font-size: 0.72rem;
+      padding: 6px 12px;
+      background: #1e2538;
+      border: 2px solid #334155;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 0 #000;
+      transition: all 0.1s ease;
+    }
+
+    .top-btn:hover {
+      background: #2a344d;
+      border-color: #64748b;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .top-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 #000;
+    }
+
+    /* Arcade Header */
+    .arcade-header {
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      position: relative;
     }
 
-    .brand-badge {
+    .arcade-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 16px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(56, 189, 248, 0.28);
-      border-radius: 9999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-size: 0.68rem;
+      padding: 5px 14px;
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
       color: #38bdf8;
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
 
-    .hub-title {
-      font-family: 'Orbitron', sans-serif;
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+    .arcade-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1.8rem, 4.2vw, 2.9rem);
+      letter-spacing: 3px;
+      color: #ffffff;
+      text-shadow: 
+        3px 3px 0 #00f0ff,
+        -3px -3px 0 #a855f7,
+        0 0 24px rgba(0, 240, 255, 0.4);
+      margin: 4px 0;
+      line-height: 1.25;
     }
 
-    .hub-subtitle {
-      color: var(--text-sub);
-      font-size: 1.1rem;
-      max-width: 580px;
+    .arcade-subtitle {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      max-width: 640px;
       line-height: 1.5;
     }
 
@@ -104,541 +205,958 @@
     .games-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 28px;
+      gap: 24px;
       width: 100%;
     }
 
-    .game-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 28px;
+    /* Pixel Game Card */
+    .pixel-card {
+      background: var(--panel-bg);
+      border: 4px solid #1e263d;
+      box-shadow: 
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 0px 0px rgba(255, 255, 255, 0.08),
+        0 6px 0px 0px #090c14,
+        0 12px 24px rgba(0, 0, 0, 0.6);
+      padding: 24px;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
       gap: 20px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
       text-decoration: none;
       color: inherit;
       position: relative;
-      overflow: hidden;
-      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
       outline: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .game-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      opacity: 0.85;
-      transition: height 0.28s ease, opacity 0.28s ease;
+    .pixel-card:hover, .pixel-card.active-focus {
+      transform: translateY(-4px);
     }
 
-    .game-card.tri-vertex::before {
-      background: linear-gradient(90deg, #00f0ff, #38bdf8);
-      box-shadow: 0 0 14px #00f0ff;
+    /* Specific Game Card Themes */
+    .pixel-card.tri-vertex {
+      border-top: 6px solid var(--tri-neon);
+    }
+    .pixel-card.tri-vertex:hover, .pixel-card.tri-vertex.active-focus {
+      border-color: var(--tri-neon);
+      box-shadow: 
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 0px 0px rgba(0, 240, 255, 0.25),
+        0 8px 0px 0px #005566,
+        0 14px 28px var(--tri-glow);
     }
 
-    .game-card.homestead::before {
-      background: linear-gradient(90deg, #4ade80, #10b981);
-      box-shadow: 0 0 14px #4ade80;
+    .pixel-card.mini-mart {
+      border-top: 6px solid var(--mart-amber);
+    }
+    .pixel-card.mini-mart:hover, .pixel-card.mini-mart.active-focus {
+      border-color: var(--mart-amber);
+      box-shadow: 
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 0px 0px rgba(245, 158, 11, 0.25),
+        0 8px 0px 0px #6b4004,
+        0 14px 28px var(--mart-glow);
     }
 
-    .game-card.mini-mart::before {
-      background: linear-gradient(90deg, #f59e0b, #10b981);
-      box-shadow: 0 0 14px #f59e0b;
+    .pixel-card.homestead {
+      border-top: 6px solid var(--farm-green);
+    }
+    .pixel-card.homestead:hover, .pixel-card.homestead.active-focus {
+      border-color: var(--farm-green);
+      box-shadow: 
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 0px 0px rgba(52, 211, 153, 0.25),
+        0 8px 0px 0px #064e3b,
+        0 14px 28px var(--farm-glow);
     }
 
-    .game-card.mini-mart:hover,
-    .game-card.mini-mart:focus-visible,
-    .game-card.mini-mart.active-focus {
-      border-color: rgba(245, 158, 11, 0.6);
-      box-shadow: 0 0 35px rgba(245, 158, 11, 0.35);
+    .pixel-card.type-hero {
+      border-top: 6px solid var(--hero-purple);
+    }
+    .pixel-card.type-hero:hover, .pixel-card.type-hero.active-focus {
+      border-color: var(--hero-purple);
+      box-shadow: 
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 0px 0px rgba(168, 85, 247, 0.25),
+        0 8px 0px 0px #581c87,
+        0 14px 28px var(--hero-glow);
+    }
+    .pixel-card.type-hero .pixel-icon-box {
+      border-color: var(--hero-purple);
+      color: var(--hero-purple);
+    }
+    .pixel-card.type-hero .genre-pill {
+      border-color: var(--hero-purple);
+      color: var(--hero-purple);
+    }
+    .pixel-card.type-hero .pixel-btn-action {
+      background: #7c3aed;
+      color: #ffffff;
+      box-shadow: 
+        inset -3px -3px 0px 0px #6d28d9,
+        inset 3px 3px 0px 0px #c084fc,
+        0 4px 0 #000;
+    }
+    .pixel-card.type-hero:hover .pixel-btn-action,
+    .pixel-card.type-hero.active-focus .pixel-btn-action {
+      background: var(--hero-purple);
+      color: #1e1035;
+      box-shadow: 
+        inset -3px -3px 0px 0px #7c3aed,
+        inset 3px 3px 0px 0px #f3e8ff,
+        0 5px 0 #000;
     }
 
-    .game-card.mini-mart .game-icon-wrap {
-      background: rgba(245, 158, 11, 0.08);
-      border-color: rgba(245, 158, 11, 0.35);
-      color: #f59e0b;
-      box-shadow: 0 0 18px rgba(245, 158, 11, 0.2);
+    .pixel-card.sling-hero {
+      border-top: 6px solid var(--sling-orange);
+    }
+    .pixel-card.sling-hero:hover, .pixel-card.sling-hero.active-focus {
+      border-color: var(--sling-orange);
+      box-shadow: 
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 0px 0px rgba(249, 115, 22, 0.25),
+        0 8px 0px 0px #9a3412,
+        0 14px 28px var(--sling-glow);
+    }
+    .pixel-card.sling-hero .pixel-icon-box {
+      border-color: var(--sling-orange);
+      color: var(--sling-orange);
+    }
+    .pixel-card.sling-hero .genre-pill {
+      border-color: var(--sling-orange);
+      color: var(--sling-orange);
+    }
+    .pixel-card.sling-hero .pixel-btn-action {
+      background: #ea580c;
+      color: #ffffff;
+      box-shadow: 
+        inset -3px -3px 0px 0px #c2410c,
+        inset 3px 3px 0px 0px #fdba74,
+        0 4px 0 #000;
+    }
+    .pixel-card.sling-hero:hover .pixel-btn-action,
+    .pixel-card.sling-hero.active-focus .pixel-btn-action {
+      background: var(--sling-orange);
+      color: #1a0800;
+      box-shadow: 
+        inset -3px -3px 0px 0px #ea580c,
+        inset 3px 3px 0px 0px #ffedd5,
+        0 5px 0 #000;
     }
 
-    .game-card.mini-mart .genre-tag {
-      background: rgba(245, 158, 11, 0.1);
-      border-color: rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
-    }
-
-    .game-card.mini-mart .launch-btn {
-      background: linear-gradient(135deg, #f59e0b, #10b981);
-      color: #070b14;
-      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
-    }
-
-    .game-card:hover,
-    .game-card:focus-visible,
-    .game-card.active-focus {
-      transform: translateY(-5px);
-      box-shadow: 0 18px 36px -10px rgba(0, 0, 0, 0.65);
-    }
-
-    .game-card.tri-vertex:hover,
-    .game-card.tri-vertex:focus-visible,
-    .game-card.tri-vertex.active-focus {
-      border-color: rgba(0, 240, 255, 0.6);
-      box-shadow: 0 0 35px var(--tri-glow);
-    }
-
-    .game-card.homestead:hover,
-    .game-card.homestead:focus-visible,
-    .game-card.homestead.active-focus {
-      border-color: rgba(74, 222, 128, 0.6);
-      box-shadow: 0 0 35px var(--farm-glow);
-    }
-
-    /* Card Elements */
-    .card-top {
+    /* Card Header */
+    .card-header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .game-icon-wrap {
-      width: 54px;
-      height: 54px;
-      border-radius: 14px;
+    .pixel-icon-box {
+      width: 52px;
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid;
+      background: #090c14;
+      border: 3px solid;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
     }
 
-    .game-card.tri-vertex .game-icon-wrap {
-      background: rgba(0, 240, 255, 0.08);
-      border-color: rgba(0, 240, 255, 0.35);
-      color: #00f0ff;
-      box-shadow: 0 0 18px rgba(0, 240, 255, 0.2);
+    .pixel-card.tri-vertex .pixel-icon-box {
+      border-color: var(--tri-neon);
+      color: var(--tri-neon);
+    }
+    .pixel-card.mini-mart .pixel-icon-box {
+      border-color: var(--mart-amber);
+      color: var(--mart-amber);
+    }
+    .pixel-card.homestead .pixel-icon-box {
+      border-color: var(--farm-green);
+      color: var(--farm-green);
     }
 
-    .game-card.homestead .game-icon-wrap {
-      background: rgba(74, 222, 128, 0.08);
-      border-color: rgba(74, 222, 128, 0.35);
-      color: #4ade80;
-      box-shadow: 0 0 18px rgba(74, 222, 128, 0.2);
-    }
-
-    .genre-tag {
-      font-size: 0.78rem;
+    .genre-pill {
+      font-size: 0.65rem;
       font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 4px 10px;
+      border: 2px solid;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 4px 12px;
-      border-radius: 6px;
-      border: 1px solid;
+      background: rgba(0, 0, 0, 0.4);
     }
 
-    .game-card.tri-vertex .genre-tag {
-      background: rgba(0, 240, 255, 0.1);
-      border-color: rgba(0, 240, 255, 0.3);
-      color: #38bdf8;
+    .pixel-card.tri-vertex .genre-pill {
+      border-color: var(--tri-neon);
+      color: var(--tri-neon);
+    }
+    .pixel-card.mini-mart .genre-pill {
+      border-color: var(--mart-amber);
+      color: var(--mart-amber);
+    }
+    .pixel-card.homestead .genre-pill {
+      border-color: var(--farm-green);
+      color: var(--farm-green);
     }
 
-    .game-card.homestead .genre-tag {
-      background: rgba(74, 222, 128, 0.1);
-      border-color: rgba(74, 222, 128, 0.3);
-      color: #4ade80;
-    }
-
+    /* Card Details */
     .card-body {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .game-name {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
+    .game-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      color: #ffffff;
+      letter-spacing: 1px;
     }
 
     .game-desc {
-      color: var(--text-sub);
-      font-size: 0.98rem;
+      font-size: 0.82rem;
       line-height: 1.55;
+      color: #cbd5e1;
     }
 
-    /* Feature tags */
-    .feature-pills {
+    /* Feature Badges */
+    .feature-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       margin-top: 4px;
     }
 
-    .feature-pill {
-      font-size: 0.76rem;
-      font-weight: 600;
-      color: #cbd5e1;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    /* Action button */
-    .card-footer {
-      margin-top: auto;
-      padding-top: 14px;
-    }
-
-    .launch-btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      font-family: 'Orbitron', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.22s ease;
-    }
-
-    .game-card.tri-vertex .launch-btn {
-      background: linear-gradient(135deg, #00f0ff, #0088cc);
-      color: #070b14;
-      box-shadow: 0 4px 18px rgba(0, 240, 255, 0.35);
-    }
-
-    .game-card.homestead .launch-btn {
-      background: linear-gradient(135deg, #4ade80, #059669);
-      color: #070b14;
-      box-shadow: 0 4px 18px rgba(74, 222, 128, 0.35);
-    }
-
-    .game-card:hover .launch-btn,
-    .game-card.active-focus .launch-btn {
-      filter: brightness(1.15);
-      transform: scale(1.02);
-    }
-
-    /* Footer Navigation & Controls Tip */
-    .hub-footer {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      color: #64748b;
-      font-size: 0.88rem;
-      text-align: center;
-      padding-top: 8px;
-    }
-
-    .tip-item {
+    .feature-badge {
       display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.68rem;
+      background: #090c14;
+      border: 1px solid #334155;
+      padding: 3px 8px;
+      color: #94a3b8;
+    }
+
+    /* Chunky Pixel Action Button */
+    .pixel-btn-action {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.75rem;
+      padding: 14px 18px;
+      text-align: center;
+      text-transform: uppercase;
+      border: 3px solid #000;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.08s ease;
+      letter-spacing: 1px;
+      text-decoration: none;
+    }
+
+    .pixel-card.tri-vertex .pixel-btn-action {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 
+        inset -3px -3px 0px 0px #0369a1,
+        inset 3px 3px 0px 0px #38bdf8,
+        0 4px 0 #000;
+    }
+    .pixel-card.tri-vertex:hover .pixel-btn-action,
+    .pixel-card.tri-vertex.active-focus .pixel-btn-action {
+      background: var(--tri-neon);
+      color: #04101e;
+      box-shadow: 
+        inset -3px -3px 0px 0px #0284c7,
+        inset 3px 3px 0px 0px #e0f2fe,
+        0 5px 0 #000;
+    }
+
+    .pixel-card.mini-mart .pixel-btn-action {
+      background: #d97706;
+      color: #ffffff;
+      box-shadow: 
+        inset -3px -3px 0px 0px #b45309,
+        inset 3px 3px 0px 0px #fbbf24,
+        0 4px 0 #000;
+    }
+    .pixel-card.mini-mart:hover .pixel-btn-action,
+    .pixel-card.mini-mart.active-focus .pixel-btn-action {
+      background: var(--mart-amber);
+      color: #261300;
+      box-shadow: 
+        inset -3px -3px 0px 0px #d97706,
+        inset 3px 3px 0px 0px #fef08a,
+        0 5px 0 #000;
+    }
+
+    .pixel-card.homestead .pixel-btn-action {
+      background: #059669;
+      color: #ffffff;
+      box-shadow: 
+        inset -3px -3px 0px 0px #047857,
+        inset 3px 3px 0px 0px #6ee7b7,
+        0 4px 0 #000;
+    }
+    .pixel-card.homestead:hover .pixel-btn-action,
+    .pixel-card.homestead.active-focus .pixel-btn-action {
+      background: var(--farm-green);
+      color: #022c22;
+      box-shadow: 
+        inset -3px -3px 0px 0px #059669,
+        inset 3px 3px 0px 0px #a7f3d0,
+        0 5px 0 #000;
+    }
+
+    .pixel-card:active .pixel-btn-action {
+      transform: translateY(2px);
+      box-shadow: inset -2px -2px 0px 0px rgba(0,0,0,0.4), inset 2px 2px 0px 0px rgba(255,255,255,0.4), 0 2px 0 #000;
+    }
+
+    /* Footer & Controls Guide */
+    .hub-footer {
+      width: 100%;
+      background: rgba(18, 22, 38, 0.85);
+      border: 3px solid #232b42;
+      box-shadow: 0 4px 0 #0b0e18;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .ctrl-item {
+      display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .key-badge {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      color: #cbd5e1;
-      font-size: 0.76rem;
-      font-family: monospace;
-      font-weight: 700;
+    .ctrl-key {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.6rem;
+      background: #0a0e17;
+      border: 1px solid #475569;
+      padding: 4px 6px;
+      color: #facc15;
+      box-shadow: 0 2px 0 #000;
     }
 
-    svg {
-      flex-shrink: 0;
+    .gamepad-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+
+    .gamepad-indicator.active {
+      background: rgba(6, 78, 59, 0.6);
+      border-color: #34d399;
+      color: #a7f3d0;
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+    }
+
+    /* Professional Icon Helper */
+    .ui-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    @media (max-width: 768px) {
+      .arcade-title {
+        font-size: 1.6rem;
+      }
+      .games-grid {
+        grid-template-columns: 1fr;
+      }
+      .hub-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
 <body>
 
+  <!-- Background Pixel Canvas -->
+  <canvas id="pixelCanvas"></canvas>
+
+  <!-- CRT Scanline Overlay -->
+  <div class="crt-overlay" id="crtOverlay"></div>
+
+  <!-- Hub Main Wrapper -->
   <main class="hub-container">
-    
-    <!-- Header -->
-    <header class="hub-header">
-      <div class="brand-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polygon points="10 8 16 12 10 16 10 8"/>
-        </svg>
-        <span>Leyten's Gaming Universe</span>
+
+    <!-- Top Status & Settings Bar -->
+    <header class="top-bar">
+      <div class="top-left-status">
+        <span class="blinking-dot"></span>
+        <span>ARCADE HUB // LEYTEN'S ARCADE</span>
       </div>
-      <h1 class="hub-title">GAME COLLECTION</h1>
-      <p class="hub-subtitle">Choose your adventure: pilot a cosmic geometric combat fighter or build and explore Grandma's rural homestead and Oakhaven City.</p>
+      <div class="top-actions">
+        <!-- Audio Synthesizer Toggle -->
+        <button class="top-btn" id="btnAudio" title="Toggle 8-bit Sound Synthesizer">
+          <svg class="ui-icon" id="audioIcon" viewBox="0 0 24 24">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+          <span id="audioText">SOUND: ON</span>
+        </button>
+
+        <!-- Scanline Toggle -->
+        <button class="top-btn" id="btnCrt" title="Toggle Retro CRT Scanlines">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <rect width="20" height="15" x="2" y="4" rx="2"/>
+            <line x1="8" x2="16" y1="21" y2="21"/>
+            <line x1="12" x2="12" y1="19" y2="21"/>
+          </svg>
+          <span id="crtText">CRT: ON</span>
+        </button>
+      </div>
     </header>
 
+    <!-- Arcade Header Banner -->
+    <section class="arcade-header">
+      <div class="arcade-badge">
+        <svg class="ui-icon" style="width: 14px; height: 14px; color: #38bdf8;" viewBox="0 0 24 24">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>SELECT YOUR GAME</span>
+      </div>
+      <h1 class="arcade-title">LEYTEN'S GAMES</h1>
+      <p class="arcade-subtitle">Cosmic space combat, cozy farming &amp; city trade, 3D supermarket tycoon, typing RPG adventure, and physics slingshot action.</p>
+    </section>
+
     <!-- Games Grid -->
-    <section class="games-grid" aria-label="Available Games">
-      
-      <!-- Tri-Vertex Card -->
-      <a href="Tri-Vertex/index.html" class="game-card tri-vertex" id="card-tri-vertex" tabindex="0">
-        <div class="card-top">
-          <div class="game-icon-wrap" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <section class="games-grid" aria-label="Game Library">
+
+      <!-- 1. TRI-VERTEX 2.0 -->
+      <a href="Tri-Vertex/index.html" class="pixel-card tri-vertex" id="card-0" data-index="0" tabindex="0">
+        <div class="card-header-row">
+          <div class="pixel-icon-box" aria-hidden="true">
+            <svg class="ui-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24">
               <polygon points="12 2 22 20 2 20 12 2"/>
             </svg>
           </div>
-          <span class="genre-tag">Cosmic Combat</span>
+          <span class="genre-pill">COSMIC COMBAT</span>
         </div>
 
         <div class="card-body">
-          <h2 class="game-name">Tri-Vertex 2.0</h2>
-          <p class="game-desc">High-octane geometric twin-stick starfighter combat. Unleash 360° lightning spins, phase dash, deflect projectiles, and survive intense boss encounters across an expansive cosmic arena.</p>
-
-          <div class="feature-pills">
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <h2 class="game-title">Tri-Vertex 2.0</h2>
+          <p class="game-desc">High-octane twin-stick space combat. Master 360° lightning spins, phase dash, deflect laser volleys, and survive cosmic boss encounters.</p>
+          <div class="feature-list">
+            <span class="feature-badge">
+              <svg class="ui-icon" style="width: 12px; height: 12px; color: #00f0ff;" viewBox="0 0 24 24">
                 <rect width="20" height="12" x="2" y="6" rx="6"/>
-                <path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/>
+                <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
               </svg>
               Xbox Controller
             </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><polygon points="12 8 8 12 12 16 12 8"/>
-              </svg>
-              Fast 360 Spin
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Super Nova Ultimate
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>
-              </svg>
-              Mobile Touch Controls
-            </span>
+            <span class="feature-badge">360° Spin</span>
+            <span class="feature-badge">Super Nova</span>
+            <span class="feature-badge">Mobile Joysticks</span>
           </div>
         </div>
 
-        <div class="card-footer">
-          <div class="launch-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            <span>Play Tri-Vertex</span>
-          </div>
+        <div class="pixel-btn-action">
+          <span>LAUNCH TRI-VERTEX</span>
+          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
         </div>
       </a>
 
-      <!-- Pixel Mini Mart Card -->
-      <a href="Mini-Mart/index.html" class="game-card mini-mart" id="card-mini-mart" tabindex="0">
-        <div class="card-top">
-          <div class="game-icon-wrap" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-              <path d="M3 6h18"/>
-              <path d="M16 10a4 4 0 0 1-8 0"/>
+      <!-- 2. Sunny Mini Mart -->
+      <a href="Mini-Mart/index.html" class="pixel-card mini-mart" id="card-1" data-index="1" tabindex="0">
+        <div class="card-header-row">
+          <div class="pixel-icon-box" aria-hidden="true">
+            <svg class="ui-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24">
+              <circle cx="8" cy="21" r="1"/>
+              <circle cx="19" cy="21" r="1"/>
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
             </svg>
           </div>
-          <span class="genre-tag">Tycoon Sim</span>
+          <span class="genre-pill">TYCOON SIM</span>
         </div>
 
         <div class="card-body">
-          <h2 class="game-name">Pixel Mini Mart</h2>
-          <p class="game-desc">Addictive casual market tycoon. Harvest ripe tomatoes, collect fresh eggs, stock shelves, scan groceries for eager customers, and reinvest earnings to hire staff and expand your mini mart.</p>
-
-          <div class="feature-pills">
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <h2 class="game-title">Sunny Mini Mart</h2>
+          <p class="game-desc">Build and expand your cartoon market empire! Manage 3 unique franchise marts with shared tycoon cash, harvest fresh goods, hire staff, and ride the Express Shuttle.</p>
+          <div class="feature-list">
+            <span class="feature-badge">
+              <svg class="ui-icon" style="width: 12px; height: 12px; color: #f59e0b;" viewBox="0 0 24 24">
                 <rect width="20" height="12" x="2" y="6" rx="6"/>
-                <path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/>
+                <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
               </svg>
               Xbox Controller
             </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
-              </svg>
-              Item Stacking
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              Hire Staff & Cashiers
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>
-              </svg>
-              Mobile Touch Joystick
-            </span>
+            <span class="feature-badge">Hire Staff</span>
+            <span class="feature-badge">3 Franchise Marts</span>
+            <span class="feature-badge">Travel Shuttle</span>
           </div>
         </div>
 
-        <div class="card-footer">
-          <div class="launch-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            <span>Open Mini Mart</span>
-          </div>
+        <div class="pixel-btn-action">
+          <span>OPEN MINI MART</span>
+          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
         </div>
       </a>
 
-      <!-- Grandma's Homestead Card -->
-      <a href="Grandmas-Homestead/index.html" class="game-card homestead" id="card-homestead" tabindex="0">
-        <div class="card-top">
-          <div class="game-icon-wrap" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 3. GRANDMA'S HOMESTEAD -->
+      <a href="Grandmas-Homestead/index.html" class="pixel-card homestead" id="card-2" data-index="2" tabindex="0">
+        <div class="card-header-row">
+          <div class="pixel-icon-box" aria-hidden="true">
+            <svg class="ui-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24">
               <path d="M7 20h10"/>
               <path d="M10 20c5.5-2.5.8-6.4 3-10"/>
               <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4.1 5.5.8z"/>
               <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>
             </svg>
           </div>
-          <span class="genre-tag">Farming Sim</span>
+          <span class="genre-pill">FARM &amp; CITY</span>
         </div>
 
         <div class="card-body">
-          <h2 class="game-name">Grandma's Homestead</h2>
-          <p class="game-desc">A cozy countryside farming simulation. Plant crops, water fertile soil, manage your backpack inventory, and explore the bustling town of Oakhaven City to trade, craft, and complete notice board quests.</p>
-
-          <div class="feature-pills">
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <h2 class="game-title">Grandma's Farm</h2>
+          <p class="game-desc">Cozy countryside farming simulator with Oakhaven City expansion. Till fertile soil, grow prize crops, visit town shops, and rest cozy by 6 AM.</p>
+          <div class="feature-list">
+            <span class="feature-badge">
+              <svg class="ui-icon" style="width: 12px; height: 12px; color: #34d399;" viewBox="0 0 24 24">
                 <rect width="20" height="12" x="2" y="6" rx="6"/>
-                <path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/>
+                <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
               </svg>
               Xbox Controller
             </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-              </svg>
-              Crop Cultivation
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-              Oakhaven City
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
-              </svg>
-              Full Backpack (I)
-            </span>
-            <span class="feature-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-              </svg>
-              Day / Night Cycle
-            </span>
+            <span class="feature-badge">Backpack (I)</span>
+            <span class="feature-badge">Oakhaven City</span>
+            <span class="feature-badge">Dual Haptics</span>
           </div>
         </div>
 
-        <div class="card-footer">
-          <div class="launch-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            <span>Enter Homestead</span>
-          </div>
+        <div class="pixel-btn-action">
+          <span>VISIT HOMESTEAD</span>
+          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
         </div>
       </a>
 
+      <!-- 4. PIXEL TYPE HERO -->
+      <a href="Pixel-Type-Hero/index.html" class="pixel-card type-hero" id="card-3" data-index="3" tabindex="0">
+        <div class="card-header-row">
+          <div class="pixel-icon-box" aria-hidden="true">
+            <svg class="ui-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24">
+              <polyline points="4 7 4 4 20 4 20 7"/>
+              <line x1="9" x2="15" y1="20" y2="20"/>
+              <line x1="12" x2="12" y1="4" y2="20"/>
+            </svg>
+          </div>
+          <span class="genre-pill">TYPING RPG</span>
+        </div>
+
+        <div class="card-body">
+          <h2 class="game-title">Pixel Type Hero</h2>
+          <p class="game-desc">Gamified typing adventure for kids! Cast magical word spells to defeat silly pixel monsters, learn home-row typing with color guides, and adopt companion pets.</p>
+          <div class="feature-list">
+            <span class="feature-badge">
+              <svg class="ui-icon" style="width: 12px; height: 12px; color: #a855f7;" viewBox="0 0 24 24">
+                <rect width="20" height="12" x="2" y="6" rx="6"/>
+                <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
+              </svg>
+              Xbox Controller
+            </span>
+            <span class="feature-badge">Pet Sanctuary</span>
+            <span class="feature-badge">Color Guides</span>
+            <span class="feature-badge">WPM &amp; Combos</span>
+          </div>
+        </div>
+
+        <div class="pixel-btn-action">
+          <span>LAUNCH TYPE HERO</span>
+          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </div>
+      </a>
+
+      <!-- 5. SLING HERO -->
+      <a href="Sling-Hero/index.html" class="pixel-card sling-hero" id="card-4" data-index="4" tabindex="0">
+        <div class="card-header-row">
+          <div class="pixel-icon-box" aria-hidden="true">
+            <svg class="ui-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <span class="genre-pill">PHYSICS SLING</span>
+        </div>
+
+        <div class="card-body">
+          <h2 class="game-title">Sling Hero</h2>
+          <p class="game-desc">High-flying physics puzzle adventure! Pull back your elastic slingshot, aim with predictive ricochet arcs, grapple mid-air anchor pegs, smash crates, and bounce to portals.</p>
+          <div class="feature-list">
+            <span class="feature-badge">
+              <svg class="ui-icon" style="width: 12px; height: 12px; color: #f97316;" viewBox="0 0 24 24">
+                <rect width="20" height="12" x="2" y="6" rx="6"/>
+                <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
+              </svg>
+              Xbox Controller
+            </span>
+            <span class="feature-badge">15 Missions</span>
+            <span class="feature-badge">Grapple Pegs</span>
+            <span class="feature-badge">Ricochets</span>
+          </div>
+        </div>
+
+        <div class="pixel-btn-action">
+          <span>LAUNCH SLING HERO</span>
+          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </div>
+      </a>
+
+
+
     </section>
 
-    <!-- Footer Controls & Navigation Tip -->
+    <!-- Footer Status & Gamepad Guide -->
     <footer class="hub-footer">
-      <div class="tip-item">
-        <span class="key-badge">&larr;</span>
-        <span class="key-badge">&rarr;</span>
-        <span>or</span>
-        <span class="key-badge">D-PAD</span>
-        <span>to select</span>
+      <div class="controls-group">
+        <div class="ctrl-item">
+          <span class="ctrl-key">&larr;</span>
+          <span class="ctrl-key">&rarr;</span>
+          <span>SELECT</span>
+        </div>
+        <div class="ctrl-item">
+          <span class="ctrl-key">ENTER</span>
+          <span>/</span>
+          <span class="ctrl-key">SPACE</span>
+          <span>LAUNCH</span>
+        </div>
+        <div class="ctrl-item">
+          <span class="ctrl-key">1</span>
+          <span class="ctrl-key">2</span>
+          <span class="ctrl-key">3</span>
+          <span class="ctrl-key">4</span>
+          <span class="ctrl-key">5</span>
+          <span>QUICK LAUNCH</span>
+        </div>
       </div>
-      <div class="tip-item">
-        <span class="key-badge">ENTER</span>
-        <span>or</span>
-        <span class="key-badge">BUTTON A</span>
-        <span>to launch</span>
+
+      <div class="gamepad-indicator" id="gamepadIndicator">
+        <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+          <rect width="20" height="12" x="2" y="6" rx="6"/>
+          <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
+        </svg>
+        <span id="gamepadText">GAMEPAD READY</span>
       </div>
     </footer>
 
   </main>
 
   <script>
-    // Keyboard and Gamepad Navigation for Hub
-    const cards = [document.getElementById('card-tri-vertex'), document.getElementById('card-mini-mart'), document.getElementById('card-homestead')];
-    let selectedIndex = 0;
-
-    function updateCardFocus() {
-      cards.forEach((card, idx) => {
-        if (idx === selectedIndex) {
-          card.classList.add('active-focus');
-          card.focus();
-        } else {
-          card.classList.remove('active-focus');
+    // --- 1. Synthesizer 8-Bit Web Audio ---
+    class RetroSound {
+      constructor() {
+        this.ctx = null;
+        this.muted = localStorage.getItem('leyten_arcade_muted') === 'true';
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) this.ctx = new AudioContextClass();
         }
-      });
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      toggleMute() {
+        this.muted = !this.muted;
+        localStorage.setItem('leyten_arcade_muted', this.muted);
+        return this.muted;
+      }
+      playBlip() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.05);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+      playLaunch() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [392, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(freq, now + i * 0.04);
+          gain.gain.setValueAtTime(0.08, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.09);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.1);
+        });
+      }
     }
 
-    // Keyboard Arrow Keys
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        selectedIndex = (selectedIndex + 1) % cards.length;
-        updateCardFocus();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectedIndex = (selectedIndex - 1 + cards.length) % cards.length;
-        updateCardFocus();
-      } else if (e.key === 'Enter') {
-        cards[selectedIndex].click();
-      }
+    const sound = new RetroSound();
+
+    // Sound Toggle Button
+    const btnAudio = document.getElementById('btnAudio');
+    const audioText = document.getElementById('audioText');
+    function updateAudioUI() {
+      audioText.textContent = sound.muted ? 'SOUND: OFF' : 'SOUND: ON';
+      btnAudio.style.opacity = sound.muted ? '0.6' : '1';
+    }
+    updateAudioUI();
+    btnAudio.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sound.init();
+      sound.toggleMute();
+      updateAudioUI();
+      if (!sound.muted) sound.playBlip();
     });
 
-    // Gamepad Polling for Hub Navigation
+    // Scanline Toggle Button
+    const btnCrt = document.getElementById('btnCrt');
+    const crtOverlay = document.getElementById('crtOverlay');
+    const crtText = document.getElementById('crtText');
+    let crtEnabled = localStorage.getItem('leyten_crt_enabled') !== 'false';
+    function updateCrtUI() {
+      if (crtEnabled) {
+        crtOverlay.classList.remove('off');
+        crtText.textContent = 'CRT: ON';
+      } else {
+        crtOverlay.classList.add('off');
+        crtText.textContent = 'CRT: OFF';
+      }
+    }
+    updateCrtUI();
+    btnCrt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      crtEnabled = !crtEnabled;
+      localStorage.setItem('leyten_crt_enabled', crtEnabled);
+      updateCrtUI();
+      sound.playBlip();
+    });
+
+    // --- 2. Pixel Starfield Canvas Background ---
+    const canvas = document.getElementById('pixelCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = 0, height = 0;
+    const stars = [];
+
+    function resizeCanvas() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      stars.length = 0;
+      const count = Math.floor((width * height) / 3400);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: Math.random() < 0.25 ? 3 : (Math.random() < 0.5 ? 2 : 1),
+          speed: 0.15 + Math.random() * 0.5,
+          color: ['#00f0ff', '#f59e0b', '#34d399', '#ffffff', '#a855f7', '#f97316'][Math.floor(Math.random() * 5)],
+          twinkle: Math.random() * Math.PI * 2
+        });
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function renderStarfield() {
+      ctx.fillStyle = '#0a0c16';
+      ctx.fillRect(0, 0, width, height);
+
+      // Subtle pixel grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
+      ctx.lineWidth = 1;
+      const gridSize = 40;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // Draw Twinkling Pixel Stars
+      const now = performance.now() * 0.002;
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        s.y += s.speed;
+        if (s.y > height) s.y = 0;
+
+        const alpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(now * 3 + s.twinkle));
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
+      }
+      ctx.globalAlpha = 1.0;
+
+      requestAnimationFrame(renderStarfield);
+    }
+    requestAnimationFrame(renderStarfield);
+
+    // --- 3. Card Selection, Navigation & Sound ---
+    const cards = [
+      document.getElementById('card-0'),
+      document.getElementById('card-1'),
+      document.getElementById('card-2'),
+      document.getElementById('card-3'),
+      document.getElementById('card-4')
+    ];
+    let selectedIndex = 0;
+
+    function setFocusIndex(idx, playAudio = true) {
+      if (idx < 0) idx = cards.length - 1;
+      if (idx >= cards.length) idx = 0;
+      selectedIndex = idx;
+
+      cards.forEach((c, i) => {
+        if (i === selectedIndex) {
+          c.classList.add('active-focus');
+          c.focus();
+        } else {
+          c.classList.remove('active-focus');
+        }
+      });
+
+      if (playAudio) sound.playBlip();
+    }
+
+    cards.forEach((c, i) => {
+      c.addEventListener('mouseenter', () => setFocusIndex(i, true));
+      c.addEventListener('click', (e) => {
+        sound.playLaunch();
+      });
+    });
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      sound.init();
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusIndex(selectedIndex + 1, true);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusIndex(selectedIndex - 1, true);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        sound.playLaunch();
+        setTimeout(() => cards[selectedIndex].click(), 120);
+      } else if (e.key === '1') {
+        setFocusIndex(0, true);
+        sound.playLaunch();
+        setTimeout(() => cards[0].click(), 120);
+      } else if (e.key === '2') {
+        setFocusIndex(1, true);
+        sound.playLaunch();
+        setTimeout(() => cards[1].click(), 120);
+      } else if (e.key === '3') {
+        setFocusIndex(2, true);
+        sound.playLaunch();
+        setTimeout(() => cards[2].click(), 120);
+      } else if (e.key === '4') {
+        setFocusIndex(3, true);
+        sound.playLaunch();
+        setTimeout(() => cards[3].click(), 120);
+      }
+      } else if (e.key === '5') {
+        setFocusIndex(4, true);
+        sound.playLaunch();
+        setTimeout(() => cards[4].click(), 120);
+    });
+
+    // --- 4. Xbox Controller / HTML5 Gamepad Support ---
+    const gpIndicator = document.getElementById('gamepadIndicator');
+    const gpText = document.getElementById('gamepadText');
     let prevButtonA = false;
-    let prevNavLeft = false;
-    let prevNavRight = false;
     let navCooldown = 0;
 
     function pollHubGamepad() {
       if (navigator.getGamepads) {
         const gamepads = navigator.getGamepads();
-        if (gamepads && gamepads[0]) {
-          const gp = gamepads[0];
-          const btnA = gp.buttons[0] && gp.buttons[0].pressed;
-          const dpadLeft = gp.buttons[14] && gp.buttons[14].pressed;
-          const dpadRight = gp.buttons[15] && gp.buttons[15].pressed;
-          const stickX = gp.axes[0] || 0;
+        let activeGp = null;
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i] && gamepads[i].connected) {
+            activeGp = gamepads[i];
+            break;
+          }
+        }
+
+        if (activeGp) {
+          if (!gpIndicator.classList.contains('active')) {
+            gpIndicator.classList.add('active');
+            gpText.textContent = 'XBOX CONTROLLER CONNECTED';
+          }
+
+          const btnA = activeGp.buttons[0] && (activeGp.buttons[0].pressed || activeGp.buttons[0].value > 0.5);
+          const dpadLeft = activeGp.buttons[14] && activeGp.buttons[14].pressed;
+          const dpadRight = activeGp.buttons[15] && activeGp.buttons[15].pressed;
+          const dpadUp = activeGp.buttons[12] && activeGp.buttons[12].pressed;
+          const dpadDown = activeGp.buttons[13] && activeGp.buttons[13].pressed;
+          const stickX = activeGp.axes[0] || 0;
+          const stickY = activeGp.axes[1] || 0;
 
           if (navCooldown <= 0) {
-            if (dpadRight || stickX > 0.45) {
-              selectedIndex = (selectedIndex + 1) % cards.length;
-              updateCardFocus();
+            if (dpadRight || stickX > 0.45 || dpadDown || stickY > 0.45) {
+              setFocusIndex(selectedIndex + 1, true);
               navCooldown = 0.22;
-            } else if (dpadLeft || stickX < -0.45) {
-              selectedIndex = (selectedIndex - 1 + cards.length) % cards.length;
-              updateCardFocus();
+            } else if (dpadLeft || stickX < -0.45 || dpadUp || stickY < -0.45) {
+              setFocusIndex(selectedIndex - 1, true);
               navCooldown = 0.22;
             }
           } else {
@@ -646,16 +1164,24 @@
           }
 
           if (btnA && !prevButtonA) {
-            cards[selectedIndex].click();
+            sound.init();
+            sound.playLaunch();
+            setTimeout(() => cards[selectedIndex].click(), 120);
           }
           prevButtonA = btnA;
+        } else {
+          if (gpIndicator.classList.contains('active')) {
+            gpIndicator.classList.remove('active');
+            gpText.textContent = 'CONNECT GAMEPAD';
+          }
         }
       }
       requestAnimationFrame(pollHubGamepad);
     }
-
     requestAnimationFrame(pollHubGamepad);
-    updateCardFocus();
+
+    // Initial Focus
+    setFocusIndex(0, false);
   </script>
 </body>
 </html>

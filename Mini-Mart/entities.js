@@ -1,58 +1,284 @@
 /**
- * PIXEL MINI MART - ENTITIES & GAME OBJECTS
- * Player, Customers, Staff Helpers, Production Plots, Shelves, Checkout, and Unlock Zones
+ * SUNNY MINI MART - CARTOON ENTITIES & GAME OBJECTS
+ * Smooth vector cartoon art style inspired by Monkey Mart / Mini Mart
+ * Features unmistakable labeled stands, cartoon animals, expressive characters, and clear icons
  */
 
 // Math helpers
 const distSq = (x1, y1, x2, y2) => (x1 - x2) ** 2 + (y1 - y2) ** 2;
 const dist = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
 
-// Item Definitions
+// Item Definitions across Mart 1, Mart 2, and Mart 3
 const ITEM_TYPES = {
+  // --- MART 1: SUNNY FARM VALLEY ---
   tomato: {
     id: 'tomato',
     name: 'Tomato',
+    standTitle: 'TOMATO STAND',
+    plotTitle: 'TOMATO GARDEN',
     color: '#ef4444',
     secondary: '#22c55e',
+    awning1: '#ef4444',
+    awning2: '#fee2e2',
+    standBg: '#dcfce7',
+    standBorder: '#15803d',
     price: 6,
     size: 14
   },
   egg: {
     id: 'egg',
-    name: 'Egg',
+    name: 'Farm Egg',
+    standTitle: 'EGG RACK',
+    plotTitle: 'CHICKEN COOP',
     color: '#fef3c7',
     secondary: '#f59e0b',
+    awning1: '#f59e0b',
+    awning2: '#fef3c7',
+    standBg: '#fef9c3',
+    standBorder: '#b45309',
     price: 12,
     size: 13
   },
   apple: {
     id: 'apple',
-    name: 'Apple',
+    name: 'Sweet Apple',
+    standTitle: 'APPLE CRATE',
+    plotTitle: 'APPLE ORCHARD',
     color: '#84cc16',
-    secondary: '#b91c1c',
+    secondary: '#dc2626',
+    awning1: '#65a30d',
+    awning2: '#ecfccb',
+    standBg: '#ecfccb',
+    standBorder: '#3f6212',
     price: 18,
     size: 14
   },
   milk: {
     id: 'milk',
     name: 'Fresh Milk',
-    color: '#e0f2fe',
-    secondary: '#38bdf8',
+    standTitle: 'MILK FRIDGE',
+    plotTitle: 'DAIRY COW PEN',
+    color: '#38bdf8',
+    secondary: '#0284c7',
+    awning1: '#0ea5e9',
+    awning2: '#e0f2fe',
+    standBg: '#e0f2fe',
+    standBorder: '#0369a1',
     price: 24,
     size: 15
   },
   bread: {
     id: 'bread',
-    name: 'Warm Bread',
+    name: 'Bakery Bread',
+    standTitle: 'BREAD BAKERY',
+    plotTitle: 'BAKERY OVEN',
     color: '#f59e0b',
     secondary: '#92400e',
+    awning1: '#d97706',
+    awning2: '#ffedd5',
+    standBg: '#ffedd5',
+    standBorder: '#9a3412',
     price: 35,
     size: 16
+  },
+
+  // --- MART 2: TROPICAL ISLAND BOARDWALK ---
+  banana: {
+    id: 'banana',
+    name: 'Bananas',
+    standTitle: 'BANANA STAND',
+    plotTitle: 'BANANA GROVE',
+    color: '#eab308',
+    secondary: '#ca8a04',
+    awning1: '#eab308',
+    awning2: '#fef08a',
+    standBg: '#fef9c3',
+    standBorder: '#a16207',
+    price: 15,
+    size: 14
+  },
+  coconut: {
+    id: 'coconut',
+    name: 'Coconut',
+    standTitle: 'COCONUT CRATE',
+    plotTitle: 'COCONUT PALM',
+    color: '#78350f',
+    secondary: '#14b8a6',
+    awning1: '#0d9488',
+    awning2: '#ccfbf1',
+    standBg: '#f0fdfa',
+    standBorder: '#0f766e',
+    price: 25,
+    size: 15
+  },
+  pineapple: {
+    id: 'pineapple',
+    name: 'Pineapple',
+    standTitle: 'PINEAPPLE CART',
+    plotTitle: 'PINEAPPLE FIELD',
+    color: '#f59e0b',
+    secondary: '#15803d',
+    awning1: '#f59e0b',
+    awning2: '#dcfce7',
+    standBg: '#fefce8',
+    standBorder: '#b45309',
+    price: 38,
+    size: 15
+  },
+  smoothie: {
+    id: 'smoothie',
+    name: 'Fruit Smoothie',
+    standTitle: 'SMOOTHIE BAR',
+    plotTitle: 'TIKI BLENDER',
+    color: '#ec4899',
+    secondary: '#06b6d4',
+    awning1: '#06b6d4',
+    awning2: '#fce7f3',
+    standBg: '#ecfeff',
+    standBorder: '#0891b2',
+    price: 55,
+    size: 15
+  },
+  icecream: {
+    id: 'icecream',
+    name: 'Gelato Ice Cream',
+    standTitle: 'ICE CREAM BAR',
+    plotTitle: 'GELATO CHURNER',
+    color: '#f43f5e',
+    secondary: '#38bdf8',
+    awning1: '#f43f5e',
+    awning2: '#e0f2fe',
+    standBg: '#fff1f2',
+    standBorder: '#be123c',
+    price: 75,
+    size: 15
+  },
+
+  // --- MART 3: SWEET CANDYLAND & CONFECTIONS ---
+  strawberry: {
+    id: 'strawberry',
+    name: 'Strawberry',
+    standTitle: 'BERRY STAND',
+    plotTitle: 'STRAWBERRY PATCH',
+    color: '#f43f5e',
+    secondary: '#16a34a',
+    awning1: '#f43f5e',
+    awning2: '#ffe4e6',
+    standBg: '#fff1f2',
+    standBorder: '#9f1239',
+    price: 30,
+    size: 14
+  },
+  cocoa: {
+    id: 'cocoa',
+    name: 'Cocoa Beans',
+    standTitle: 'COCOA SACKS',
+    plotTitle: 'COCOA ORCHARD',
+    color: '#713f12',
+    secondary: '#d97706',
+    awning1: '#713f12',
+    awning2: '#fef3c7',
+    standBg: '#fef3c7',
+    standBorder: '#451a03',
+    price: 48,
+    size: 14
+  },
+  chocolate: {
+    id: 'chocolate',
+    name: 'Artisan Chocolate',
+    standTitle: 'CHOCOLATE CASE',
+    plotTitle: 'CHOCOLATE VAT',
+    color: '#451a03',
+    secondary: '#f59e0b',
+    awning1: '#b45309',
+    awning2: '#fed7aa',
+    standBg: '#ffedd5',
+    standBorder: '#78350f',
+    price: 80,
+    size: 15
+  },
+  donut: {
+    id: 'donut',
+    name: 'Glazed Donut',
+    standTitle: 'DONUT DISPLAY',
+    plotTitle: 'DONUT BAKER',
+    color: '#f472b6',
+    secondary: '#f59e0b',
+    awning1: '#ec4899',
+    awning2: '#fdf2f8',
+    standBg: '#fdf2f8',
+    standBorder: '#db2777',
+    price: 110,
+    size: 15
+  },
+  candy: {
+    id: 'candy',
+    name: 'Rainbow Candy',
+    standTitle: 'CANDY TOWER',
+    plotTitle: 'CANDY CAROUSEL',
+    color: '#a855f7',
+    secondary: '#06b6d4',
+    awning1: '#a855f7',
+    awning2: '#f3e8ff',
+    standBg: '#faf5ff',
+    standBorder: '#7e22ce',
+    price: 150,
+    size: 15
   }
 };
 
 /**
- * PLAYER CHARACTER
+ * HELPER: DRAW CARTOON OVERHEAD SIGNBOARD PILL (With Item Icon + Bold Label)
+ */
+function drawOverheadSign(ctx, x, y, label, itemType = null, accentColor = '#f59e0b') {
+  ctx.save();
+  ctx.translate(x, y);
+
+  ctx.font = '700 11px "Fredoka", "Nunito", sans-serif';
+  const textW = ctx.measureText(label).width;
+  const iconSpace = itemType ? 20 : 0;
+  const pillW = Math.max(88, textW + iconSpace + 22);
+  const pillH = 24;
+
+  // Drop shadow
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+  ctx.beginPath();
+  ctx.roundRect(-pillW / 2, -pillH / 2 + 3, pillW, pillH, 12);
+  ctx.fill();
+
+  // Signboard background
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(-pillW / 2, -pillH / 2, pillW, pillH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  // Top color accent bar
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.roundRect(-pillW / 2 + 2, -pillH / 2 + 2, pillW - 4, 5, 4);
+  ctx.fill();
+
+  if (itemType) {
+    drawItemIcon(ctx, -pillW / 2 + 14, 1, itemType, 0.72);
+    ctx.fillStyle = '#1e293b';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, -pillW / 2 + 26, 2);
+  } else {
+    ctx.fillStyle = '#1e293b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, 2);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * PLAYER CHARACTER (Cute Cartoon Shopkeeper)
  */
 class MiniMartPlayer {
   constructor(x, y) {
@@ -60,7 +286,7 @@ class MiniMartPlayer {
     this.y = y;
     this.vx = 0;
     this.vy = 0;
-    this.speed = 220;
+    this.speed = 225;
     this.speedLevel = 1;
     this.maxStack = 6;
     this.stackLevel = 1;
@@ -88,7 +314,6 @@ class MiniMartPlayer {
   }
 
   update(dt, input, bounds, game) {
-    // Turbo timers
     if (this.turbo) {
       this.turboTimer -= dt;
       if (this.turboTimer <= 0) {
@@ -99,23 +324,19 @@ class MiniMartPlayer {
       this.turboCooldown -= dt;
     }
 
-    // Input Movement
     let mx = 0;
     let my = 0;
 
-    // Keyboard
     if (input.keys['KeyW'] || input.keys['ArrowUp']) my -= 1;
     if (input.keys['KeyS'] || input.keys['ArrowDown']) my += 1;
     if (input.keys['KeyA'] || input.keys['ArrowLeft']) mx -= 1;
     if (input.keys['KeyD'] || input.keys['ArrowRight']) mx += 1;
 
-    // Gamepad Left Stick override / blend
     if (input.gamepadConnected && input.gamepadMoveMagnitude > 0.15) {
       mx = input.gamepadMoveX;
       my = input.gamepadMoveY;
     }
 
-    // Touch Joystick override / blend
     if (input.touchActive && input.touchMagnitude > 0.1) {
       mx = input.touchMoveX;
       my = input.touchMoveY;
@@ -138,7 +359,6 @@ class MiniMartPlayer {
       this.vy = normY * currentSpeed;
       this.walkAnim += dt * 14;
 
-      // Physics stack tilt (bounces and tilts against acceleration)
       this.targetTilt = -normX * 0.22;
     } else {
       this.isMoving = false;
@@ -147,15 +367,12 @@ class MiniMartPlayer {
       this.targetTilt = 0;
     }
 
-    // Smooth wobbly stack tilt spring
     this.stackTilt += (this.targetTilt - this.stackTilt) * Math.min(1, dt * 12);
 
-    // Apply motion
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    // Boundaries clamp inside the mart
-    const pad = 24;
+    const pad = 28;
     this.x = Math.max(bounds.minX + pad, Math.min(bounds.maxX - pad, this.x));
     this.y = Math.max(bounds.minY + pad, Math.min(bounds.maxY - pad, this.y));
   }
@@ -164,92 +381,132 @@ class MiniMartPlayer {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Cute shadow under player
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    // Soft cartoon ground shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.beginPath();
-    ctx.ellipse(0, 14, 15, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 16, 17, 7.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Walking leg animation offset
-    const legOffset = this.isMoving ? Math.sin(this.walkAnim) * 5 : 0;
-
-    // Shoes
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(-8, 10 + legOffset, 6, 5);
-    ctx.fillRect(2, 10 - legOffset, 6, 5);
-
-    // Blue denim overalls
-    ctx.fillStyle = '#2563eb';
-    ctx.fillRect(-9, -2, 18, 14);
-
-    // White / Red striped polo shirt
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(-10, -9, 20, 8);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(-10, -7, 20, 3);
-
-    // Cute little hands
-    ctx.fillStyle = '#ffedd5';
-    ctx.beginPath();
-    ctx.arc(-11, 2 + legOffset, 3.5, 0, Math.PI * 2);
-    ctx.arc(11, 2 - legOffset, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Head
-    ctx.fillStyle = '#ffedd5';
-    ctx.beginPath();
-    ctx.arc(0, -14, 9, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle = '#0f172a';
-    if (this.facing === 'left') {
-      ctx.fillRect(-6, -15, 2.5, 3.5);
-    } else if (this.facing === 'right') {
-      ctx.fillRect(4, -15, 2.5, 3.5);
-    } else if (this.facing === 'down') {
-      ctx.fillRect(-4, -15, 2.5, 3.5);
-      ctx.fillRect(2, -15, 2.5, 3.5);
-      // Cheerful blush
-      ctx.fillStyle = '#fca5a5';
-      ctx.fillRect(-6, -11, 3, 2);
-      ctx.fillRect(3, -11, 3, 2);
-    }
-
-    // Mini Mart green cap / visor
-    ctx.fillStyle = '#10b981';
-    ctx.beginPath();
-    ctx.arc(0, -17, 9.5, Math.PI, 0);
-    ctx.fill();
-    // Cap brim
-    if (this.facing !== 'up') {
-      ctx.fillStyle = '#059669';
-      ctx.fillRect(-11, -17, 22, 3);
-    }
-
-    // Turbo trail effect
+    // Turbo speed aura ring
     if (this.turbo) {
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(0, 0, 22, 0, Math.PI * 2);
+      ctx.ellipse(0, 14, 22, 10, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // Physics Item Stack on Player's back / head!
+    const legSwing = this.isMoving ? Math.sin(this.walkAnim) * 5 : 0;
+    const bounce = this.isMoving ? Math.abs(Math.cos(this.walkAnim)) * 2.5 : 0;
+
+    // Rounded cartoon sneakers
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.ellipse(-6, 12 + legSwing, 5.5, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(6, 12 - legSwing, 5.5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body: Bright Sky-Blue Shirt + Sunny Green Mart Apron
+    ctx.fillStyle = '#0ea5e9';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(-12, -8 - bounce, 24, 20, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Green Mart Apron with yellow pocket
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.roundRect(-9, -4 - bounce, 18, 15, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(-5, 3 - bounce, 10, 5);
+
+    // Cute cartoon hands
+    ctx.fillStyle = '#fed7aa';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-14, 1 - legSwing * 0.6 - bounce, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(14, 1 + legSwing * 0.6 - bounce, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Big Smooth Cartoon Head
+    ctx.fillStyle = '#fed7aa';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, -16 - bounce, 12.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Expressive Cartoon Eyes & Smile
+    if (this.facing !== 'up') {
+      const eyeOffsetX = this.facing === 'left' ? -3 : (this.facing === 'right' ? 3 : 0);
+      // Rosy cheeks
+      ctx.fillStyle = '#fda4af';
+      ctx.beginPath();
+      ctx.ellipse(-6 + eyeOffsetX * 0.5, -13 - bounce, 2.8, 1.8, 0, 0, Math.PI * 2);
+      ctx.ellipse(6 + eyeOffsetX * 0.5, -13 - bounce, 2.8, 1.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(-4.2 + eyeOffsetX, -16.5 - bounce, 2.4, 0, Math.PI * 2);
+      ctx.arc(4.2 + eyeOffsetX, -16.5 - bounce, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // White eye shine dots
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-4.8 + eyeOffsetX, -17.3 - bounce, 0.9, 0, Math.PI * 2);
+      ctx.arc(3.6 + eyeOffsetX, -17.3 - bounce, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Happy smile
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(eyeOffsetX, -13.5 - bounce, 2.8, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+    }
+
+    // Shopkeeper Green & Yellow Cap
+    ctx.fillStyle = '#16a34a';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, -20 - bounce, 12.5, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    // Cap visor & yellow badge
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.roundRect(-13, -21 - bounce, 26, 4.5, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(0, -25 - bounce, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Floating Items on Head
     if (this.carryStack.length > 0) {
       const stackCount = this.carryStack.length;
       for (let i = 0; i < stackCount; i++) {
         const itemId = this.carryStack[i];
-        const itemDef = ITEM_TYPES[itemId];
-        if (!itemDef) continue;
-
-        // Progressive wobble tilt the higher the stack goes!
         const wobbleX = Math.sin(this.walkAnim * 0.8 + i * 0.4) * (this.isMoving ? 2.5 : 0.5);
-        const stackHeight = 22 + i * 11;
+        const stackHeight = 36 + i * 13 + bounce;
         const tiltX = this.stackTilt * (i * 12) + wobbleX;
-
-        drawItemIcon(ctx, tiltX, -stackHeight, itemId, 1.0);
+        drawItemIcon(ctx, tiltX, -stackHeight, itemId, 1.05);
       }
     }
 
@@ -258,23 +515,23 @@ class MiniMartPlayer {
 }
 
 /**
- * PRODUCTION PLOT (Tomatoes, Chickens/Eggs, Apple Tree, Cow/Milk, Bakery/Bread)
+ * PRODUCTION PLOT (Custom Cartoon Production Zones for All Marts)
  */
 class ProductionPlot {
   constructor(opts) {
     this.id = opts.id;
-    this.type = opts.type; // 'tomato', 'egg', 'apple', 'milk', 'bread'
+    this.type = opts.type;
     this.name = opts.name;
     this.x = opts.x;
     this.y = opts.y;
-    this.width = opts.width || 80;
-    this.height = opts.height || 80;
+    this.width = opts.width || 96;
+    this.height = opts.height || 92;
     this.maxStorage = opts.maxStorage || 8;
     this.storage = opts.initialStock || 0;
     this.growTimer = 0;
-    this.growInterval = opts.growInterval || 2.4;
+    this.growInterval = opts.growInterval || 2.2;
     this.unlocked = opts.unlocked !== undefined ? opts.unlocked : true;
-    this.triggerRadius = 52;
+    this.triggerRadius = 58;
     this.animTimer = Math.random() * 10;
   }
 
@@ -282,25 +539,23 @@ class ProductionPlot {
     if (!this.unlocked) return;
     this.animTimer += dt;
 
-    // Produce items over time up to capacity
     if (this.storage < this.maxStorage) {
       this.growTimer += dt;
       if (this.growTimer >= this.growInterval) {
         this.growTimer = 0;
         this.storage++;
-        if (game && game.spawnPopEffect) {
-          game.spawnPopEffect(this.x, this.y - 12, ITEM_TYPES[this.type].color);
+        const itemDef = ITEM_TYPES[this.type];
+        if (game && game.spawnPopEffect && itemDef) {
+          game.spawnPopEffect(this.x, this.y - 12, itemDef.color);
         }
       }
     }
 
-    // Check Player proximity to harvest
     const p = game.player;
     if (p && dist(this.x, this.y, p.x, p.y) < this.triggerRadius) {
       this.harvestTo(p, game);
     }
 
-    // Check Staff Helper proximity to harvest
     if (game.staffHelper && dist(this.x, this.y, game.staffHelper.x, game.staffHelper.y) < this.triggerRadius) {
       this.harvestTo(game.staffHelper, game);
     }
@@ -314,6 +569,9 @@ class ProductionPlot {
         window.miniMartAudio.playHarvest();
         if (game.rumble) game.rumble(30, 0.15, 0.1);
       }
+      if (carrier === game.player && game.progressTutorial) {
+        game.progressTutorial('harvest_crop', 1);
+      }
       game.spawnFlyingItem(this.x, this.y, carrier, this.type);
     }
   }
@@ -321,138 +579,633 @@ class ProductionPlot {
   draw(ctx) {
     if (!this.unlocked) return;
 
+    const def = ITEM_TYPES[this.type] || ITEM_TYPES.tomato;
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Ground soil / wooden base
-    ctx.fillStyle = this.type === 'tomato' ? '#78350f' : (this.type === 'egg' ? '#fef3c7' : '#ecfdf5');
-    ctx.strokeStyle = '#b45309';
-    ctx.lineWidth = 2.5;
+    const w = this.width;
+    const h = this.height;
+
+    // 1. Soft 3D Ground Base Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
     ctx.beginPath();
-    ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 12);
+    ctx.roundRect(-w / 2 + 2, -h / 2 + 7, w, h, 18);
     ctx.fill();
-    ctx.stroke();
 
-    // Specific visuals for each plot type
+    // 2. Custom Plot Visuals
     if (this.type === 'tomato') {
-      // 4 Tomato plants on soil
-      ctx.fillStyle = '#15803d';
-      const pos = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
-      pos.forEach(([px, py], idx) => {
-        ctx.beginPath();
-        ctx.arc(px, py, 11, 0, Math.PI * 2);
-        ctx.fill();
-        // Red tomato fruit if ripe
-        if (idx < this.storage) {
-          ctx.fillStyle = '#ef4444';
-          ctx.beginPath();
-          ctx.arc(px, py, 6.5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#15803d';
-        }
-      });
-    } else if (this.type === 'egg') {
-      // Chicken coop hay nest with animated cute pixel chickens
-      ctx.fillStyle = '#fde68a';
-      ctx.fillRect(-28, -28, 56, 56);
-
-      // Hay texture lines
-      ctx.strokeStyle = '#d97706';
-      ctx.lineWidth = 1.5;
+      // Wooden raised garden planter with fertile dark soil
+      ctx.fillStyle = '#b45309';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(-20, -10); ctx.lineTo(-8, -6);
-      ctx.moveTo(8, -14); ctx.lineTo(20, -10);
-      ctx.moveTo(-14, 16); ctx.lineTo(14, 18);
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
       ctx.stroke();
 
-      // White chickens with red comb
-      const bob = Math.sin(this.animTimer * 5) * 2;
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#5c3418';
       ctx.beginPath();
-      ctx.arc(-14, -8 + bob, 10, 0, Math.PI * 2);
-      ctx.arc(14, 4 - bob, 10, 0, Math.PI * 2);
+      ctx.roundRect(-w / 2 + 7, -h / 2 + 7, w - 14, h - 14, 13);
       ctx.fill();
 
-      // Chicken beaks & combs
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(-22, -10 + bob, 4, 3);
-      ctx.fillRect(22, 2 - bob, 4, 3);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(-16, -20 + bob, 4, 4);
-      ctx.fillRect(12, -8 - bob, 4, 4);
-    } else if (this.type === 'apple') {
-      // Apple orchard tree trunk and lush leafy canopy
-      ctx.fillStyle = '#92400e';
-      ctx.fillRect(-8, 6, 16, 26);
+      // Furrow stripes
+      ctx.fillStyle = '#472610';
+      ctx.fillRect(-w / 2 + 12, -20, w - 24, 7);
+      ctx.fillRect(-w / 2 + 12, 12, w - 24, 7);
 
-      // Tree foliage
+      // 4 Lush Cartoon Tomato Bushes
+      const bushCoords = [[-20, -16], [20, -16], [-20, 16], [20, 16]];
+      bushCoords.forEach(([bx, by], idx) => {
+        ctx.fillStyle = '#16a34a';
+        ctx.strokeStyle = '#14532d';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bx, by, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(bx - 3, by - 3, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (idx < this.storage) {
+          drawItemIcon(ctx, bx - 4, by + 2, 'tomato', 0.78);
+        }
+        if (idx + 4 < this.storage) {
+          drawItemIcon(ctx, bx + 6, by - 3, 'tomato', 0.72);
+        }
+      });
+
+    } else if (this.type === 'egg') {
+      // Sunny Straw Chicken Coop Pen
+      ctx.fillStyle = '#fde68a';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Golden straw nests
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(-20, 18, 15, 9, 0, 0, Math.PI * 2);
+      ctx.ellipse(20, 18, 15, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Red-Roofed Wooden Henhouse
+      ctx.fillStyle = '#d97706';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-24, -h / 2 + 6, 48, 24, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(-28, -h / 2 + 10);
+      ctx.lineTo(0, -h / 2 - 4);
+      ctx.lineTo(28, -h / 2 + 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Animated Chickens
+      const drawCartoonChicken = (cx, cy, flip, phase) => {
+        const bob = Math.sin(this.animTimer * 5 + phase) * 2.5;
+        ctx.save();
+        ctx.translate(cx, cy + bob);
+        ctx.scale(flip, 1);
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 12, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(-3, -11, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(10, -3); ctx.lineTo(16, 0); ctx.lineTo(10, 3);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(5, -3, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+
+      drawCartoonChicken(-18, -2, 1, 0);
+      drawCartoonChicken(18, -2, -1, 2.2);
+
+      for (let i = 0; i < Math.min(6, this.storage); i++) {
+        const ex = (i % 2 === 0 ? -24 : 14) + (i % 3) * 6;
+        const ey = 17 + (i % 2) * 3;
+        drawItemIcon(ctx, ex, ey, 'egg', 0.78);
+      }
+
+    } else if (this.type === 'apple') {
+      // Orchard Grass & Cartoon Apple Tree
+      ctx.fillStyle = '#86efac';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#92400e';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-9, 2, 18, 26, 5);
+      ctx.fill();
+      ctx.stroke();
+
       ctx.fillStyle = '#16a34a';
       ctx.beginPath();
-      ctx.arc(0, -8, 28, 0, Math.PI * 2);
+      ctx.arc(-16, -4, 19, 0, Math.PI * 2);
+      ctx.arc(16, -4, 19, 0, Math.PI * 2);
+      ctx.arc(0, -16, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(0, -10, 22, 0, Math.PI * 2);
       ctx.fill();
 
-      // Hanging green/red apples
-      for (let i = 0; i < Math.min(6, this.storage); i++) {
-        const ang = i * (Math.PI * 2 / 6);
-        const ax = Math.cos(ang) * 16;
-        const ay = -8 + Math.sin(ang) * 16;
-        drawItemIcon(ctx, ax, ay, 'apple', 0.85);
+      const appleSpots = [[-16, -6], [16, -6], [0, -20], [-8, 4], [10, 4], [0, -8]];
+      for (let i = 0; i < Math.min(appleSpots.length, this.storage); i++) {
+        drawItemIcon(ctx, appleSpots[i][0], appleSpots[i][1], 'apple', 0.85);
       }
-    } else if (this.type === 'milk') {
-      // Spotty dairy cow pen with milk churns
-      ctx.fillStyle = '#15803d';
-      ctx.fillRect(-32, -32, 64, 64);
 
-      // Cute spotty pixel cow body
+    } else if (this.type === 'milk') {
+      // Dairy Cow Pen
+      ctx.fillStyle = '#bbf7d0';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      const cowBob = Math.sin(this.animTimer * 3.5) * 1.8;
+      ctx.save();
+      ctx.translate(-4, 2 + cowBob);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-24, -14, 42, 28, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(-12, -5, 6.5, 0, Math.PI * 2);
+      ctx.arc(6, 4, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.roundRect(-22, -16, 44, 28, 8);
+      ctx.arc(16, -6, 12, 0, Math.PI * 2);
       ctx.fill();
+      ctx.stroke();
 
-      // Black patches
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(-10, -6, 8, 0, Math.PI * 2);
-      ctx.arc(8, 2, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Pink muzzle
       ctx.fillStyle = '#fbcfe8';
-      ctx.fillRect(-6, 2, 12, 8);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(17, -1, 9, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(13, -8, 2, 0, Math.PI * 2);
+      ctx.arc(21, -8, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -26 + i * 17, 24, 'milk', 0.8);
+      }
+
     } else if (this.type === 'bread') {
-      // Brick bakery stone oven with warm fire glow
-      ctx.fillStyle = '#78350f';
-      ctx.fillRect(-26, -26, 52, 52);
+      // Warm Bakery Oven
+      ctx.fillStyle = '#ffedd5';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#c2410c';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 4, 28, Math.PI, 0);
+      ctx.lineTo(28, 16); ctx.lineTo(-28, 16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#431407';
+      ctx.beginPath();
+      ctx.arc(0, 14, 15, Math.PI, 0);
+      ctx.fill();
+
+      const flicker = Math.sin(this.animTimer * 8) * 2;
       ctx.fillStyle = '#f97316';
       ctx.beginPath();
-      ctx.arc(0, 4, 12, Math.PI, 0);
+      ctx.arc(0, 14, 11 + flicker * 0.4, Math.PI, 0);
       ctx.fill();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 26, 'bread', 0.82);
+      }
+
+    // --- MART 2: TROPICAL ISLAND BOARDWALK PLOTS ---
+    } else if (this.type === 'banana') {
+      // Tropical Banana Grove (Rich Green Grass & Banana Palm)
+      ctx.fillStyle = '#fef08a';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Curved Palm Trunk
+      ctx.fillStyle = '#ca8a04';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-10, -4, 20, 32, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Sweeping Tropical Banana Leaves
+      ctx.fillStyle = '#65a30d';
+      ctx.beginPath();
+      ctx.ellipse(-22, -14, 22, 10, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(22, -14, 22, 10, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(0, -22, 24, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#365314';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Ripe Banana Bunches hanging
+      for (let i = 0; i < Math.min(5, this.storage); i++) {
+        const bx = -22 + i * 11;
+        const by = 22;
+        drawItemIcon(ctx, bx, by, 'banana', 0.85);
+      }
+
+    } else if (this.type === 'coconut') {
+      // Beach Sand Island with Coconut Palm Tree
+      ctx.fillStyle = '#fed7aa';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Coconut Palm trunk
+      ctx.fillStyle = '#78350f';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-8, -2, 16, 28, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      // Palm fronds
+      ctx.fillStyle = '#0d9488';
+      ctx.beginPath();
+      ctx.arc(-16, -14, 18, 0, Math.PI * 2);
+      ctx.arc(16, -14, 18, 0, Math.PI * 2);
+      ctx.arc(0, -20, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Ready Coconuts on the ground
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 22, 'coconut', 0.85);
+      }
+
+    } else if (this.type === 'pineapple') {
+      // Tropical Pineapple Field
+      ctx.fillStyle = '#ecfccb';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Spiky Pineapple Rosettes
+      const pineSpots = [[-22, -12], [22, -12], [0, 4]];
+      pineSpots.forEach(([px, py]) => {
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(px, py, 14, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      for (let i = 0; i < Math.min(5, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 12, 22, 'pineapple', 0.82);
+      }
+
+    } else if (this.type === 'smoothie') {
+      // Tiki Blender Juice Bar
+      ctx.fillStyle = '#cffafe';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Bamboo Blender Counter
+      ctx.fillStyle = '#d97706';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-30, -10, 60, 28, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // 2 Glass Blender Jars with Swirling Smoothie
+      const drawBlender = (bx, by, liquidColor) => {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(bx - 9, by - 14, 18, 20, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = liquidColor;
+        ctx.beginPath();
+        ctx.roundRect(bx - 7, by - 6, 14, 10, 2);
+        ctx.fill();
+
+        // Lid
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(bx - 10, by - 16, 20, 3);
+      };
+
+      drawBlender(-14, -6, '#ec4899');
+      drawBlender(14, -6, '#06b6d4');
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 24, 'smoothie', 0.8);
+      }
+
+    } else if (this.type === 'icecream') {
+      // Vintage Gelato Churner Cart
+      ctx.fillStyle = '#ffe4e6';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Chrome Gelato Machine
+      ctx.fillStyle = '#f43f5e';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-26, -18, 52, 34, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Chrome freezer lids
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(-12, -4, 9, 0, Math.PI * 2);
+      ctx.arc(12, -4, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 24, 'icecream', 0.82);
+      }
+
+    // --- MART 3: SWEET CANDYLAND PLOTS ---
+    } else if (this.type === 'strawberry') {
+      // Sweet Strawberry Patch
+      ctx.fillStyle = '#ffe4e6';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Lush clover green mounds
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath();
+      ctx.arc(-18, -8, 16, 0, Math.PI * 2);
+      ctx.arc(18, -8, 16, 0, Math.PI * 2);
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // White blossoms
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-12, -14, 4, 0, Math.PI * 2);
+      ctx.arc(12, -14, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = 0; i < Math.min(5, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 12, 22, 'strawberry', 0.85);
+      }
+
+    } else if (this.type === 'cocoa') {
+      // Cacao Tree & Cocoa Pods
+      ctx.fillStyle = '#fef3c7';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#78350f';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-10, -8, 20, 36, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.arc(-16, -18, 18, 0, Math.PI * 2);
+      ctx.arc(16, -18, 18, 0, Math.PI * 2);
+      ctx.arc(0, -22, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 22, 'cocoa', 0.82);
+      }
+
+    } else if (this.type === 'chocolate') {
+      // Steaming Copper Chocolate Fondue Vat
+      ctx.fillStyle = '#fed7aa';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Copper Kettle
+      ctx.fillStyle = '#c2410c';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Melted Chocolate Swirl
+      ctx.fillStyle = '#451a03';
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Golden stir paddle
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-10, -10); ctx.lineTo(10, 10);
+      ctx.stroke();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 24, 'chocolate', 0.82);
+      }
+
+    } else if (this.type === 'donut') {
+      // Donut Baking Station
+      ctx.fillStyle = '#fdf2f8';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Fryer counter
+      ctx.fillStyle = '#f472b6';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-28, -16, 56, 32, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Sizzling oil tray
       ctx.fillStyle = '#fef08a';
       ctx.beginPath();
-      ctx.arc(0, 4, 6, Math.PI, 0);
+      ctx.roundRect(-22, -11, 44, 22, 5);
       ctx.fill();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 24, 'donut', 0.82);
+      }
+
+    } else if (this.type === 'candy') {
+      // Rainbow Candy Spinning Carousel
+      ctx.fillStyle = '#faf5ff';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      // Glass Dome Base
+      ctx.fillStyle = '#a855f7';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(-26, 0, 52, 16, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Glass sphere dome
+      ctx.fillStyle = 'rgba(238, 242, 255, 0.8)';
+      ctx.beginPath();
+      ctx.arc(0, -8, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Rainbow candy swirl in dome
+      const swirl = this.animTimer * 2;
+      ctx.fillStyle = '#ec4899';
+      ctx.beginPath();
+      ctx.arc(Math.cos(swirl) * 8, -8 + Math.sin(swirl) * 8, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#06b6d4';
+      ctx.beginPath();
+      ctx.arc(Math.cos(swirl + 2.1) * 8, -8 + Math.sin(swirl + 2.1) * 8, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = 0; i < Math.min(4, this.storage); i++) {
+        drawItemIcon(ctx, -24 + i * 16, 24, 'candy', 0.82);
+      }
     }
 
-    // Storage counter pill
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(-26, this.height / 2 + 4, 52, 18, 6);
-    ctx.fill();
-    ctx.stroke();
+    // 3. Overhead Signboard with Icon + Plot Name
+    drawOverheadSign(ctx, 0, -h / 2 - 14, def.plotTitle, this.type, def.color);
 
-    ctx.font = 'bold 12px "Rajdhani", sans-serif';
+    // 4. Bottom Stock Counter Pill + Production Progress Bar
+    const pillW = 78;
+    const pillH = 22;
+    const pillY = h / 2 + 4;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-pillW / 2, pillY, pillW, pillH, 11);
+    ctx.fill();
+
+    const prog = this.storage >= this.maxStorage ? 1 : (this.growTimer / this.growInterval);
+    ctx.fillStyle = this.storage >= this.maxStorage ? '#16a34a' : '#0284c7';
+    ctx.beginPath();
+    ctx.roundRect(-pillW / 2 + 2, pillY + 2, Math.max(8, (pillW - 4) * prog), pillH - 4, 9);
+    ctx.fill();
+
+    ctx.font = '700 11px "Fredoka", "Nunito", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.storage}/${this.maxStorage}`, 0, this.height / 2 + 17);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`READY: ${this.storage}/${this.maxStorage}`, 0, pillY + pillH / 2 + 0.5);
 
     ctx.restore();
   }
 }
 
 /**
- * DISPLAY SHELF / GROCERY FRIDGE
+ * DISPLAY SHELF / GROCERY STAND (Distinct Cartoon Market Stand per Department)
  */
 class StoreShelf {
   constructor(opts) {
@@ -461,24 +1214,22 @@ class StoreShelf {
     this.name = opts.name;
     this.x = opts.x;
     this.y = opts.y;
-    this.width = opts.width || 76;
-    this.height = opts.height || 64;
+    this.width = opts.width || 96;
+    this.height = opts.height || 74;
     this.maxCapacity = opts.maxCapacity || 12;
     this.items = opts.initialStock || 4;
     this.unlocked = opts.unlocked !== undefined ? opts.unlocked : true;
-    this.triggerRadius = 56;
+    this.triggerRadius = 60;
   }
 
   update(dt, game) {
     if (!this.unlocked) return;
 
-    // Check Player proximity to restock
     const p = game.player;
     if (p && dist(this.x, this.y, p.x, p.y) < this.triggerRadius) {
       this.restockFrom(p, game);
     }
 
-    // Check Staff Helper proximity to restock
     if (game.staffHelper && dist(this.x, this.y, game.staffHelper.x, game.staffHelper.y) < this.triggerRadius) {
       this.restockFrom(game.staffHelper, game);
     }
@@ -486,7 +1237,6 @@ class StoreShelf {
 
   restockFrom(carrier, game) {
     if (this.items < this.maxCapacity && carrier.carryStack.length > 0) {
-      // Find matching item in stack
       const idx = carrier.carryStack.indexOf(this.type);
       if (idx !== -1) {
         carrier.carryStack.splice(idx, 1);
@@ -494,6 +1244,9 @@ class StoreShelf {
         if (carrier === game.player && window.miniMartAudio) {
           window.miniMartAudio.playRestock();
           if (game.rumble) game.rumble(30, 0.12, 0.1);
+        }
+        if (carrier === game.player && game.progressTutorial) {
+          game.progressTutorial('stock_shelf', 1);
         }
         game.spawnFlyingItem(carrier.x, carrier.y, this, this.type);
       }
@@ -503,47 +1256,92 @@ class StoreShelf {
   draw(ctx) {
     if (!this.unlocked) return;
 
+    const def = ITEM_TYPES[this.type] || ITEM_TYPES.tomato;
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Shelf cabinet body
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2.5;
+    const w = this.width;
+    const h = this.height;
+
+    // 1. Drop shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
     ctx.beginPath();
-    ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10);
+    ctx.roundRect(-w / 2 + 2, -h / 2 + 7, w, h, 16);
+    ctx.fill();
+
+    // 2. Cartoon Market Stand Body
+    ctx.fillStyle = def.standBorder || '#d97706';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 16);
     ctx.fill();
     ctx.stroke();
 
-    // Wooden tier planks / fridge glass
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(-this.width / 2 + 4, -8, this.width - 8, 5);
-    ctx.fillRect(-this.width / 2 + 4, 16, this.width - 8, 5);
+    // Inner display tray recess
+    ctx.fillStyle = def.standBg;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 6, -h / 2 + 12, w - 12, h - 20, 11);
+    ctx.fill();
 
-    // Render stocked items in rows
-    const cols = 4;
-    for (let i = 0; i < this.items; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const ix = -this.width / 2 + 14 + col * 16;
-      const iy = -16 + row * 22;
-      drawItemIcon(ctx, ix, iy, this.type, 0.9);
+    // Striped Cartoon Market Awning along the top edge of the stand
+    const stripeCount = 6;
+    const stripeW = (w - 8) / stripeCount;
+    for (let s = 0; s < stripeCount; s++) {
+      ctx.fillStyle = (s % 2 === 0) ? def.awning1 : def.awning2;
+      ctx.beginPath();
+      ctx.roundRect(-w / 2 + 4 + s * stripeW, -h / 2 + 2, stripeW, 11, 4);
+      ctx.fill();
     }
 
-    // Shelf capacity badge
-    const isLow = this.items <= 2;
-    ctx.fillStyle = isLow ? 'rgba(239, 68, 68, 0.9)' : 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = isLow ? '#ef4444' : '#38bdf8';
-    ctx.lineWidth = 1.5;
+    // Horizontal shelf divider bar
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(-w / 2 + 6, 2, w - 12, 4);
+
+    // 3. Draw 12 Item Slots
+    const cols = 4;
+    for (let i = 0; i < this.maxCapacity; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const ix = -w / 2 + 18 + col * 20;
+      const iy = -13 + row * 16;
+
+      if (i < this.items) {
+        drawItemIcon(ctx, ix, iy, this.type, 0.92);
+      } else {
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        drawItemIcon(ctx, ix, iy, this.type, 0.78);
+        ctx.restore();
+      }
+    }
+
+    // 4. Overhead Department Signboard (Icon + Stand Name)
+    drawOverheadSign(ctx, 0, -h / 2 - 14, def.standTitle, this.type, def.color);
+
+    // 5. Bottom Stock Badge
+    const isEmpty = this.items === 0;
+    const badgeW = isEmpty ? 94 : 68;
+    const badgeH = 20;
+    const badgeY = h / 2 + 4;
+
+    ctx.fillStyle = isEmpty ? '#ef4444' : '#1e293b';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(-24, this.height / 2 + 3, 48, 16, 5);
+    ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, 10);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 11px "Rajdhani", sans-serif';
+    ctx.font = '700 10.5px "Fredoka", "Nunito", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.items}/${this.maxCapacity}`, 0, this.height / 2 + 15);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+      isEmpty ? `RESTOCK ${def.name.toUpperCase()}!` : `${this.items}/${this.maxCapacity}`,
+      0,
+      badgeY + badgeH / 2 + 0.5
+    );
 
     ctx.restore();
   }
@@ -552,59 +1350,112 @@ class StoreShelf {
 /**
  * CHECKOUT COUNTER & CASH REGISTER
  */
+/**
+ * CHECKOUT COUNTER & CASH REGISTER
+ * Features an enlarged cashier standing floor mat, precise hit detection,
+ * instant customer queue pickup, and automatic cash collection while standing at the register.
+ */
 class CheckoutCounter {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 110;
-    this.height = 70;
-    this.cashStash = 0; // accumulated cash bundles on counter
-    this.cashCollectRadius = 45;
-    this.staffZoneRadius = 40;
+    this.width = 136;
+    this.height = 78;
+    this.cashStash = 0;
     this.activeCustomer = null;
     this.scanTimer = 0;
-    this.scanInterval = 0.55; // seconds per item scanned
+    this.scanInterval = 0.45;
+    this.isPlayerAttending = false;
+    this.animPulse = 0;
+  }
+
+  // Exact world coordinates of the cashier standing mat center
+  getMatCenter() {
+    return {
+      x: this.x - 104,
+      y: this.y
+    };
   }
 
   update(dt, game) {
-    // Check if player or hired cashier is attending the register
-    const playerAttending = game.player && dist(this.x - 30, this.y, game.player.x, game.player.y) < this.staffZoneRadius;
+    this.animPulse += dt * 6;
+    const mat = this.getMatCenter();
+
+    // Robust, spacious check for player standing on or touching the mat
+    const p = game.player;
+    const dx = p ? Math.abs(p.x - mat.x) : 999;
+    const dy = p ? Math.abs(p.y - mat.y) : 999;
+    const playerOnMat = dx < 48 && dy < 48;
+    const playerNearMat = p ? (dist(p.x, p.y, mat.x, mat.y) < 55) : false;
+    
+    this.isPlayerAttending = playerOnMat || playerNearMat;
     const cashierAttending = game.cashierHired;
+    const canScan = this.isPlayerAttending || cashierAttending;
 
-    if (playerAttending || cashierAttending) {
-      if (this.activeCustomer && this.activeCustomer.basket.length > 0) {
-        this.scanTimer += dt;
-        if (this.scanTimer >= this.scanInterval) {
-          this.scanTimer = 0;
-          const item = this.activeCustomer.basket.shift();
-          const itemVal = ITEM_TYPES[item] ? ITEM_TYPES[item].price : 8;
-          this.cashStash += itemVal;
+    // 1. Ensure active customer is assigned from queue head
+    if (!this.activeCustomer || this.activeCustomer.state === 'LEAVING' || this.activeCustomer.state === 'DONE') {
+      if (game.customerQueue && game.customerQueue.length > 0) {
+        const head = game.customerQueue[0];
+        const queueSlotX = this.x + 52;
+        const queueSlotY = this.y - 10;
+        const d = dist(head.x, head.y, queueSlotX, queueSlotY);
+        if (d < 65) {
+          this.activeCustomer = head;
+        }
+      }
+    }
 
-          if (window.miniMartAudio) window.miniMartAudio.playScan();
-          if (game.rumble) game.rumble(30, 0.1, 0.1);
+    // 2. Scan items
+    if (canScan && this.activeCustomer && this.activeCustomer.basket && this.activeCustomer.basket.length > 0) {
+      this.scanTimer += dt;
+      if (this.scanTimer >= this.scanInterval) {
+        this.scanTimer = 0;
+        const item = this.activeCustomer.basket.shift();
+        const itemVal = ITEM_TYPES[item] ? ITEM_TYPES[item].price : 8;
+        this.cashStash += itemVal;
 
-          game.spawnFloatingText(this.x + 10, this.y - 20, `+$${itemVal}`, '#22c55e', 14);
+        if (window.miniMartAudio) window.miniMartAudio.playScan();
+        if (game.rumble) game.rumble(30, 0.1, 0.1);
 
-          // If customer has paid for all items in basket, release them happily!
-          if (this.activeCustomer.basket.length === 0) {
-            this.activeCustomer.state = 'LEAVING';
-            game.totalCustomersServed = (game.totalCustomersServed || 0) + 1;
-            game.spawnHeartEffect(this.activeCustomer.x, this.activeCustomer.y - 26);
-            this.activeCustomer = null;
+        game.spawnFloatingText(this.x + 12, this.y - 24, `+$${itemVal}`, '#16a34a', 16);
+
+        if (this.activeCustomer.basket.length === 0) {
+          const finishedCustomer = this.activeCustomer;
+          finishedCustomer.state = 'LEAVING';
+          const qIdx = game.customerQueue.indexOf(finishedCustomer);
+          if (qIdx !== -1) game.customerQueue.splice(qIdx, 1);
+
+          game.totalCustomersServed = (game.totalCustomersServed || 0) + 1;
+          if (game.progressTutorial) {
+            game.progressTutorial('serve_customers', 1);
+          }
+          game.spawnHeartEffect(finishedCustomer.x, finishedCustomer.y - 28);
+          this.activeCustomer = null;
+
+          // Check if next customer in line is already waiting
+          if (game.customerQueue.length > 0) {
+            const nextHead = game.customerQueue[0];
+            if (dist(nextHead.x, nextHead.y, this.x + 52, this.y - 10) < 70) {
+              this.activeCustomer = nextHead;
+            }
           }
         }
       }
     }
 
-    // Collect accumulated cash when player walks over counter
-    if (this.cashStash > 0 && game.player && dist(this.x, this.y, game.player.x, game.player.y) < this.cashCollectRadius) {
-      const collected = this.cashStash;
-      this.cashStash = 0;
-      game.money += collected;
-      if (window.miniMartAudio) window.miniMartAudio.playCash();
-      if (game.rumble) game.rumble(50, 0.2, 0.15);
-      game.spawnFloatingText(this.x, this.y - 30, `+$${collected}`, '#4ade80', 20);
-      game.spawnCashParticles(this.x, this.y, 10);
+    // 3. Collect cash stash
+    // Automatically collects cash when attending on mat OR near the desk
+    if (this.cashStash > 0 && p) {
+      const nearDesk = dist(this.x, this.y, p.x, p.y) < 95;
+      if (this.isPlayerAttending || nearDesk) {
+        const collected = this.cashStash;
+        this.cashStash = 0;
+        game.money += collected;
+        if (window.miniMartAudio) window.miniMartAudio.playCash();
+        if (game.rumble) game.rumble(50, 0.2, 0.15);
+        game.spawnFloatingText(this.x, this.y - 34, `+$${collected}`, '#16a34a', 22);
+        game.spawnCashParticles(this.x, this.y, 10);
+      }
     }
   }
 
@@ -612,78 +1463,285 @@ class CheckoutCounter {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Wooden checkout counter base
-    ctx.fillStyle = '#475569';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2.5;
+    const w = this.width;
+    const h = this.height;
+
+    // 1. Extra Large Cashier Standing Floor Mat on the left side of counter
+    // Mat center is at (-104, 0), dimensions 58x60
+    const matX = -104;
+    const matY = 0;
+    const matW = 58;
+    const matH = 60;
+
+    const isActive = this.isPlayerAttending;
+
+    // Glowing aura when player is standing on mat
+    if (isActive) {
+      ctx.fillStyle = 'rgba(34, 197, 94, 0.35)';
+      ctx.beginPath();
+      ctx.roundRect(matX - matW / 2 - 4, matY - matH / 2 - 4, matW + 8, matH + 8, 14);
+      ctx.fill();
+    }
+
+    // Mat Body
+    ctx.fillStyle = isActive ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.18)';
+    ctx.strokeStyle = isActive ? '#15803d' : '#16a34a';
+    ctx.lineWidth = isActive ? 3 : 2.5;
+    ctx.setLineDash(isActive ? [] : [6, 4]);
     ctx.beginPath();
-    ctx.roundRect(-this.width / 2, -this.height / 2, this.width, this.height, 10);
+    ctx.roundRect(matX - matW / 2, matY - matH / 2, matW, matH, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Mat Labels
+    ctx.fillStyle = isActive ? '#15803d' : '#16a34a';
+    ctx.font = '800 10.5px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (isActive) {
+      if (this.activeCustomer && this.activeCustomer.basket.length > 0) {
+        ctx.fillText('SCANNING', matX, matY - 6);
+        ctx.fillText('...', matX, matY + 8);
+      } else {
+        ctx.fillText('ACTIVE', matX, matY - 6);
+        ctx.fillText('READY', matX, matY + 8);
+      }
+    } else {
+      ctx.fillText('STAND', matX, matY - 7);
+      ctx.fillText('HERE', matX, matY + 7);
+    }
+
+    // 2. Counter Drop Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 2, -h / 2 + 7, w, h, 16);
+    ctx.fill();
+
+    // 3. Bright Cartoon Checkout Desk Body
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 16);
     ctx.fill();
     ctx.stroke();
 
-    // Conveyor belt
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(-this.width / 2 + 10, -18, 55, 36);
+    // Cream countertop surface
+    ctx.fillStyle = '#fffbeb';
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 14, 12);
+    ctx.fill();
 
-    // White dashed conveyor roller lines
+    // Moving Conveyor Belt
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 12, -22, 60, 44, 6);
+    ctx.fill();
+    ctx.stroke();
+
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(-this.width / 2 + 22, -16); ctx.lineTo(-this.width / 2 + 22, 16);
-    ctx.moveTo(-this.width / 2 + 38, -16); ctx.lineTo(-this.width / 2 + 38, 16);
-    ctx.moveTo(-this.width / 2 + 54, -16); ctx.lineTo(-this.width / 2 + 54, 16);
+    ctx.moveTo(-w / 2 + 26, -18); ctx.lineTo(-w / 2 + 26, 18);
+    ctx.moveTo(-w / 2 + 42, -18); ctx.lineTo(-w / 2 + 42, 18);
+    ctx.moveTo(-w / 2 + 58, -18); ctx.lineTo(-w / 2 + 58, 18);
     ctx.stroke();
 
-    // Cash Register Machine & Green Screen
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(18, -20, 28, 26);
-    ctx.fillStyle = '#22c55e';
-    ctx.fillRect(22, -16, 20, 10);
+    // Cartoon Cash Register
+    ctx.fillStyle = '#0ea5e9';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(16, -26, 36, 30, 6);
+    ctx.fill();
+    ctx.stroke();
 
-    // Operator Staff Standing Pad Indicator
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(-this.width / 2 - 20, -16, 20, 32);
-    ctx.setLineDash([]);
+    // Register Screen
+    ctx.fillStyle = isActive ? '#4ade80' : '#22c55e';
+    ctx.beginPath();
+    ctx.roundRect(20, -22, 28, 14, 3);
+    ctx.fill();
 
-    // Stacks of Green Cash Money Bills on counter
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 11px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('$', 34, -11);
+
+    // Overhead Signboard
+    drawOverheadSign(ctx, 0, -h / 2 - 14, 'CHECKOUT REGISTER', null, '#22c55e');
+
+    // Dollar Bills Stacks
     if (this.cashStash > 0) {
-      const stacks = Math.min(8, Math.ceil(this.cashStash / 12));
+      const stacks = Math.min(7, Math.ceil(this.cashStash / 12));
       for (let s = 0; s < stacks; s++) {
-        ctx.fillStyle = '#16a34a';
-        ctx.strokeStyle = '#86efac';
-        ctx.lineWidth = 1;
-        ctx.fillRect(8, 2 - s * 4, 18, 10);
-        ctx.strokeRect(8, 2 - s * 4, 18, 10);
+        ctx.fillStyle = '#22c55e';
+        ctx.strokeStyle = '#14532d';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.roundRect(16, 8 - s * 4, 28, 12, 3);
+        ctx.fill();
+        ctx.stroke();
       }
 
-      // Money value tag
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 12px "Orbitron", sans-serif';
+      ctx.fillStyle = '#16a34a';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(4, 24, 52, 20, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 11px "Fredoka", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`$${this.cashStash}`, 16, 26);
+      ctx.fillText(`$${this.cashStash}`, 30, 37);
     }
 
     ctx.restore();
   }
 }
 
+
 /**
- * SHOPPING CUSTOMER
+ * TRASH CAN / DISPOSAL BIN
+ * Allows player to discard unwanted items from their carry stack
  */
+class TrashBin {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.width = 52;
+    this.height = 62;
+    this.triggerRadius = 48;
+    this.discardTimer = 0;
+    this.discardInterval = 0.22;
+    this.lidAnim = 0;
+    this.isOpen = false;
+  }
+
+  update(dt, game) {
+    const p = game.player;
+    const playerNear = p && dist(this.x, this.y, p.x, p.y) < this.triggerRadius;
+
+    if (playerNear && p.carryStack.length > 0) {
+      this.isOpen = true;
+      this.discardTimer += dt;
+      if (this.discardTimer >= this.discardInterval) {
+        this.discardTimer = 0;
+        const tossedItem = p.carryStack.pop();
+        if (tossedItem) {
+          if (window.miniMartAudio) window.miniMartAudio.playBlip();
+          if (game.rumble) game.rumble(25, 0.1, 0.08);
+          const color = (ITEM_TYPES[tossedItem] && ITEM_TYPES[tossedItem].color) || '#ef4444';
+          game.spawnPopEffect(this.x, this.y - 20, color);
+          game.spawnFloatingText(this.x, this.y - 34, 'DISCARDED', '#ef4444', 15);
+        }
+      }
+    } else {
+      this.isOpen = false;
+      this.discardTimer = 0;
+    }
+
+    const targetLid = this.isOpen ? 1 : 0;
+    this.lidAnim += (targetLid - this.lidAnim) * Math.min(1, dt * 10);
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Drop shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+    ctx.beginPath();
+    ctx.ellipse(0, 18, 22, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Trash Bin Body (Sleek Charcoal / Metallic with Ribs)
+    ctx.fillStyle = '#475569';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-20, -14, 40, 34, [4, 4, 10, 10]);
+    ctx.fill();
+    ctx.stroke();
+
+    // Metallic Sheen Ribs
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-16, -4); ctx.lineTo(16, -4);
+    ctx.moveTo(-16, 6); ctx.lineTo(16, 6);
+    ctx.stroke();
+
+    // Green Recycling / Disposal Symbol in Center
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(0, 4, 7, 0, Math.PI * 1.6);
+    ctx.stroke();
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.moveTo(3, -5); ctx.lineTo(8, -3); ctx.lineTo(6, -8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Animated Hinged Flip Lid
+    ctx.save();
+    ctx.translate(0, -14);
+    ctx.rotate(-this.lidAnim * 0.45); // Flips open when player is discarding!
+
+    // Lid Rim
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(-24, -6, 48, 8, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Lid Handle
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.roundRect(-8, -12, 16, 6, 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Overhead Signboard: "TRASH CAN"
+    drawOverheadSign(ctx, 0, -38, 'TRASH CAN', null, '#ef4444');
+
+    // Dashed stand area indicator when player carrying items
+    if (this.isOpen) {
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.ellipse(0, 18, 28, 14, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  }
+}
+
 class MartCustomer {
   constructor(x, y, desiredTypes) {
     this.x = x;
     this.y = y;
     this.targetX = x;
     this.targetY = y;
-    this.speed = 105;
-    this.basket = []; // items picked up
-    this.shoppingList = [...desiredTypes]; // items still needed
+    this.speed = 108;
+    this.basket = [];
+    this.shoppingList = [...desiredTypes];
     this.currentGoalShelf = null;
-    this.state = 'SPAWN'; // 'WALKING_TO_SHELF', 'WAITING_FOR_RESTOCK', 'WALKING_TO_CHECKOUT', 'IN_QUEUE', 'LEAVING', 'DONE'
-    this.shirtColor = ['#38bdf8', '#fb7185', '#a78bfa', '#facc15', '#4ade80'][Math.floor(Math.random() * 5)];
-    this.hairColor = ['#78350f', '#0f172a', '#b45309', '#fef08a'][Math.floor(Math.random() * 4)];
+    this.state = 'SPAWN';
+    this.shirtColor = ['#38bdf8', '#fb7185', '#a78bfa', '#facc15', '#f97316', '#34d399'][Math.floor(Math.random() * 6)];
+    this.hairColor = ['#78350f', '#1e293b', '#b45309', '#eab308'][Math.floor(Math.random() * 4)];
     this.walkAnim = Math.random() * 10;
     this.waitTimer = 0;
   }
@@ -696,12 +1754,11 @@ class MartCustomer {
     } else if (this.state === 'WALKING_TO_SHELF') {
       if (this.currentGoalShelf) {
         this.targetX = this.currentGoalShelf.x;
-        this.targetY = this.currentGoalShelf.y + 40;
+        this.targetY = this.currentGoalShelf.y + 48;
 
         this.moveTowards(this.targetX, this.targetY, dt);
 
         if (dist(this.x, this.y, this.targetX, this.targetY) < 14) {
-          // Arrived at shelf
           if (this.currentGoalShelf.items > 0) {
             this.currentGoalShelf.items--;
             const item = this.currentGoalShelf.type;
@@ -710,7 +1767,6 @@ class MartCustomer {
             game.spawnFlyingItem(this.currentGoalShelf.x, this.currentGoalShelf.y, this, item);
             this.findNextShelf(game);
           } else {
-            // Out of stock! Wait patiently
             this.state = 'WAITING_FOR_RESTOCK';
             this.waitTimer = 0;
           }
@@ -720,7 +1776,6 @@ class MartCustomer {
       }
     } else if (this.state === 'WAITING_FOR_RESTOCK') {
       this.waitTimer += dt;
-      // If shelf gets restocked while waiting, grab item!
       if (this.currentGoalShelf && this.currentGoalShelf.items > 0) {
         this.currentGoalShelf.items--;
         const item = this.currentGoalShelf.type;
@@ -729,17 +1784,16 @@ class MartCustomer {
         game.spawnFlyingItem(this.currentGoalShelf.x, this.currentGoalShelf.y, this, item);
         this.findNextShelf(game);
       } else if (this.waitTimer > 8.0) {
-        // Waited too long, give up on this item and head to checkout with whatever is in basket
         this.shoppingList.shift();
         this.findNextShelf(game);
       }
     } else if (this.state === 'WALKING_TO_CHECKOUT') {
       const queueIndex = game.customerQueue.indexOf(this);
-      const queueSlotY = game.checkout.y - 10 + (queueIndex * 34);
-      const queueSlotX = game.checkout.x + 42;
+      const queueSlotY = game.checkout.y - 10 + (queueIndex * 36);
+      const queueSlotX = game.checkout.x + 52;
 
       this.moveTowards(queueSlotX, queueSlotY, dt);
-      if (dist(this.x, this.y, queueSlotX, queueSlotY) < 10) {
+      if (dist(this.x, this.y, queueSlotX, queueSlotY) < 18) {
         this.state = 'IN_QUEUE';
       }
     } else if (this.state === 'IN_QUEUE') {
@@ -747,12 +1801,10 @@ class MartCustomer {
       if (queueIndex === 0) {
         game.checkout.activeCustomer = this;
       }
-      // Follow queue slot smoothly
-      const queueSlotY = game.checkout.y - 10 + (queueIndex * 34);
-      const queueSlotX = game.checkout.x + 42;
+      const queueSlotY = game.checkout.y - 10 + (queueIndex * 36);
+      const queueSlotX = game.checkout.x + 52;
       this.moveTowards(queueSlotX, queueSlotY, dt);
     } else if (this.state === 'LEAVING') {
-      // Walk towards entrance door exit
       this.moveTowards(game.entranceX, game.entranceY + 40, dt);
       if (dist(this.x, this.y, game.entranceX, game.entranceY + 40) < 16) {
         this.state = 'DONE';
@@ -768,12 +1820,10 @@ class MartCustomer {
         this.currentGoalShelf = matchingShelf;
         this.state = 'WALKING_TO_SHELF';
       } else {
-        // Shelf not unlocked yet, skip
         this.shoppingList.shift();
         this.findNextShelf(game);
       }
     } else {
-      // Ready to pay! Join checkout queue
       this.currentGoalShelf = null;
       if (!game.customerQueue.includes(this)) {
         game.customerQueue.push(this);
@@ -798,68 +1848,95 @@ class MartCustomer {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Customer Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(0, 12, 12, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Walking legs
-    const leg = Math.sin(this.walkAnim) * 4;
+    const leg = Math.sin(this.walkAnim) * 3.5;
+
+    // Feet
     ctx.fillStyle = '#334155';
-    ctx.fillRect(-6, 8 + leg, 4, 5);
-    ctx.fillRect(2, 8 - leg, 4, 5);
+    ctx.beginPath();
+    ctx.ellipse(-5, 10 + leg, 4.5, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(5, 10 - leg, 4.5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Colorful shirt
+    // Rounded cartoon body
     ctx.fillStyle = this.shirtColor;
-    ctx.fillRect(-8, -4, 16, 13);
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.roundRect(-10, -6, 20, 16, 7);
+    ctx.fill();
+    ctx.stroke();
 
-    // Head
+    // Smooth cartoon head
     ctx.fillStyle = '#fed7aa';
     ctx.beginPath();
-    ctx.arc(0, -12, 8, 0, Math.PI * 2);
+    ctx.arc(0, -14, 10.5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
 
     // Hair
     ctx.fillStyle = this.hairColor;
     ctx.beginPath();
-    ctx.arc(0, -15, 8.5, Math.PI, 0);
+    ctx.arc(0, -17, 10.5, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    // Eyes & Smile
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(-3.5, -14, 1.8, 0, Math.PI * 2);
+    ctx.arc(3.5, -14, 1.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cute Shopping Basket carried at side
-    ctx.fillStyle = '#d97706';
-    ctx.fillRect(9, -2, 12, 9);
-    ctx.strokeStyle = '#b45309';
-    ctx.strokeRect(9, -2, 12, 9);
-    // Render items in basket
+    // Cute Shopping Basket at side
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.roundRect(8, -2, 13, 10, 3);
+    ctx.fill();
+    ctx.stroke();
+
     if (this.basket.length > 0) {
-      ctx.fillStyle = ITEM_TYPES[this.basket[0]] ? ITEM_TYPES[this.basket[0]].color : '#ef4444';
-      ctx.beginPath();
-      ctx.arc(15, -4, 4, 0, Math.PI * 2);
-      ctx.fill();
+      drawItemIcon(ctx, 14.5, -3, this.basket[0], 0.55);
     }
 
-    // Speech bubble showing item needed or Out of Stock wait
+    // Smooth Cartoon Thought/Speech Bubble
     if (this.shoppingList.length > 0 && this.state !== 'LEAVING') {
       const wanted = this.shoppingList[0];
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = this.state === 'WAITING_FOR_RESTOCK' ? '#ef4444' : '#1e293b';
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
-      ctx.roundRect(-16, -34, 32, 16, 6);
+      ctx.roundRect(-18, -48, 36, 22, 11);
       ctx.fill();
       ctx.stroke();
 
+      drawItemIcon(ctx, this.state === 'WAITING_FOR_RESTOCK' ? -5 : 0, -37, wanted, 0.72);
       if (this.state === 'WAITING_FOR_RESTOCK') {
-        // Red question / exclamation mark
         ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = '800 12px "Fredoka", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('!', 0, -22);
-      } else {
-        // Draw miniature item wanted
-        drawItemIcon(ctx, 0, -26, wanted, 0.7);
+        ctx.fillText('!', 9, -33);
       }
+    } else if ((this.state === 'WALKING_TO_CHECKOUT' || this.state === 'IN_QUEUE') && this.basket.length > 0) {
+      ctx.fillStyle = '#dcfce7';
+      ctx.strokeStyle = '#16a34a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-14, -46, 28, 20, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#15803d';
+      ctx.font = '700 11px "Fredoka", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAY', 0, -33);
     }
 
     ctx.restore();
@@ -873,12 +1950,12 @@ class StaffHelper {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.speed = 135;
+    this.speed = 140;
     this.carryStack = [];
     this.maxStack = 6;
     this.radius = 16;
     this.walkAnim = 0;
-    this.state = 'FIND_SUPPLY'; // 'FIND_SUPPLY', 'DELIVERING'
+    this.state = 'FIND_SUPPLY';
     this.targetPlot = null;
     this.targetShelf = null;
   }
@@ -887,7 +1964,6 @@ class StaffHelper {
     this.walkAnim += dt * 10;
 
     if (this.state === 'FIND_SUPPLY') {
-      // Find a plot with ready stock
       if (!this.targetPlot || this.targetPlot.storage === 0) {
         this.targetPlot = game.plots.find(p => p.unlocked && p.storage > 0);
       }
@@ -902,17 +1978,15 @@ class StaffHelper {
         }
       }
     } else if (this.state === 'DELIVERING') {
-      // Deliver items to shelves needing them
       if (this.carryStack.length > 0) {
         const itemType = this.carryStack[0];
         const shelf = game.shelves.find(s => s.unlocked && s.type === itemType && s.items < s.maxCapacity);
         if (shelf) {
-          this.moveTowards(shelf.x, shelf.y + 35, dt);
-          if (dist(this.x, this.y, shelf.x, shelf.y + 35) < 30) {
+          this.moveTowards(shelf.x, shelf.y + 38, dt);
+          if (dist(this.x, this.y, shelf.x, shelf.y + 38) < 30) {
             shelf.restockFrom(this, game);
           }
         } else {
-          // Shelves full, return to supply
           this.state = 'FIND_SUPPLY';
         }
       } else {
@@ -935,30 +2009,35 @@ class StaffHelper {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(0, 12, 12, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Helper Uniform (Orange apron)
-    ctx.fillStyle = '#ea580c';
-    ctx.fillRect(-7, -4, 14, 14);
+    // Orange Helper Uniform & Cap
+    ctx.fillStyle = '#f97316';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.roundRect(-10, -6, 20, 16, 7);
+    ctx.fill();
+    ctx.stroke();
 
-    // Head
     ctx.fillStyle = '#fed7aa';
     ctx.beginPath();
-    ctx.arc(0, -12, 7.5, 0, Math.PI * 2);
+    ctx.arc(0, -14, 10, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
 
-    // Headband / Visor
-    ctx.fillStyle = '#f97316';
-    ctx.fillRect(-8, -16, 16, 4);
+    ctx.fillStyle = '#ea580c';
+    ctx.beginPath();
+    ctx.arc(0, -17, 10, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
 
-    // Item stack
     if (this.carryStack.length > 0) {
       for (let i = 0; i < this.carryStack.length; i++) {
-        drawItemIcon(ctx, 0, -22 - i * 10, this.carryStack[i], 0.85);
+        drawItemIcon(ctx, 0, -30 - i * 11, this.carryStack[i], 0.9);
       }
     }
 
@@ -967,27 +2046,26 @@ class StaffHelper {
 }
 
 /**
- * UNLOCK & EXPANSION ZONE
+ * UNLOCK & EXPANSION ZONE (Clear Cartoon Expansion Pad with Preview Icon)
  */
 class UnlockZone {
   constructor(opts) {
     this.id = opts.id;
     this.x = opts.x;
     this.y = opts.y;
-    this.width = opts.width || 76;
-    this.height = opts.height || 64;
+    this.width = opts.width || 96;
+    this.height = opts.height || 76;
     this.title = opts.title;
-    this.targetId = opts.targetId; // id of plot, shelf, or staff to activate
+    this.targetId = opts.targetId;
     this.cost = opts.cost;
     this.paid = 0;
-    this.triggerRadius = 45;
+    this.triggerRadius = 50;
     this.pulse = 0;
   }
 
   update(dt, game) {
     this.pulse += dt * 4;
 
-    // Check Player proximity to deposit cash
     const p = game.player;
     if (p && dist(this.x, this.y, p.x, p.y) < this.triggerRadius) {
       if (game.money > 0 && this.paid < this.cost) {
@@ -1001,7 +2079,6 @@ class UnlockZone {
         }
 
         if (this.paid >= this.cost) {
-          // UNLOCKED!
           this.activate(game);
         }
       }
@@ -1012,105 +2089,500 @@ class UnlockZone {
     if (window.miniMartAudio) window.miniMartAudio.playUnlock();
     if (game.rumble) game.rumble(200, 0.4, 0.6);
     game.spawnConfetti(this.x, this.y);
-    game.spawnFloatingText(this.x, this.y - 30, 'UNLOCKED!', '#4ade80', 22);
+    game.spawnFloatingText(this.x, this.y - 30, 'UNLOCKED!', '#16a34a', 22);
 
-    // Activate target entity or upgrade
+    if (game.progressTutorial) {
+      game.progressTutorial('unlock_expansion', 1);
+    }
+
     if (this.targetId === 'hire_stocker') {
       game.staffHelper = new StaffHelper(this.x, this.y);
       game.staffHired = true;
     } else if (this.targetId === 'hire_cashier') {
       game.cashierHired = true;
     } else {
-      // Find matching plot or shelf
       const plot = game.plots.find(p => p.id === this.targetId);
       if (plot) plot.unlocked = true;
       const shelf = game.shelves.find(s => s.id === this.targetId);
       if (shelf) shelf.unlocked = true;
     }
 
-    // Remove zone from active unlock zones
     const idx = game.unlockZones.indexOf(this);
     if (idx !== -1) {
       game.unlockZones.splice(idx, 1);
     }
   }
 
+  getPreviewType() {
+    const t = this.targetId.toLowerCase();
+    if (t.includes('egg')) return 'egg';
+    if (t.includes('milk')) return 'milk';
+    if (t.includes('apple')) return 'apple';
+    if (t.includes('bakery') || t.includes('bread')) return 'bread';
+    if (t.includes('banana')) return 'banana';
+    if (t.includes('coconut')) return 'coconut';
+    if (t.includes('pineapple')) return 'pineapple';
+    if (t.includes('smoothie')) return 'smoothie';
+    if (t.includes('icecream') || t.includes('gelato')) return 'icecream';
+    if (t.includes('strawberry') || t.includes('berry')) return 'strawberry';
+    if (t.includes('cocoa')) return 'cocoa';
+    if (t.includes('chocolate')) return 'chocolate';
+    if (t.includes('donut')) return 'donut';
+    if (t.includes('candy') || t.includes('lollipop')) return 'candy';
+    return null;
+  }
+
   draw(ctx) {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    const glow = 0.5 + Math.sin(this.pulse) * 0.25;
+    const w = this.width;
+    const h = this.height;
+    const bounce = Math.sin(this.pulse) * 2;
 
-    // Glowing dashed boundary pad
-    ctx.strokeStyle = `rgba(56, 189, 248, ${0.4 + glow * 0.4})`;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([6, 6]);
-    ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+    // 1. Cartoon Expansion Card Base
+    ctx.fillStyle = 'rgba(255, 251, 235, 0.94)';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 16);
+    ctx.fill();
+    ctx.stroke();
     ctx.setLineDash([]);
 
-    // Progress bar fill
+    // 2. Progress Fill Bar
     const progress = this.paid / this.cost;
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
-    ctx.fillRect(-this.width / 2 + 2, -this.height / 2 + 2, (this.width - 4) * progress, this.height - 4);
+    if (progress > 0) {
+      ctx.fillStyle = 'rgba(34, 197, 94, 0.28)';
+      ctx.beginPath();
+      ctx.roundRect(-w / 2 + 3, -h / 2 + 3, (w - 6) * progress, h - 6, 13);
+      ctx.fill();
+    }
 
-    // Title & Remaining Cost
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px "Rajdhani", sans-serif';
+    // 3. Preview Icon at Top
+    const previewType = this.getPreviewType();
+    if (previewType) {
+      drawItemIcon(ctx, 0, -18 + bounce * 0.5, previewType, 1.0);
+    } else {
+      ctx.fillStyle = '#0ea5e9';
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -18 + bounce * 0.5, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // 4. Clean Bold Label
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '700 10.5px "Fredoka", "Nunito", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(this.title, 0, -6);
+    ctx.fillText(this.title, 0, 3);
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 14px "Orbitron", sans-serif';
-    ctx.fillText(`$${this.cost - this.paid}`, 0, 14);
+    // 5. Green Price Pill at Bottom
+    ctx.fillStyle = '#22c55e';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-30, 11, 60, 20, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 11.5px "Fredoka", sans-serif';
+    ctx.fillText(`$${this.cost - this.paid}`, 0, 25);
 
     ctx.restore();
   }
 }
 
 /**
- * HELPER: DRAW PIXEL ITEM ICON
+ * HELPER: DRAW GLOSSY VECTOR CARTOON ITEM ICON FOR ALL MARTS
  */
 function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scale, scale);
 
+  // --- MART 1 ITEMS ---
   if (type === 'tomato') {
     ctx.fillStyle = '#ef4444';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#22c55e';
-    ctx.fillRect(-2, -8, 4, 3);
-  } else if (type === 'egg') {
-    ctx.fillStyle = '#fef3c7';
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 5.5, 7.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 1, 8.5, 7.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.beginPath();
+    ctx.ellipse(-3, -2, 2.5, 1.5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#22c55e';
+    ctx.strokeStyle = '#14532d';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-4, -5); ctx.lineTo(0, -8); ctx.lineTo(4, -5); ctx.lineTo(0, -3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+  } else if (type === 'egg') {
+    ctx.fillStyle = '#fef3c7';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6.8, 8.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fde68a';
+    ctx.beginPath();
+    ctx.ellipse(1, 2, 4.5, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(-2.2, -3, 1.8, 2.8, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
   } else if (type === 'apple') {
     ctx.fillStyle = '#84cc16';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.arc(0, 1, 8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(-1.5, -8.5, 3, 3.5);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.beginPath();
+    ctx.ellipse(-3, -2, 2.2, 1.4, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -6); ctx.lineTo(1, -10);
+    ctx.stroke();
+
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.ellipse(4, -8, 3, 1.6, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
   } else if (type === 'milk') {
-    ctx.fillStyle = '#e0f2fe';
-    ctx.fillRect(-4, -7, 8, 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-6.5, -6, 13, 14, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#0ea5e9';
+    ctx.beginPath();
+    ctx.moveTo(-6.5, -5); ctx.lineTo(0, -10.5); ctx.lineTo(6.5, -5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
     ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(-4, -2, 8, 4);
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(-2.5, -9, 5, 2.5);
+    ctx.fillRect(-5, -1, 10, 5);
+
   } else if (type === 'bread') {
     ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(-7, -4, 14, 8, 4);
+    ctx.roundRect(-9, -6, 18, 12, 6);
     ctx.fill();
-    ctx.fillStyle = '#b45309';
-    ctx.fillRect(-4, -5, 8, 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#fef3c7';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, -3); ctx.lineTo(-2, 3);
+    ctx.moveTo(0, -3);  ctx.lineTo(2, 3);
+    ctx.moveTo(4, -3);  ctx.lineTo(6, 3);
+    ctx.stroke();
+
+  // --- MART 2 ITEMS ---
+  } else if (type === 'banana') {
+    // Bright Yellow Banana Bunch
+    ctx.fillStyle = '#eab308';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-2, 2, 8, -0.2, 1.6);
+    ctx.arc(3, 1, 8.5, -0.2, 1.5);
+    ctx.lineTo(2, -7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Green banana stem
+    ctx.fillStyle = '#65a30d';
+    ctx.fillRect(0, -9, 4, 3);
+
+    // Specular shine
+    ctx.fillStyle = '#fef9c3';
+    ctx.beginPath();
+    ctx.ellipse(1, 0, 5, 2, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+  } else if (type === 'coconut') {
+    // Rich Brown Tropical Coconut
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Coconut face 3 dark eyes
+    ctx.fillStyle = '#451a03';
+    ctx.beginPath();
+    ctx.arc(-2.5, -2, 1.6, 0, Math.PI * 2);
+    ctx.arc(2.5, -2, 1.6, 0, Math.PI * 2);
+    ctx.arc(0, 2.5, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Palm leaf fiber highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(-3, -3, 2, 4, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+  } else if (type === 'pineapple') {
+    // Golden Pineapple with Spiky Tropical Crown
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 7.5, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Scale cross-hatch
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(-5, -2); ctx.lineTo(5, 6);
+    ctx.moveTo(5, -2); ctx.lineTo(-5, 6);
+    ctx.moveTo(-5, 2); ctx.lineTo(3, 8);
+    ctx.moveTo(5, 2); ctx.lineTo(-3, 8);
+    ctx.stroke();
+
+    // Spiky green crown
+    ctx.fillStyle = '#16a34a';
+    ctx.strokeStyle = '#14532d';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-5, -6); ctx.lineTo(-7, -12); ctx.lineTo(-2, -8);
+    ctx.lineTo(0, -14); ctx.lineTo(2, -8); ctx.lineTo(7, -12); ctx.lineTo(5, -6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+  } else if (type === 'smoothie') {
+    // Chilled Fruit Smoothie Cup with Straw
+    ctx.fillStyle = '#ec4899';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-6, -4);
+    ctx.lineTo(-4.5, 9);
+    ctx.lineTo(4.5, 9);
+    ctx.lineTo(6, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Whipped cream swirl
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -5, 6, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    // Diagonal striped straw
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(1, -5); ctx.lineTo(5, -13);
+    ctx.stroke();
+
+  } else if (type === 'icecream') {
+    // Gelato Cone with Double Scoop & Cherry
+    ctx.fillStyle = '#d97706';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-6, 0); ctx.lineTo(0, 11); ctx.lineTo(6, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Mint Scoop
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(0, -1, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Strawberry Scoop
+    ctx.fillStyle = '#f43f5e';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, -6, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Red Cherry on top
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(1, -12, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+  // --- MART 3 ITEMS ---
+  } else if (type === 'strawberry') {
+    // Plump Red Strawberry with Seeds
+    ctx.fillStyle = '#f43f5e';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 9);
+    ctx.bezierCurveTo(-9, 4, -8, -5, 0, -4);
+    ctx.bezierCurveTo(8, -5, 9, 4, 0, 9);
+    ctx.fill();
+    ctx.stroke();
+
+    // Tiny golden seeds
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(-3, 0, 1.4, 1.4);
+    ctx.fillRect(3, 0, 1.4, 1.4);
+    ctx.fillRect(0, 3, 1.4, 1.4);
+    ctx.fillRect(-2, -2, 1.4, 1.4);
+    ctx.fillRect(2, -2, 1.4, 1.4);
+
+    // Leafy green top
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.ellipse(0, -5, 5, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+  } else if (type === 'cocoa') {
+    // Golden-Brown Cocoa Pod
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6.5, 9.5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pod longitudinal ridges
+    ctx.strokeStyle = '#ca8a04';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(0, -8); ctx.lineTo(-2, 0); ctx.lineTo(0, 8);
+    ctx.moveTo(0, -8); ctx.lineTo(2, 0); ctx.lineTo(0, 8);
+    ctx.stroke();
+
+  } else if (type === 'chocolate') {
+    // Artisan Chocolate Bar with Gold Foil
+    ctx.fillStyle = '#451a03';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-7, -8, 14, 16, 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Chocolate Grid Squares
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -8); ctx.lineTo(0, 0);
+    ctx.moveTo(-7, -4); ctx.lineTo(7, -4);
+    ctx.stroke();
+
+    // Gold foil bottom wrap
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(-7, 0, 14, 8);
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(-7, 0, 14, 2);
+
+  } else if (type === 'donut') {
+    // Pink Frosted Glazed Donut with Sprinkles
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pink Icing
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(0, 0, 7.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hole in center
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Rainbow Sprinkles
+    ctx.fillStyle = '#facc15'; ctx.fillRect(-4, -4, 2, 1.2);
+    ctx.fillStyle = '#38bdf8'; ctx.fillRect(3, -4, 2, 1.2);
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(-4, 3, 2, 1.2);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(3, 3, 2, 1.2);
+
+  } else if (type === 'candy') {
+    // Rainbow Swirl Lollipop on Stick
+    // White stick
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 4); ctx.lineTo(0, 12);
+    ctx.stroke();
+
+    // Lollipop Disc
+    ctx.fillStyle = '#a855f7';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -2, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Rainbow Swirl Petals
+    ctx.fillStyle = '#ec4899';
+    ctx.beginPath();
+    ctx.arc(0, -2, 7.5, 0, Math.PI * 0.5);
+    ctx.lineTo(0, -2);
+    ctx.fill();
+
+    ctx.fillStyle = '#06b6d4';
+    ctx.beginPath();
+    ctx.arc(0, -2, 7.5, Math.PI, Math.PI * 1.5);
+    ctx.lineTo(0, -2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.ellipse(-2.5, -4.5, 2.5, 1.2, -0.4, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();

@@ -130,6 +130,7 @@
         speed: 3.4,
         dir: 0, // 0: down, 1: up, 2: left, 3: right
         isMoving: false,
+        inBed: false,
         walkFrame: 0,
         toolAction: null,
         toolTimer: 0,
@@ -238,6 +239,8 @@
       this.prevGamepadButtons = {};
       this.gamepadMoveX = 0;
       this.gamepadMoveY = 0;
+    this.touchMoveX = 0;
+    this.touchMoveY = 0;
       this.lastInputSource = 'keyboard'; // 'keyboard', 'mouse', or 'gamepad'
 
       // Positions of Grandma and Key Structures on Farm
@@ -513,6 +516,43 @@
       });
     }
 
+    isInteriorLocation(loc) {
+      return typeof loc === 'string' && loc.startsWith('interior_');
+    }
+
+    createInteriorTiles(cols = 18, rows = 14) {
+      const tiles = [];
+      for (let r = 0; r < rows; r++) {
+        tiles[r] = [];
+        for (let c = 0; c < cols; c++) {
+          tiles[r][c] = {
+            type: 'wood_floor',
+            isTilled: false,
+            isWatered: false,
+            seed: (r * 19 + c * 13) % 100
+          };
+        }
+      }
+      return tiles;
+    }
+
+    exitCurrentInterior() {
+      this.player.inBed = false;
+      if (this.currentLocation === 'interior_cottage') {
+        this.transitionTo('farm', 15 * TILE_SIZE, 9.2 * TILE_SIZE);
+      } else if (this.currentLocation === 'interior_store') {
+        this.transitionTo('city', 8.5 * TILE_SIZE, 9.5 * TILE_SIZE);
+      } else if (this.currentLocation === 'interior_bakery') {
+        this.transitionTo('city', 36.5 * TILE_SIZE, 9.5 * TILE_SIZE);
+      } else if (this.currentLocation === 'interior_blacksmith') {
+        this.transitionTo('city', 8.5 * TILE_SIZE, 23.5 * TILE_SIZE);
+      } else if (this.currentLocation === 'interior_townhall') {
+        this.transitionTo('city', 36.5 * TILE_SIZE, 23.5 * TILE_SIZE);
+      } else {
+        this.transitionTo('farm');
+      }
+    }
+
     switchLocation(loc) {
       if (this.activeLocation && this.activeLocation !== loc) {
         if (this.activeLocation === 'farm') {
@@ -528,6 +568,9 @@
 
       this.currentLocation = loc;
       this.activeLocation = loc;
+      if (loc !== 'interior_cottage') {
+        this.player.inBed = false;
+      }
 
       if (loc === 'farm') {
         if (!this.farm.tiles || this.farm.tiles.length === 0) {
@@ -539,7 +582,7 @@
         this.crops = this.farm.crops;
         this.objects = this.farm.objects;
         this.debrisHealth = this.farm.debrisHealth;
-      } else {
+      } else if (loc === 'city') {
         if (!this.city.tiles || this.city.tiles.length === 0) {
           this.initCityMap();
         }
@@ -549,6 +592,13 @@
         this.crops = {};
         this.objects = this.city.objects;
         this.debrisHealth = {};
+      } else if (this.isInteriorLocation(loc)) {
+        this.mapCols = 18;
+        this.mapRows = 14;
+        this.tiles = this.createInteriorTiles(18, 14);
+        this.crops = {};
+        this.objects = {};
+        this.debrisHealth = {};
       }
 
       this.worldWidth = this.mapCols * TILE_SIZE;
@@ -556,11 +606,24 @@
 
       const locBadge = document.getElementById('hudLocation');
       const travelBtnText = document.getElementById('btnTravelText');
+      const locNames = {
+        farm: "Grandma's Farm",
+        city: "Oakhaven City",
+        interior_cottage: "Farmhouse Cottage",
+        interior_store: "General Store",
+        interior_bakery: "Hazelwood Bakery",
+        interior_blacksmith: "Blacksmith Forge",
+        interior_townhall: "Oakhaven City Hall"
+      };
       if (locBadge) {
-        locBadge.textContent = loc === 'farm' ? "Grandma's Farm" : "Oakhaven City";
+        locBadge.textContent = locNames[loc] || "Grandma's Farm";
       }
       if (travelBtnText) {
-        travelBtnText.textContent = loc === 'farm' ? "Visit City" : "Return to Farm";
+        if (this.isInteriorLocation(loc)) {
+          travelBtnText.textContent = "Step Outside";
+        } else {
+          travelBtnText.textContent = loc === 'farm' ? "Visit City" : "Return to Farm";
+        }
       }
     }
 
@@ -568,6 +631,7 @@
       if (this.isTransitioning) return;
       this.isTransitioning = true;
       this.transitionAlpha = 1.0;
+      this.player.inBed = false;
 
       window.soundSystem?.playDialogue();
 
@@ -577,11 +641,18 @@
         if (spawnX !== undefined && spawnY !== undefined) {
           this.player.x = spawnX;
           this.player.y = spawnY;
+          if (this.isInteriorLocation(targetLoc)) {
+            this.player.dir = 1; // face up into the room when entering
+          }
         } else {
           if (targetLoc === 'city') {
             this.player.x = 23.5 * TILE_SIZE;
             this.player.y = 3 * TILE_SIZE;
             this.player.dir = 0; // facing down
+          } else if (this.isInteriorLocation(targetLoc)) {
+            this.player.x = 8.5 * TILE_SIZE;
+            this.player.y = 10.8 * TILE_SIZE;
+            this.player.dir = 1; // facing up
           } else {
             this.player.x = 29 * TILE_SIZE;
             this.player.y = 42 * TILE_SIZE;
@@ -590,15 +661,34 @@
         }
 
         this.player.targetPos = null;
-        this.camera.x = this.player.x + TILE_SIZE / 2 - this.canvas.width / 2;
-        this.camera.y = this.player.y + TILE_SIZE / 2 - this.canvas.height / 2;
-        this.camera.x = Math.max(0, Math.min(this.camera.x, this.worldWidth - this.canvas.width));
-        this.camera.y = Math.max(0, Math.min(this.camera.y, this.worldHeight - this.canvas.height));
+        if (this.worldWidth <= this.canvas.width) {
+          this.camera.x = -(this.canvas.width - this.worldWidth) / 2;
+        } else {
+          this.camera.x = this.player.x + TILE_SIZE / 2 - this.canvas.width / 2;
+          this.camera.x = Math.max(0, Math.min(this.camera.x, this.worldWidth - this.canvas.width));
+        }
+
+        if (this.worldHeight <= this.canvas.height) {
+          this.camera.y = -(this.canvas.height - this.worldHeight) / 2;
+        } else {
+          this.camera.y = this.player.y + TILE_SIZE / 2 - this.canvas.height / 2;
+          this.camera.y = Math.max(0, Math.min(this.camera.y, this.worldHeight - this.canvas.height));
+        }
 
         if (targetLoc === 'city') {
-          this.showToast('Arrived at Oakhaven City! Explore the plaza, notice board, and shops.');
+          this.showToast('Arrived at Oakhaven City! Walk up to any shop door to go inside.');
+        } else if (targetLoc === 'interior_cottage') {
+          this.showToast('Welcome inside your Farmhouse Cottage! Walk to your bed on the right to lie down and sleep.');
+        } else if (targetLoc === 'interior_store') {
+          this.showToast('Entered Oakhaven General Store! Speak with Penny at the counter to buy seeds or sell crops.');
+        } else if (targetLoc === 'interior_bakery') {
+          this.showToast('Entered Hazelwood Bakery & Cafe! Speak with Nora at the counter for warm pastries.');
+        } else if (targetLoc === 'interior_blacksmith') {
+          this.showToast('Entered Garth’s Blacksmith Forge! Speak with Garth at the counter to upgrade your tools.');
+        } else if (targetLoc === 'interior_townhall') {
+          this.showToast('Entered Oakhaven City Hall! Speak with Mayor Clara at the front desk.');
         } else {
-          this.showToast('Returned to Grandma’s Homestead! The crops and fields await.');
+          this.showToast('Stepped outside onto Grandma’s Homestead!');
         }
       }, 200);
     }
@@ -687,6 +777,78 @@
       });
 
       // Touch controls for mobile / tablets
+      
+      // Mobile Virtual Joystick & Use Button
+      const joyWrap = document.getElementById('farmJoystick');
+      const joyKnob = document.getElementById('farmJoyKnob');
+      if (joyWrap && joyKnob) {
+        let joyTouchId = null;
+        let startX = 0;
+        let startY = 0;
+
+        joyWrap.addEventListener('touchstart', (e) => {
+          if (joyTouchId !== null) return;
+          const t = e.changedTouches[0];
+          joyTouchId = t.identifier;
+          const rect = joyWrap.getBoundingClientRect();
+          startX = rect.left + rect.width / 2;
+          startY = rect.top + rect.height / 2;
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+
+        const onJoyMove = (e) => {
+          if (joyTouchId === null) return;
+          for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            if (t.identifier === joyTouchId) {
+              const dx = t.clientX - startX;
+              const dy = t.clientY - startY;
+              const distVal = Math.hypot(dx, dy);
+              const maxR = 36;
+              if (distVal > 0) {
+                const clamped = Math.min(distVal, maxR);
+                this.touchMoveX = (dx / distVal) * (clamped / maxR);
+                this.touchMoveY = (dy / distVal) * (clamped / maxR);
+                joyKnob.style.transform = `translate(${this.touchMoveX * maxR}px, ${this.touchMoveY * maxR}px)`;
+              }
+              if (e.cancelable) e.preventDefault();
+              break;
+            }
+          }
+        };
+
+        const onJoyEnd = (e) => {
+          if (joyTouchId === null) return;
+          for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            if (t.identifier === joyTouchId) {
+              joyTouchId = null;
+              this.touchMoveX = 0;
+              this.touchMoveY = 0;
+              joyKnob.style.transform = 'translate(0px, 0px)';
+              if (e.cancelable) e.preventDefault();
+              break;
+            }
+          }
+        };
+
+        window.addEventListener('touchmove', onJoyMove, { passive: false });
+        window.addEventListener('touchend', onJoyEnd, { passive: false });
+        window.addEventListener('touchcancel', onJoyEnd, { passive: false });
+      }
+
+      const btnMobileUse = document.getElementById('btnMobileUse');
+      if (btnMobileUse) {
+        btnMobileUse.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.interactFacingTile();
+        });
+        btnMobileUse.addEventListener('touchstart', (e) => {
+          if (e.cancelable) e.preventDefault();
+          this.interactFacingTile();
+        }, { passive: false });
+      }
+
       this.canvas.addEventListener('touchstart', (e) => {
         const rect = this.canvas.getBoundingClientRect();
         const touch = e.touches[0];
@@ -720,7 +882,9 @@
       document.getElementById('btnAudio')?.addEventListener('click', () => this.toggleAudio());
       document.getElementById('btnHelpGuide')?.addEventListener('click', () => this.openHelpGuideModal());
       document.getElementById('btnTravel')?.addEventListener('click', () => {
-        if (this.currentLocation === 'farm') {
+        if (this.isInteriorLocation(this.currentLocation)) {
+          this.exitCurrentInterior();
+        } else if (this.currentLocation === 'farm') {
           this.transitionTo('city');
         } else {
           this.transitionTo('farm');
@@ -1152,6 +1316,24 @@
           dx /= mag;
           dy /= mag;
         }
+      } else if (this.touchMoveX !== 0 || this.touchMoveY !== 0) {
+        const mag = Math.hypot(this.touchMoveX, this.touchMoveY);
+        dx = this.touchMoveX;
+        dy = this.touchMoveY;
+        moveSpeed = this.player.speed * Math.min(1.0, mag);
+        this.player.targetPos = null;
+        this.lastInputSource = 'touch';
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+          this.player.dir = dx > 0 ? 3 : 2;
+        } else {
+          this.player.dir = dy > 0 ? 0 : 1;
+        }
+
+        if (mag > 0.001) {
+          dx /= mag;
+          dy /= mag;
+        }
       }
 
       let isMoving = isKeyboardMoving || isGamepadMoving;
@@ -1176,7 +1358,16 @@
 
       this.player.isMoving = isMoving;
 
-      if (isMoving) {
+      // If player is tucked in bed and presses movement keys/stick, step out of bed!
+      if (this.player.inBed && (isKeyboardMoving || isGamepadMoving)) {
+        this.player.inBed = false;
+        this.player.x = 11.8 * TILE_SIZE;
+        this.player.y = 4.8 * TILE_SIZE;
+        this.player.dir = 0;
+        document.getElementById('sleepModal')?.classList.remove('active');
+      }
+
+      if (isMoving && !this.player.inBed) {
         const nextX = this.player.x + dx * moveSpeed;
         const nextY = this.player.y + dy * moveSpeed;
 
@@ -1210,15 +1401,22 @@
         }
       }
 
-      // 3. Camera smoothly follows player
-      const targetCamX = this.player.x + TILE_SIZE / 2 - this.canvas.width / 2;
-      const targetCamY = this.player.y + TILE_SIZE / 2 - this.canvas.height / 2;
-      this.camera.x += (targetCamX - this.camera.x) * 0.1;
-      this.camera.y += (targetCamY - this.camera.y) * 0.1;
+      // 3. Camera smoothly follows player (or centers interior room if smaller than viewport)
+      if (this.worldWidth <= this.canvas.width) {
+        this.camera.x = -(this.canvas.width - this.worldWidth) / 2;
+      } else {
+        const targetCamX = this.player.x + TILE_SIZE / 2 - this.canvas.width / 2;
+        this.camera.x += (targetCamX - this.camera.x) * 0.1;
+        this.camera.x = Math.max(0, Math.min(this.camera.x, this.worldWidth - this.canvas.width));
+      }
 
-      // Clamp camera within map bounds
-      this.camera.x = Math.max(0, Math.min(this.camera.x, this.worldWidth - this.canvas.width));
-      this.camera.y = Math.max(0, Math.min(this.camera.y, this.worldHeight - this.canvas.height));
+      if (this.worldHeight <= this.canvas.height) {
+        this.camera.y = -(this.canvas.height - this.worldHeight) / 2;
+      } else {
+        const targetCamY = this.player.y + TILE_SIZE / 2 - this.canvas.height / 2;
+        this.camera.y += (targetCamY - this.camera.y) * 0.1;
+        this.camera.y = Math.max(0, Math.min(this.camera.y, this.worldHeight - this.canvas.height));
+      }
 
       // Keep hovered tile synchronized with live camera
       this.updateMouseWorld();
@@ -1249,6 +1447,11 @@
           if (this.player.y <= 1.2 * TILE_SIZE && this.player.x >= 20 * TILE_SIZE && this.player.x <= 27 * TILE_SIZE) {
             this.transitionTo('farm', 16 * TILE_SIZE, 42 * TILE_SIZE);
           }
+        } else if (this.isInteriorLocation(this.currentLocation)) {
+          // Stepping onto the South Exit Mat (cols 7 to 10.5, row 11.9+) steps outside!
+          if (this.player.y >= 11.7 * TILE_SIZE && this.player.x >= 7 * TILE_SIZE && this.player.x <= 10.5 * TILE_SIZE) {
+            this.exitCurrentInterior();
+          }
         }
       }
     }
@@ -1262,6 +1465,40 @@
         top: py + 16,
         bottom: py + 30
       };
+
+      // --- Interior Room Collision Logic ---
+      if (this.isInteriorLocation(this.currentLocation)) {
+        // Perimeter walls: top wall (rows 0..2.8), left wall (col 0..1), right wall (col 17), bottom wall (row 13 except exit door cols 7..11)
+        if (box.left < 1.1 * TILE_SIZE || box.right > 16.9 * TILE_SIZE || box.top < 2.9 * TILE_SIZE) {
+          return true;
+        }
+        if (box.bottom > 12.9 * TILE_SIZE) {
+          if (!(box.left >= 7 * TILE_SIZE && box.right <= 11 * TILE_SIZE)) {
+            return true;
+          }
+        }
+
+        if (this.currentLocation === 'interior_cottage') {
+          // Walking into the Farmhouse Bed (cols 12.8..15.8, rows 3.2..6.5) tucks player into bed!
+          if (box.right > 12.8 * TILE_SIZE && box.left < 15.8 * TILE_SIZE &&
+              box.bottom > 3.2 * TILE_SIZE && box.top < 6.4 * TILE_SIZE) {
+            this.lieInBed();
+            return true;
+          }
+          // Kitchen Dining Table collision (cols 2.2..5, rows 6.5..8.3)
+          if (box.right > 2.2 * TILE_SIZE && box.left < 5.0 * TILE_SIZE &&
+              box.bottom > 6.5 * TILE_SIZE && box.top < 8.3 * TILE_SIZE) {
+            return true;
+          }
+        } else {
+          // Shopkeeper / Civic Counter collision (cols 5..13, rows 4.4..5.6)
+          if (box.right > 5 * TILE_SIZE && box.left < 13 * TILE_SIZE &&
+              box.bottom > 4.2 * TILE_SIZE && box.top < 5.6 * TILE_SIZE) {
+            return true;
+          }
+        }
+        return false;
+      }
 
       if (this.currentLocation === 'city') {
         // City Boundaries:
@@ -1287,13 +1524,26 @@
           return true;
         }
 
-        // City Buildings collision
+        // City Buildings collision & front doors
         for (const b of this.city.buildings) {
           const bLeft = b.x * TILE_SIZE;
           const bRight = (b.x + b.w) * TILE_SIZE;
           const bTop = b.y * TILE_SIZE + 16;
           const bBottom = (b.y + b.h) * TILE_SIZE;
           if (box.right > bLeft && box.left < bRight && box.bottom > bTop && box.top < bBottom) {
+            // Check if player walked into the front door of the building (center of bottom edge)
+            const doorCenter = (b.x + b.w / 2) * TILE_SIZE;
+            if (box.left >= doorCenter - 26 && box.right <= doorCenter + 26 && box.bottom >= bBottom - 16) {
+              const targetMap = {
+                general_store: 'interior_store',
+                bakery: 'interior_bakery',
+                blacksmith: 'interior_blacksmith',
+                town_hall: 'interior_townhall'
+              };
+              if (targetMap[b.type]) {
+                this.transitionTo(targetMap[b.type], 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
+              }
+            }
             return true;
           }
         }
@@ -1334,9 +1584,9 @@
       // Check Cottage bounding box (6x5 tiles)
       if (box.right > this.cottagePos.x + 16 && box.left < this.cottagePos.x + 176 &&
           box.bottom > this.cottagePos.y + 40 && box.top < this.cottagePos.y + 140) {
-        // Cottage front door entrance triggers sleep modal
-        if (box.left >= this.cottagePos.x + 85 && box.right <= this.cottagePos.x + 115 && box.bottom >= this.cottagePos.y + 120) {
-          this.openSleepConfirm();
+        // Cottage front door entrance transitions inside the Farmhouse Cottage!
+        if (box.left >= this.cottagePos.x + 76 && box.right <= this.cottagePos.x + 126 && box.bottom >= this.cottagePos.y + 116) {
+          this.transitionTo('interior_cottage', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
         }
         return true;
       }
@@ -1406,6 +1656,55 @@
         this.player.dir = (tileY > playerTileY) ? 0 : 1;
       }
 
+      // --- INTERIOR BUILDING INTERACTIONS ---
+      if (this.isInteriorLocation(this.currentLocation)) {
+        // 1. South Exit Doorway (cols 7..10, rows 11..13)
+        if (tileX >= 7 && tileX <= 10 && tileY >= 11) {
+          this.exitCurrentInterior();
+          return;
+        }
+
+        if (this.currentLocation === 'interior_cottage') {
+          // 2. The Player's Cozy Farmhouse Bed (cols 12..16, rows 3..7) -> Lie in bed & open Sleep Modal!
+          if (tileX >= 12 && tileX <= 16 && tileY >= 2 && tileY <= 7) {
+            this.lieInBed();
+            return;
+          }
+          // 3. Country Kitchen Table with Grandma's Berry Pie (cols 2..5, rows 6..9)
+          if (tileX >= 2 && tileX <= 5 && tileY >= 5 && tileY <= 9) {
+            this.player.stamina = Math.min(this.player.maxStamina, this.player.stamina + 5);
+            this.showFloatingText('+5 Energy (Warm Tea)', this.player.x + 16, this.player.y - 8, '#4ade80');
+            this.showToast('You sipped warm herbal tea by the farmhouse table. (+5 Energy)');
+            this.updateHUD();
+            return;
+          }
+          // 4. Crackling Stone Fireplace (cols 7..10, rows 1..4)
+          if (tileX >= 7 && tileX <= 10 && tileY >= 1 && tileY <= 4) {
+            this.showToast('The crackling hearth fire fills the cottage with a cozy amber glow.');
+            return;
+          }
+          this.showToast('Walk over to your cozy bed on the right to lie down and sleep!');
+          return;
+        }
+
+        // City Building Interior Counter / NPC Interactions (cols 4..13, rows 2..6)
+        if (tileX >= 4 && tileX <= 13 && tileY >= 2 && tileY <= 6) {
+          if (this.currentLocation === 'interior_store') {
+            this.openShopModal('buy');
+          } else if (this.currentLocation === 'interior_bakery') {
+            this.openBakeryModal();
+          } else if (this.currentLocation === 'interior_blacksmith') {
+            this.openBlacksmithModal();
+          } else if (this.currentLocation === 'interior_townhall') {
+            this.talkToCityNPC('mayor');
+          }
+          return;
+        }
+
+        this.showToast('Approach the front counter to speak with the shopkeeper, or walk to the south door to step outside.');
+        return;
+      }
+
       // --- CITY INTERACTIONS ---
       if (this.currentLocation === 'city') {
         // 1. Central Fountain -> Refill Watering Can
@@ -1434,25 +1733,25 @@
           }
         }
 
-        // 5. City Buildings (Doors & Storefronts)
+        // 5. City Buildings (Doors & Storefronts -> Enter the Building!)
         // General Store (x: 6 to 11, y: 5 to 9)
         if (tileX >= 6 && tileX <= 11 && tileY >= 5 && tileY <= 9) {
-          this.openShopModal('buy');
+          this.transitionTo('interior_store', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
           return;
         }
         // Hazelwood Bakery (x: 34 to 39, y: 5 to 9)
         if (tileX >= 34 && tileX <= 39 && tileY >= 5 && tileY <= 9) {
-          this.openBakeryModal();
+          this.transitionTo('interior_bakery', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
           return;
         }
         // Garth's Blacksmith (x: 6 to 11, y: 19 to 23)
         if (tileX >= 6 && tileX <= 11 && tileY >= 19 && tileY <= 23) {
-          this.openBlacksmithModal();
+          this.transitionTo('interior_blacksmith', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
           return;
         }
         // City Hall (x: 34 to 39, y: 19 to 23)
         if (tileX >= 34 && tileX <= 39 && tileY >= 19 && tileY <= 23) {
-          this.talkToCityNPC('mayor');
+          this.transitionTo('interior_townhall', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
           return;
         }
 
@@ -1468,6 +1767,12 @@
       }
 
       // --- FARM INTERACTIONS ---
+      // Check if clicking Farmhouse Cottage Door / House (cols 12..17, rows 4..8) -> Go Inside Cottage!
+      if (tileX >= 12 && tileX <= 17 && tileY >= 4 && tileY <= 8) {
+        this.transitionTo('interior_cottage', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
+        return;
+      }
+
       // Check if clicking Signpost to City at (16, 44) or (28, 43)
       if (Math.hypot(tileX - 16, tileY - 44) <= 1.8 || Math.hypot(tileX - 28, tileY - 43) <= 1.8) {
         this.transitionTo('city');
@@ -1939,10 +2244,27 @@
     }
 
     // --- Day Transition & Sleep System ---
+    lieInBed() {
+      if (this.player.inBed) {
+        this.openSleepConfirm();
+        return;
+      }
+      this.player.inBed = true;
+      this.player.isMoving = false;
+      this.player.targetPos = null;
+      this.player.x = 13.8 * TILE_SIZE;
+      this.player.y = 4.2 * TILE_SIZE;
+      this.player.dir = 0;
+      this.grandmaApprovedSleep = true;
+      window.soundSystem?.playDialogue();
+      this.showToast('You lie down under the warm patchwork quilt in your bed...');
+      this.openSleepConfirm();
+    }
+
     openSleepConfirm() {
-      // Tutorial Day 1 Requirement: Must talk to Grandma to sleep!
-      if (this.day === 1 && !this.grandmaApprovedSleep) {
-        this.showToast('Grandma Hazel is waiting on the porch! Speak with her before your first night’s rest.');
+      // If player is already inside their house or lying in bed, allow sleeping right away!
+      if (this.day === 1 && !this.grandmaApprovedSleep && this.currentLocation !== 'interior_cottage') {
+        this.showToast('Grandma Hazel is waiting on the porch! Speak with her or head inside to your bed.');
         this.talkToGrandma(true);
         return;
       }
@@ -1958,19 +2280,39 @@
       document.getElementById('sleepModal')?.classList.remove('active');
       this.rumble(80, 0.4, 0.6);
 
+      // Sync active farm tiles if currently on farm
+      if (this.currentLocation === 'farm') {
+        this.farm.tiles = this.tiles;
+        this.farm.crops = this.crops;
+        this.farm.objects = this.objects;
+        this.farm.debrisHealth = this.debrisHealth;
+      }
+
       // 1. Advance Day Count
       this.day++;
       this.timeMinutes = 6 * 60; // Reset to 6:00 AM
       this.player.stamina = this.player.maxStamina; // Full energy restore
+      this.player.inBed = false;
+
+      // Wake up refreshed beside the bed inside your Farmhouse Cottage!
+      if (this.currentLocation === 'interior_cottage') {
+        this.player.x = 11.8 * TILE_SIZE;
+        this.player.y = 4.8 * TILE_SIZE;
+        this.player.dir = 0;
+      }
 
       // 2. Weather Roll (75% Sunny, 25% Rainy)
       this.weather = Math.random() < 0.25 ? 'rainy' : 'sunny';
 
-      // 3. Process Automatic Sprinklers & Rain Watering
+      // 3. Process Automatic Sprinklers & Rain Watering on the Farm
       let wateredCount = 0;
-      for (let r = 0; r < this.mapRows; r++) {
-        for (let c = 0; c < this.mapCols; c++) {
-          const tile = this.tiles[r][c];
+      const farmTiles = this.farm.tiles;
+      const farmObjects = this.farm.objects;
+      const farmCrops = this.farm.crops;
+
+      for (let r = 0; r < this.farm.rows; r++) {
+        for (let c = 0; c < this.farm.cols; c++) {
+          const tile = farmTiles[r][c];
           
           if (this.weather === 'rainy') {
             if (tile.isTilled || tile.type === 'soil') {
@@ -1979,10 +2321,10 @@
           } else {
             // Check adjacent sprinklers
             const hasSprinklerNearby = 
-              this.objects[`${c+1},${r}`] === 'sprinkler' ||
-              this.objects[`${c-1},${r}`] === 'sprinkler' ||
-              this.objects[`${c},${r+1}`] === 'sprinkler' ||
-              this.objects[`${c},${r-1}`] === 'sprinkler';
+              farmObjects[`${c+1},${r}`] === 'sprinkler' ||
+              farmObjects[`${c-1},${r}`] === 'sprinkler' ||
+              farmObjects[`${c},${r+1}`] === 'sprinkler' ||
+              farmObjects[`${c},${r-1}`] === 'sprinkler';
 
             if (hasSprinklerNearby) {
               tile.isWatered = true;
@@ -1994,10 +2336,10 @@
 
       // 4. Grow Crops that were watered
       let maturedCrops = 0;
-      for (const key in this.crops) {
-        const crop = this.crops[key];
+      for (const key in farmCrops) {
+        const crop = farmCrops[key];
         const [cx, cy] = key.split(',').map(Number);
-        const tile = this.tiles[cy][cx];
+        const tile = farmTiles[cy][cx];
 
         if (tile.isWatered) {
           crop.daysGrown++;
@@ -3112,7 +3454,10 @@
       const hours = this.timeMinutes / 60;
       const isNight = (hours < 6 || hours >= 19.5);
 
-      if (this.currentLocation === 'city') {
+      if (this.isInteriorLocation(this.currentLocation)) {
+        // --- Building & Farmhouse Interior Rendering ---
+        Sprites.drawInteriorRoom(ctx, this.currentLocation, currentTime, this.player.inBed);
+      } else if (this.currentLocation === 'city') {
         // --- City Rendering ---
         // 1. Draw Map Tiles
         for (let r = 0; r < this.mapRows; r++) {
@@ -3254,16 +3599,18 @@
         this.drawShopCart(ctx, this.shopCartPos.x, this.shopCartPos.y);
       }
 
-      // 8. Draw Player
-      Sprites.drawPlayer(
-        ctx,
-        this.player.x,
-        this.player.y,
-        this.player.dir,
-        this.player.isMoving,
-        this.player.toolAction,
-        this.player.walkFrame
-      );
+      // 8. Draw Player (when standing/walking; if tucked in bed, drawInteriorRoom draws them under the quilt!)
+      if (!this.player.inBed) {
+        Sprites.drawPlayer(
+          ctx,
+          this.player.x,
+          this.player.y,
+          this.player.dir,
+          this.player.isMoving,
+          this.player.toolAction,
+          this.player.walkFrame
+        );
+      }
 
       // 9. Draw Grid Cursor Highlight
       this.drawCursorHighlight(ctx);
@@ -3273,8 +3620,10 @@
 
       ctx.restore();
 
-      // 11. Ambient Day / Night / Weather Lighting
-      this.renderAmbientLighting(ctx);
+      // 11. Ambient Day / Night / Weather Lighting (only outdoors)
+      if (!this.isInteriorLocation(this.currentLocation)) {
+        this.renderAmbientLighting(ctx);
+      }
 
       // 12. Floating Texts
       this.renderFloatingTexts(ctx);

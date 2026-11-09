@@ -637,6 +637,12 @@ const Sprites = {
     ctx.fillRect(startX + 16, startY + 128, w - 32, 10);
     ctx.fillStyle = this.colors.woodDark;
     ctx.fillRect(startX + 16, startY + 138, w - 32, 4);
+
+    // Cozy Welcome Mat in front of the door
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(startX + 86, startY + 128, 34, 10);
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(startX + 88, startY + 130, 30, 6);
   },
 
   drawWindowWithCurtain(ctx, x, y) {
@@ -1176,6 +1182,432 @@ const Sprites = {
       // Red Collar
       ctx.fillStyle = '#ef4444';
       ctx.fillRect(x + 18, y + 15, 3, 4);
+    }
+  },
+
+  // --- Interior Building & Farmhouse Rooms (18x14 tiles = 576x448) ---
+  drawInteriorRoom(ctx, locType, time = 0, playerInBed = false) {
+    const s = this.TILE_SIZE;
+    const cols = 18;
+    const rows = 14;
+    const roomW = cols * s;
+    const roomH = rows * s;
+
+    // Outer dark frame shadow
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(-2000, -2000, 5000, 5000);
+
+    // Room Drop Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(8, 12, roomW, roomH);
+
+    // Theme Colors per Building
+    let floorBase = '#c88a4b';
+    let floorPlank = '#b57638';
+    let floorLine = '#8c5319';
+    let wallTop = '#451a03';
+    let wallFace = '#fde68a';
+    let wainscoting = '#92400e';
+    let rugMain = '#991b1b';
+    let rugInner = '#dc2626';
+    let rugTrim = '#fbbf24';
+    let roomTitle = "FARMHOUSE COTTAGE";
+
+    if (locType === 'interior_store') {
+      floorBase = '#d69e5c';
+      floorPlank = '#c08543';
+      wallFace = '#dcfce7';
+      wainscoting = '#166534';
+      rugMain = '#15803d';
+      rugInner = '#22c55e';
+      rugTrim = '#fef08a';
+      roomTitle = "OAKHAVEN GENERAL STORE";
+    } else if (locType === 'interior_bakery') {
+      floorBase = '#f5d0fe';
+      floorPlank = '#f0abfc';
+      wallFace = '#fce7f3';
+      wainscoting = '#9d174d';
+      rugMain = '#be185d';
+      rugInner = '#ec4899';
+      rugTrim = '#ffffff';
+      roomTitle = "HAZELWOOD BAKERY & CAFE";
+    } else if (locType === 'interior_blacksmith') {
+      floorBase = '#64748b';
+      floorPlank = '#475569';
+      floorLine = '#334155';
+      wallFace = '#78716c';
+      wainscoting = '#292524';
+      rugMain = '#7c2d12';
+      rugInner = '#ea580c';
+      rugTrim = '#fdba74';
+      roomTitle = "GARTH'S BLACKSMITH FORGE";
+    } else if (locType === 'interior_townhall') {
+      floorBase = '#cbd5e1';
+      floorPlank = '#94a3b8';
+      floorLine = '#64748b';
+      wallFace = '#e0e7ff';
+      wainscoting = '#1e3a8a';
+      rugMain = '#1d4ed8';
+      rugInner = '#3b82f6';
+      rugTrim = '#facc15';
+      roomTitle = "OAKHAVEN CITY HALL";
+    }
+
+    // 1. Draw Floor Planks (cols 1..16, rows 3..12)
+    for (let r = 3; r < rows - 1; r++) {
+      for (let c = 1; c < cols - 1; c++) {
+        const fx = c * s;
+        const fy = r * s;
+        ctx.fillStyle = ((r + c) % 2 === 0) ? floorBase : floorPlank;
+        ctx.fillRect(fx, fy, s, s);
+        // Horizontal plank lines
+        ctx.fillStyle = floorLine;
+        ctx.fillRect(fx, fy + 15, s, 1);
+        ctx.fillRect(fx, fy + 31, s, 1);
+        ctx.fillRect(fx + ((r % 2) * 16), fy, 1, 15);
+      }
+    }
+
+    // 2. Draw Back Wall (rows 0..2) & Side/Bottom Perimeter Walls
+    // Top wall crown
+    ctx.fillStyle = wallTop;
+    ctx.fillRect(0, 0, roomW, s);
+    // Back wall wallpaper (rows 1..2)
+    ctx.fillStyle = wallFace;
+    ctx.fillRect(s, s, roomW - s * 2, s * 2);
+    // Wainscoting wood trim along bottom of back wall
+    ctx.fillStyle = wainscoting;
+    ctx.fillRect(s, s * 2 + 14, roomW - s * 2, 18);
+    ctx.fillStyle = '#271406';
+    ctx.fillRect(s, s * 3 - 2, roomW - s * 2, 2);
+
+    // Side & Bottom Thick Timber Walls
+    ctx.fillStyle = wallTop;
+    ctx.fillRect(0, 0, s, roomH); // Left wall
+    ctx.fillRect(roomW - s, 0, s, roomH); // Right wall
+    ctx.fillRect(0, roomH - s, s * 7, s); // Bottom-left wall
+    ctx.fillRect(s * 11, roomH - s, s * 7, s); // Bottom-right wall
+
+    // Inner border highlight
+    ctx.strokeStyle = '#92400e';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(s, s, roomW - s * 2, roomH - s * 2);
+
+    // 3. South Exit Doorway & Welcome Mat (cols 7..10, row 12..13)
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(7 * s, 13 * s, 4 * s, s);
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(7 * s + 6, 13 * s + 2, 4 * s - 12, s - 4);
+    // Welcome mat inside doorway
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(7.5 * s, 12 * s + 4, 3 * s, 26);
+    ctx.fillStyle = '#fef08a';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(7.5 * s + 3, 12 * s + 7, 3 * s - 6, 20);
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('EXIT DOOR (v)', 9 * s, 12 * s + 20);
+
+    // Room Header Banner on Top Wall
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(5.5 * s, 5, 7 * s, 22);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(5.5 * s, 5, 7 * s, 22);
+    ctx.fillStyle = '#fef3c7';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(roomTitle, 9 * s, 20);
+
+    // 4. Room-Specific Interior Furniture & Details
+    if (locType === 'interior_cottage') {
+      // --- FARMHOUSE COTTAGE INTERIOR ---
+      // Windows on Back Wall
+      this.drawWindowWithCurtain(ctx, 4 * s, s + 10);
+      this.drawWindowWithCurtain(ctx, 13.5 * s, s + 10);
+
+      // Center Parlor Woven Rug (cols 6..11, rows 6..10)
+      ctx.fillStyle = rugTrim;
+      ctx.fillRect(6 * s, 6.5 * s, 5.5 * s, 3.8 * s);
+      ctx.fillStyle = rugMain;
+      ctx.fillRect(6 * s + 4, 6.5 * s + 4, 5.5 * s - 8, 3.8 * s - 8);
+      ctx.fillStyle = rugInner;
+      ctx.fillRect(6 * s + 14, 6.5 * s + 14, 5.5 * s - 28, 3.8 * s - 28);
+
+      // Stone Hearth & Fireplace (cols 7.5..10.5, rows 1..3)
+      const fpX = 7.5 * s;
+      const fpY = 1 * s;
+      ctx.fillStyle = this.colors.stoneDark;
+      ctx.fillRect(fpX, fpY, 3 * s, 2.3 * s);
+      ctx.fillStyle = this.colors.stoneMid;
+      ctx.fillRect(fpX + 4, fpY + 4, 3 * s - 8, 2.3 * s - 8);
+      // Wood Mantelpiece
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(fpX - 6, fpY + 26, 3 * s + 12, 8);
+      // Firebox opening
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(fpX + 18, fpY + 38, 3 * s - 36, 34);
+      // Crackling Animated Fire
+      const flicker = Math.sin(time * 0.012) * 3;
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.arc(fpX + 48, fpY + 60, 16 + flicker * 0.4, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(fpX + 48, fpY + 62, 10 - flicker * 0.3, Math.PI, 0);
+      ctx.fill();
+      // Warm Fire Glow on Floor
+      ctx.fillStyle = 'rgba(251, 146, 60, 0.18)';
+      ctx.beginPath();
+      ctx.ellipse(fpX + 48, fpY + 86, 48, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Left Wall Bookshelf (cols 1.5..3.5, rows 2..3.5)
+      ctx.fillStyle = '#5c2d0c';
+      ctx.fillRect(1.5 * s, 1.5 * s, 2 * s, 2 * s);
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(1.5 * s + 4, 1.5 * s + 4, 2 * s - 8, 2 * s - 8);
+      // Colorful book spines
+      const bookColors = ['#ef4444', '#3b82f6', '#10b981', '#eab308', '#a855f7', '#ec4899'];
+      for (let b = 0; b < 6; b++) {
+        ctx.fillStyle = bookColors[b];
+        ctx.fillRect(1.5 * s + 8 + b * 8, 1.5 * s + 10, 6, 16);
+        ctx.fillRect(1.5 * s + 8 + b * 8, 1.5 * s + 34, 6, 16);
+      }
+
+      // Country Kitchen Counter & Dining Table (cols 2..5, rows 6..9)
+      const tblX = 2.2 * s;
+      const tblY = 6.5 * s;
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(tblX + 4, tblY + 56, 88, 10);
+      // Wooden Table
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(tblX, tblY, 88, 56);
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(tblX + 4, tblY + 4, 80, 48);
+      // Checkered Table Runner
+      ctx.fillStyle = '#fef2f2';
+      ctx.fillRect(tblX + 18, tblY + 4, 52, 48);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(tblX + 24, tblY + 10, 40, 36);
+      // Grandma's Fresh Berry Pie on Table
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(tblX + 44, tblY + 28, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#be123c';
+      ctx.beginPath();
+      ctx.arc(tblX + 44, tblY + 28, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Potted Houseplants in bottom corners
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(1.5 * s + 6, 10.8 * s + 14, 20, 16);
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.arc(1.5 * s + 16, 10.8 * s + 10, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // --- THE PLAYER'S COZY FARMHOUSE BED (cols 13..15.5, rows 3.2..6.5) ---
+      const bedX = 13 * s;
+      const bedY = 3.2 * s;
+      const bedW = 2.6 * s; // 83px
+      const bedH = 3.2 * s; // 102px
+
+      // Bed Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.fillRect(bedX - 4, bedY + 8, bedW + 8, bedH);
+
+      // Bedside Nightstand with Warm Lamp (col 11.8, row 3.3)
+      ctx.fillStyle = '#5c2d0c';
+      ctx.fillRect(11.7 * s, 3.3 * s, 32, 34);
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(11.7 * s + 3, 3.3 * s + 3, 26, 28);
+      // Lamp
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(11.7 * s + 12, 3.3 * s + 10, 8, 12);
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.moveTo(11.7 * s + 6, 3.3 * s + 12);
+      ctx.lineTo(11.7 * s + 16, 3.3 * s - 2);
+      ctx.lineTo(11.7 * s + 26, 3.3 * s + 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wooden Headboard & Frame
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(bedX, bedY, bedW, bedH);
+      // Carved Oak Headboard Top
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(bedX + 4, bedY + 3, bedW - 8, 22);
+      // Brass Bedposts
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(bedX, bedY, 7, 7);
+      ctx.fillRect(bedX + bedW - 7, bedY, 7, 7);
+      ctx.fillRect(bedX, bedY + bedH - 7, 7, 7);
+      ctx.fillRect(bedX + bedW - 7, bedY + bedH - 7, 7, 7);
+
+      // Soft Cream Mattress
+      ctx.fillStyle = '#fffbeb';
+      ctx.fillRect(bedX + 6, bedY + 22, bedW - 12, bedH - 28);
+
+      // Fluffy White Pillows
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(bedX + 12, bedY + 25, bedW - 24, 20);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(bedX + 14, bedY + 26, bedW - 28, 16);
+
+      // If Player is Lying in Bed: Draw Player's Head on the Pillow before drawing the Quilt over their body!
+      if (playerInBed) {
+        const px = bedX + Math.floor(bedW / 2) - 16;
+        const py = bedY + 26;
+        // Brown Hair
+        ctx.fillStyle = '#854d0e';
+        ctx.fillRect(px + 8, py, 16, 12);
+        // Face resting on pillow
+        ctx.fillStyle = '#fed7aa';
+        ctx.fillRect(px + 10, py + 4, 12, 11);
+        // Closed peaceful sleeping eyes
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(px + 11, py + 9, 3, 1.5);
+        ctx.fillRect(px + 18, py + 9, 3, 1.5);
+        // Rosy sleeping cheeks
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillRect(px + 10, py + 11, 2, 2);
+        ctx.fillRect(px + 20, py + 11, 2, 2);
+
+        // Straw Hat hung neatly on the right bedpost!
+        ctx.fillStyle = '#ca8a04';
+        ctx.fillRect(bedX + bedW - 14, bedY - 4, 18, 10);
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(bedX + bedW - 11, bedY - 1, 12, 3);
+      }
+
+      // Cozy Patchwork Quilt Blanket (covers lower 60% of bed, and tucks the player in!)
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(bedX + 6, bedY + 44, bedW - 12, bedH - 50);
+      // Folded Top Sheet Trim
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(bedX + 6, bedY + 42, bedW - 12, 7);
+      // Patchwork Quilt Squares (Gold & Forest Green & Crimson)
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(bedX + 10, bedY + 53, 18, 18);
+      ctx.fillRect(bedX + 48, bedY + 53, 18, 18);
+      ctx.fillRect(bedX + 29, bedY + 73, 18, 18);
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(bedX + 29, bedY + 53, 18, 18);
+      ctx.fillRect(bedX + 10, bedY + 73, 18, 18);
+      ctx.fillRect(bedX + 48, bedY + 73, 18, 18);
+
+      // Floating "Zzz" or "COZY BED (SLEEP)" Label above Bed
+      const bob = Math.sin(time * 0.004) * 3;
+      if (playerInBed) {
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Zzz...', bedX + bedW / 2 + 8, bedY - 6 + bob);
+      } else {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+        ctx.fillRect(bedX + 2, bedY - 22 + bob, bedW - 4, 18);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bedX + 2, bedY - 22 + bob, bedW - 4, 18);
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('COZY BED (SLEEP)', bedX + bedW / 2, bedY - 10 + bob);
+      }
+
+    } else {
+      // --- CITY BUILDING INTERIORS (General Store, Bakery, Blacksmith, Town Hall) ---
+      // Center Carpet Runner leading from Door to Counter
+      ctx.fillStyle = rugTrim;
+      ctx.fillRect(6.5 * s, 5.5 * s, 5 * s, 6 * s);
+      ctx.fillStyle = rugMain;
+      ctx.fillRect(6.5 * s + 4, 5.5 * s + 4, 5 * s - 8, 6 * s - 8);
+      ctx.fillStyle = rugInner;
+      ctx.fillRect(6.5 * s + 12, 5.5 * s + 12, 5 * s - 24, 6 * s - 24);
+
+      // Shopkeeper / Civic Counter (cols 5..12, row 4.5)
+      const ctrX = 5 * s;
+      const ctrY = 4.5 * s;
+      const ctrW = 8 * s;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(ctrX + 4, ctrY + 30, ctrW, 8);
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(ctrX, ctrY, ctrW, 32);
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(ctrX + 4, ctrY + 4, ctrW - 8, 24);
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(ctrX - 2, ctrY, ctrW + 4, 7);
+
+      // Draw Resident NPC behind the Counter!
+      let npcType = 'penny';
+      let actionLabel = 'TALK / SHOP (E)';
+      if (locType === 'interior_store') {
+        npcType = 'penny';
+        actionLabel = 'SEED & GENERAL SHOP (E)';
+        // Display crates of produce & seeds on left & right walls
+        for (let i = 0; i < 3; i++) {
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(1.8 * s, (4.5 + i * 2) * s, 48, 36);
+          ctx.fillStyle = i === 0 ? '#ef4444' : (i === 1 ? '#f59e0b' : '#22c55e');
+          ctx.fillRect(1.8 * s + 6, (4.5 + i * 2) * s + 6, 36, 24);
+        }
+      } else if (locType === 'interior_bakery') {
+        npcType = 'baker';
+        actionLabel = 'FRESH PASTRIES & PIES (E)';
+        // Brick Bakery Oven on back-left wall
+        ctx.fillStyle = '#7f1d1d';
+        ctx.fillRect(2 * s, 1.5 * s, 2.5 * s, 2.2 * s);
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(2.5 * s, 2.4 * s, 1.5 * s, 1 * s);
+        // Café Tables on right side
+        ctx.fillStyle = '#9d174d';
+        ctx.fillRect(13.5 * s, 6.5 * s, 54, 44);
+        ctx.fillStyle = '#fbcfe8';
+        ctx.fillRect(13.5 * s + 4, 6.5 * s + 4, 46, 36);
+      } else if (locType === 'interior_blacksmith') {
+        npcType = 'blacksmith';
+        actionLabel = 'FORGE & UPGRADE TOOLS (E)';
+        // Glowing Lava Forge & Anvil on left side
+        ctx.fillStyle = '#292524';
+        ctx.fillRect(1.8 * s, 2 * s, 3 * s, 2.2 * s);
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(2.2 * s, 2.6 * s, 2.2 * s, 1.2 * s);
+        // Heavy Iron Anvil
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(2.5 * s, 6.5 * s, 48, 28);
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(2.3 * s, 6.3 * s, 60, 12);
+      } else if (locType === 'interior_townhall') {
+        npcType = 'mayor';
+        actionLabel = 'SPEAK WITH MAYOR CLARA (E)';
+        // Bookshelves & Town Banners
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(2.5 * s, 1.3 * s, 28, 48);
+        ctx.fillRect(14.5 * s, 1.3 * s, 28, 48);
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(2.5 * s + 6, 1.3 * s + 8, 16, 16);
+        ctx.fillRect(14.5 * s + 6, 1.3 * s + 8, 16, 16);
+      }
+
+      // Draw NPC behind counter
+      this.drawNPC(ctx, 8.5 * s, 3.1 * s, npcType, time);
+
+      // Floating Prompt Banner over Counter
+      const bob = Math.sin(time * 0.004) * 2.5;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(6.2 * s, 2.1 * s + bob, 5.6 * s, 18);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(6.2 * s, 2.1 * s + bob, 5.6 * s, 18);
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(actionLabel, 9 * s, 2.1 * s + 12 + bob);
     }
   }
 };

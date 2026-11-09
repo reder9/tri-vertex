@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pixel Type Hero - Gamified Typing Adventure</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Retro CRT Scanline Overlay -->
+  <div class="crt-overlay"></div>
+
+  <!-- Main Game Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Heads-Up Display (HUD) Layer -->
+  <div id="ui-layer">
+    
+    <!-- Top Navigation & Stats Bar -->
+    <header class="top-hud">
+      
+      <!-- Brand & Active Stage -->
+      <div class="hud-card brand-card">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7"/>
+            <line x1="9" x2="15" y1="20" y2="20"/>
+            <line x1="12" x2="12" y1="4" y2="20"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="hero-title">PIXEL TYPE HERO</span>
+          <span id="hud-level-name" class="hero-level">LV.1 HOME ROW DOJO</span>
+        </div>
+      </div>
+
+      <!-- Castle Shield Defense Hearts -->
+      <div class="hud-card hearts-card" title="Castle Shield Health">
+        <span class="stat-label">SHIELD:</span>
+        <div id="castle-hearts" class="hearts-row">
+          <!-- Populated by game.js -->
+        </div>
+      </div>
+
+      <!-- Currency & Score Counters -->
+      <div class="hud-card currency-card">
+        <!-- Coins -->
+        <div class="stat-pill" title="Gold Coins earned from defeating word monsters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15 9.5a2.5 2.5 0 0 0-5 0c0 2.5 5 2.5 5 5a2.5 2.5 0 0 1-5 0"/>
+          </svg>
+          <span id="hud-coins" class="coin-val">60</span>
+        </div>
+
+        <!-- Star Gems -->
+        <div class="stat-pill" title="Star Gems for pet & wand rewards">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span id="hud-gems" class="gem-val">25</span>
+        </div>
+
+        <!-- WPM & Accuracy -->
+        <div class="stat-pill" title="Words Per Minute (Typing Speed)">
+          <span class="mini-label">WPM:</span>
+          <span id="hud-wpm" class="stat-val">0</span>
+        </div>
+
+        <div class="stat-pill" title="Typing Accuracy">
+          <span class="mini-label">ACC:</span>
+          <span id="hud-accuracy" class="stat-val">100%</span>
+        </div>
+
+        <div class="stat-pill streak-pill" title="Consecutive Correct Keystroke Streak">
+          <span class="mini-label">STREAK:</span>
+          <span id="hud-streak" class="streak-val">0x</span>
+        </div>
+      </div>
+
+      <!-- Top Action Buttons -->
+      <div class="top-actions">
+        <!-- Level Select Button -->
+        <button id="btn-levels" class="hud-btn highlight-btn" title="Choose Level / Arena (Xbox Y / Click)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>Levels</span>
+        </button>
+
+        <!-- Pet & Wand Shop Button -->
+        <button id="btn-shop" class="hud-btn highlight-shop" title="Pet Companion & Magic Wand Shop (Xbox X / Click)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>Rewards</span>
+        </button>
+
+        <!-- Music Toggle -->
+        <button id="btn-music" class="hud-btn icon-only" title="Toggle Music">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </button>
+
+        <!-- Sound FX Toggle -->
+        <button id="btn-sfx" class="hud-btn icon-only" title="Toggle Sound FX">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+        </button>
+
+        <!-- Pause Button -->
+        <button id="btn-pause" class="hud-btn icon-only" title="Pause Menu (Escape / Xbox Start)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        </button>
+
+        <!-- Back to Hub -->
+        <a href="../index.html" class="hud-btn" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 6px;" title="Back to Leyten's Games Hub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Hub</span>
+        </a>
+      </div>
+
+    </header>
+
+    <!-- Bottom Interactive Finger Guide & Pixel Keyboard -->
+    <footer class="bottom-dock">
+      
+      <!-- Finger Placement Guide Card -->
+      <div class="finger-guide-card">
+        <div class="guide-header-row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+          </svg>
+          <span class="guide-title">TYPING TRAINER</span>
+          <span class="progress-pill">PROGRESS: <span id="hud-progress">0/8</span></span>
+        </div>
+        <div id="finger-tip-text" class="guide-tip">
+          Loading typing tip...
+        </div>
+      </div>
+
+      <!-- Interactive 16-Bit Color-Coded Keyboard -->
+      <div id="virtual-keyboard" class="pixel-keyboard">
+        <!-- Dynamically generated with color-coded finger zones -->
+      </div>
+
+      <!-- Hidden Mobile Native Input Assist -->
+      <input type="text" id="mobile-type-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;">
+    </footer>
+
+  </div>
+
+  <!-- Shop & Companion Pet Wardrobe Modal -->
+  <div id="shop-modal" class="modal-overlay hidden">
+    <div class="modal-card wide-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <h2 class="modal-title" style="margin: 0;">HERO SHOP & PET SANCTUARY</h2>
+        </div>
+        <button id="btn-close-shop" class="hud-btn icon-only" title="Close (Escape / Xbox B)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="modal-subtitle">Adopt cute companion pets, unlock glowing magic wands, and equip legendary hero armor!</p>
+
+      <div id="shop-items-list" class="shop-grid">
+        <!-- Populated by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Select Modal -->
+  <div id="level-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <h2 class="modal-title" style="margin: 0;">SELECT TYPING ARENA</h2>
+        </div>
+        <button id="btn-close-levels" class="hud-btn icon-only" title="Close (Escape / Xbox B)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="modal-subtitle">Advance from the Home Row Dojo to the Vocab Dragon Lair!</p>
+
+      <div id="level-select-list" class="level-list">
+        <!-- Populated by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Victory / Game Over Modal -->
+  <div id="victory-modal" class="modal-overlay hidden">
+    <div class="modal-card" style="text-align: center;">
+      <h2 id="victory-title" class="modal-title">VICTORY!</h2>
+      <div id="victory-stats" class="victory-stats-box">
+        <!-- Populated by game.js -->
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button id="btn-replay-level" class="action-btn-main" style="background: #334155;">
+          <span>REPLAY</span>
+        </button>
+        <button id="btn-next-level" class="action-btn-main">
+          <span>NEXT ARENA</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Modal Dialog -->
+  <div id="pause-modal" class="modal-overlay hidden">
+    <div class="modal-card" style="text-align: center;">
+      <h2 class="modal-title">GAME PAUSED</h2>
+      <p style="color: #94a3b8; font-size: 0.95rem;">Type the letters floating above the monsters to defend the kingdom! Use the glowing on-screen keyboard to guide your fingers.</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+        <button id="btn-resume" class="action-btn-main">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span>RESUME GAME</span>
+        </button>
+
+        <button id="btn-pause-levels" class="action-btn-main" style="background: #0284c7;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          <span>CHOOSE ARENA / LEVELS</span>
+        </button>
+
+        <button id="btn-pause-shop" class="action-btn-main" style="background: #7c3aed;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>HERO SHOP &amp; PETS</span>
+        </button>
+        
+        <a href="../index.html" class="hud-btn" style="justify-content: center; text-decoration: none; padding: 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </svg>
+          <span>Return to Game Hub</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="words.js"></script>
+  <script src="audio.js"></script>
+  <script src="entities.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

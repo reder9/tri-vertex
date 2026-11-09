@@ -933,3 +933,133 @@ body {
 .inv-slot-mini:hover {
   border-color: #facc15;
 }
+
+/* ==========================================================================
+   MOBILE & TABLET TOUCH CONTROLS AND RESPONSIVENESS
+   ========================================================================== */
+.mobile-controls-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 85;
+  display: none;
+}
+
+@media (pointer: coarse), (max-width: 900px) {
+  .mobile-controls-layer {
+    display: block;
+  }
+}
+
+.virtual-joystick-wrap {
+  position: absolute;
+  bottom: 85px;
+  left: 20px;
+  width: 96px;
+  height: 96px;
+  background: rgba(30, 41, 59, 0.45);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.virtual-joystick-knob {
+  width: 42px;
+  height: 42px;
+  background: #4ade80;
+  border: 3px solid #14532d;
+  border-radius: 50%;
+  box-shadow: 0 3px 0 #14532d;
+  pointer-events: none;
+}
+
+.mobile-action-buttons {
+  position: absolute;
+  bottom: 85px;
+  right: 20px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-action-btn {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #15803d;
+  border: 3px solid #86efac;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #14532d, 0 6px 16px rgba(0, 0, 0, 0.4);
+  touch-action: manipulation;
+}
+
+.mobile-action-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #14532d;
+}
+
+@media (max-width: 860px) {
+  #gameHeader {
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .brand-section span {
+    font-size: 0.85rem;
+  }
+  .status-pill {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+  .header-actions {
+    gap: 4px;
+  }
+  .btn-header {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+  #gameFooter {
+    padding: 6px 8px;
+  }
+  .gamepad-hint-row {
+    display: none;
+  }
+  .hotbar-slot {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-section {
+    display: none;
+  }
+  .btn-header span {
+    display: none;
+  }
+  .status-pill span {
+    font-size: 0.68rem;
+  }
+  .hotbar-slot {
+    width: 36px;
+    height: 36px;
+  }
+  #btnOpenBackpack {
+    height: 44px !important;
+    padding: 2px 8px !important;
+  }
+}

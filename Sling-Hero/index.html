@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sling Hero - Retro Physics Slingshot Arcade | Leyten's Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Retro CRT Scanline Overlay -->
+  <div class="crt-overlay"></div>
+
+  <!-- Top Arcade Navbar & HUD -->
+  <header class="arcade-navbar" role="banner">
+    <div class="nav-left">
+      <a href="../index.html" class="hub-back-btn" title="Back to Leyten's Arcade Hub">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>HUB</span>
+      </a>
+
+      <div class="game-brand">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+            <path d="M2 12h20"></path>
+          </svg>
+        </div>
+        <span class="brand-text">SLING HERO</span>
+      </div>
+    </div>
+
+    <!-- Center Status Pills -->
+    <div class="nav-center">
+      <!-- Level Name Pill -->
+      <div class="hud-pill">
+        <span class="hud-pill-label">MISSION:</span>
+        <span class="hud-pill-value" id="hud-level">LVL 1: FIRST FLING</span>
+      </div>
+
+      <!-- Shots Taken Pill -->
+      <div class="hud-pill">
+        <span class="hud-pill-label">SHOTS:</span>
+        <span class="hud-pill-value" id="hud-shots">0</span>
+        <span style="font-size: 0.65rem; color: #64748b; margin-left: 2px;" id="hud-par">PAR: 3</span>
+      </div>
+
+      <!-- Score Pill -->
+      <div class="hud-pill">
+        <span class="hud-pill-label">SCORE:</span>
+        <span class="hud-pill-value" id="hud-score">0</span>
+      </div>
+
+      <!-- Level 3-Star Rating -->
+      <div class="hud-pill">
+        <div class="hud-stars-container">
+          <div class="hud-star" id="star-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#facc15" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="hud-star" id="star-1">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#facc15" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="hud-star" id="star-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#facc15" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Action Buttons -->
+    <div class="nav-right">
+      <button class="action-btn" id="btn-restart" title="Restart Level (R / Y button)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        <span>RESTART</span>
+      </button>
+
+      <button class="action-btn" id="btn-levels" title="Level Map (L / X button)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>LEVELS</span>
+      </button>
+
+      <button class="action-btn" id="btn-sound" title="Toggle Sound FX (M)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <span>SFX</span>
+      </button>
+
+      <button class="action-btn" id="btn-music" title="Toggle Chiptune Music (N)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+        <span>BGM</span>
+      </button>
+
+      <button class="action-btn btn-accent" id="btn-pause" title="Pause Game (P / Esc / Start)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+        <span>PAUSE</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport with Scaled Physics Canvas -->
+  <main class="game-viewport">
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <!-- Bottom Guidance & Gamepad Pill -->
+    <div class="bottom-bar">
+      <div class="hint-msg">
+        <svg class="hint-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span id="hud-hint">Aim with trajectory and release to sling!</span>
+      </div>
+
+      <div class="controller-pills">
+        <span class="key-pill"><strong>DRAG / L-STICK</strong> AIM</span>
+        <span class="key-pill"><strong>RELEASE / A</strong> SLING</span>
+        <span class="key-pill"><strong>R / Y</strong> RESTART</span>
+        <span class="key-pill"><strong>L / X</strong> LEVELS</span>
+        <span class="key-pill"><strong>ESC / START</strong> PAUSE</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================================
+       LEVEL SELECT MODAL
+       ====================================================================== -->
+  <div class="modal-overlay hidden" id="level-modal" role="dialog" aria-modal="true" aria-labelledby="modal-level-title">
+    <div class="modal-dialog level-dialog">
+      <button class="btn-close-corner" id="btn-close-levels" title="Close Level Select">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-level-title">MISSION SELECT</h2>
+        <p class="modal-subtitle">Choose a cleared level to improve your star rating or play the latest unlock.</p>
+      </div>
+
+      <div class="levels-grid" id="levels-grid">
+        <!-- Rendered by game.js renderLevelsGrid() -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="window.slingGameInstance.closeModals()">
+          <span>CLOSE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       LEVEL CLEARED / VICTORY MODAL
+       ====================================================================== -->
+  <div class="modal-overlay hidden" id="win-modal" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="win-title">LEVEL COMPLETED!</h2>
+        <p class="modal-subtitle">Great slingshot aim! Portal reached safely.</p>
+      </div>
+
+      <div class="modal-stars-row" id="win-stars-row">
+        <!-- Rendered dynamically by game.js openWinModal() -->
+      </div>
+
+      <div class="modal-stats" id="win-stats">
+        <!-- Populated with shots taken, par, and score -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn" id="btn-next-level">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>NEXT MISSION</span>
+        </button>
+
+        <button class="modal-btn secondary" id="btn-replay-level">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>REPLAY</span>
+        </button>
+
+        <button class="modal-btn secondary" onclick="window.slingGameInstance.toggleLevelModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>LEVELS</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       GAME OVER / OUT OF SHOTS MODAL
+       ====================================================================== -->
+  <div class="modal-overlay hidden" id="over-modal" role="dialog" aria-modal="true" aria-labelledby="over-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="over-title" style="text-shadow: 3px 3px 0 #b91c1c;">OUT OF SHOTS</h2>
+        <p class="modal-subtitle">Don't give up! Try a different bounce angle or slingshot tension.</p>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button class="modal-btn" id="btn-retry-over">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>TRY AGAIN</span>
+        </button>
+
+        <button class="modal-btn secondary" onclick="window.slingGameInstance.toggleLevelModal()">
+          <span>SELECT LEVEL</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       PAUSE MODAL
+       ====================================================================== -->
+  <div class="modal-overlay hidden" id="pause-modal" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="pause-title">GAME PAUSED</h2>
+        <p class="modal-subtitle">Take a breather, hero! Whenever you're ready, sling back into action.</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn" id="btn-resume">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>RESUME</span>
+        </button>
+
+        <button class="modal-btn secondary" onclick="window.slingGameInstance.loadLevel(window.slingGameInstance.currentLevelIdx); window.slingGameInstance.closeModals();">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>RESTART</span>
+        </button>
+
+        <button class="modal-btn secondary" onclick="window.slingGameInstance.toggleLevelModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>LEVELS</span>
+        </button>
+
+        <a href="../index.html" class="modal-btn secondary" style="text-decoration: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>ARCADE HUB</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Scripts (Audio -> Levels -> Game Engine) -->
+  <script src="audio.js"></script>
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
