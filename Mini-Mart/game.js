@@ -271,6 +271,25 @@ class MiniMartGame {
     this.martListRefreshTimer = 0;
     this.busTriggerLock = false;
 
+    // Store Rating, Gems, Dynamic Events, Decor/Pets & Gourmet Combos
+    this.gems = 0;
+    this.starRating = 4.0;
+    this.hypeTimer = 0;
+    this.rushTimer = 0;
+    this.eventCooldown = 26;
+    this.spills = [];
+    this.raccoon = null;
+    this.comboStation = null;
+    this.shopDog = null;
+    this.shopDogOwned = false;
+    this.speakerInstalled = false;
+    this.cashVacuumInstalled = false;
+    this.playerOutfit = 'classic';
+    this.unlockedOutfits = ['classic'];
+    this.vanCooldown = 0;
+    this.upgradeTab = 'upgrades';
+    this.contracts = this.createDefaultContracts();
+
     // Visual FX
     this.flyingItems = [];
     this.particles = [];
@@ -284,6 +303,12 @@ class MiniMartGame {
     // UI Cache
     this.ui = {
       hudMoney: document.getElementById('hud-money'),
+      hudRating: document.getElementById('hud-rating'),
+      hudGems: document.getElementById('hud-gems'),
+      eventBanner: document.getElementById('event-banner'),
+      eventBannerDot: document.getElementById('event-banner-dot'),
+      eventBannerTitle: document.getElementById('event-banner-title'),
+      eventBannerSub: document.getElementById('event-banner-sub'),
       hudStack: document.getElementById('hud-stack'),
       hudLevel: document.getElementById('hud-level'),
       hudMartTitle: document.getElementById('hud-mart-title'),
@@ -388,7 +413,10 @@ class MiniMartGame {
     this.shelves = config.createShelves();
     this.checkout = new CheckoutCounter(780, 670);
     this.pickupStation = new PickupStation(1210, 515);
+    this.comboStation = new ComboStation(410, 560, config.id);
     this.trashBin = new TrashBin(490, 800);
+    this.spills = [];
+    this.raccoon = null;
     this.unlockZones = config.createUnlockZones();
     this.staffHelpers = [];
     this.deliveryCourier = null;
@@ -540,6 +568,15 @@ class MiniMartGame {
     if (saved.courierHired) {
       this.hireCourier();
     }
+
+    // Gourmet Combo Station near main checkout patio
+    this.comboStation = new ComboStation(410, 560, martId);
+    this.spills = [];
+    this.raccoon = null;
+    if (this.shopDogOwned && !this.shopDog) {
+      this.shopDog = new ShopDog(this.player.x - 36, this.player.y + 18);
+    }
+    this.player.outfitStyle = this.playerOutfit || 'classic';
 
     if (this.pickupStation && Array.isArray(saved.pickupOrders)) {
       this.pickupStation.orders = saved.pickupOrders.map(o => ({ ...o, itemsRemaining: [...o.itemsRemaining] }));
@@ -908,6 +945,18 @@ class MiniMartGame {
           this.rumble(35, 0.25, 0.2);
         }
       }
+
+      // LB / RB switch Upgrade Modal tabs with controller
+      if (this.ui.upgradeModal && !this.ui.upgradeModal.classList.contains('hidden')) {
+        const tabs = ['upgrades', 'decor', 'contracts'];
+        if (isJustPressed(4) || isJustPressed(5)) {
+          const curIdx = Math.max(0, tabs.indexOf(this.upgradeTab || 'upgrades'));
+          const step = isJustPressed(5) ? 1 : -1;
+          this.upgradeTab = tabs[(curIdx + step + tabs.length) % tabs.length];
+          this.modalFocusIdx = 0;
+          this.updateUpgradeModal();
+        }
+      }
     } else {
       const rawMag = Math.hypot(lx, ly);
       const DEADZONE = 0.16;
@@ -1176,48 +1225,304 @@ class MiniMartGame {
     this.updateUpgradeModal();
   }
 
+  createDefaultContracts() {
+    return [
+      { id: 'c_customers', trackKey: 'customers', title: 'Friendly Service', desc: 'Serve happy customers at checkout.', progress: 0, target: 10, rewardGems: 4, claimed: false },
+      { id: 'c_combos',    trackKey: 'combos',    title: 'Gourmet Crafter',  desc: 'Craft Gourmet Combos at the Combo Bar.', progress: 0, target: 3, rewardGems: 5, claimed: false },
+      { id: 'c_clean',     trackKey: 'clean',     title: 'Spotless Floor',   desc: 'Clean floor spills or shoo cheeky raccoons.', progress: 0, target: 3, rewardGems: 5, claimed: false },
+      { id: 'c_vip',       trackKey: 'vip',       title: 'VIP Hospitality',  desc: 'Serve a VIP Critic & trigger Store Hype.', progress: 0, target: 1, rewardGems: 6, claimed: false },
+      { id: 'c_tips',      trackKey: 'tips',      title: 'Tip Magnet',       desc: 'Earn fast-service tips from shoppers.', progress: 0, target: 40, rewardGems: 4, claimed: false }
+    ];
+  }
+
+  adjustStarRating(delta) {
+    this.starRating = Math.max(1.0, Math.min(5.0, +(this.starRating + delta).toFixed(2)));
+  }
+
+  advanceContract(trackKey, amount = 1) {
+    if (!Array.isArray(this.contracts)) return;
+    let newlyReady = false;
+    this.contracts.forEach(c => {
+      if (c.claimed || c.trackKey !== trackKey) return;
+      const wasDone = c.progress >= c.target;
+      c.progress = Math.min(c.target, (c.progress || 0) + amount);
+      if (!wasDone && c.progress >= c.target) {
+        newlyReady = true;
+      }
+    });
+    if (newlyReady) {
+      this.showRemoteToast('Contract Ready!', 'Open Upgrades > Contracts to claim Gems!', '#0ea5e9');
+    }
+  }
+
+  claimContract(contractId) {
+    const c = (this.contracts || []).find(item => item.id === contractId);
+    if (!c || c.claimed || c.progress < c.target) return;
+    c.claimed = true;
+    this.gems += c.rewardGems;
+    if (window.miniMartAudio) window.miniMartAudio.playQuestComplete();
+    if (this.rumble) this.rumble(140, 0.3, 0.35);
+    this.spawnFloatingText(this.player.x, this.player.y - 45, `+${c.rewardGems} GEMS!`, '#0284c7', 20);
+    // Refresh next repeatable tier for endless contract play
+    const nextTarget = Math.max(c.target + 2, Math.round(c.target * 1.6));
+    c.target = nextTarget;
+    c.progress = 0;
+    c.claimed = false;
+    c.rewardGems += 1;
+    this.saveGame();
+    this.updateUpgradeModal();
+  }
+
+  getDecorCatalog() {
+    return [
+      {
+        id: 'shop_dog',
+        name: 'Sunny Pup Helper',
+        sub: this.shopDogOwned ? 'ACTIVE COMPANION' : 'Follows & Protects Store',
+        desc: 'Trots alongside you, sweeps floor spills clean & chases away raccoons automatically!',
+        gems: 6,
+        owned: this.shopDogOwned,
+        active: this.shopDogOwned,
+        color: '#f59e0b',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg>'
+      },
+      {
+        id: 'music_speaker',
+        name: 'Cozy Store Speaker',
+        sub: this.speakerInstalled ? 'INSTALLED (-35% Patience Drain)' : 'Store Atmosphere Upgrade',
+        desc: 'Lo-fi aisle tunes keep queued & waiting shoppers calm 35% longer for higher tips.',
+        gems: 5,
+        owned: this.speakerInstalled,
+        active: this.speakerInstalled,
+        color: '#8b5cf6',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><line x1="12" y1="6" x2="12.01" y2="6"/></svg>'
+      },
+      {
+        id: 'cash_vacuum',
+        name: 'Auto Cash Magnet',
+        sub: this.cashVacuumInstalled ? 'INSTALLED (Instant Deposit)' : 'Register Automation',
+        desc: 'Automatically vacuums register sales cash directly into your wallet anywhere in the mart.',
+        gems: 7,
+        owned: this.cashVacuumInstalled,
+        active: this.cashVacuumInstalled,
+        color: '#10b981',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"/></svg>'
+      },
+      {
+        id: 'outfit_classic',
+        name: 'Classic Mart Uniform',
+        sub: 'Sky Shirt & Sunny Green Apron',
+        desc: 'Traditional Mini Mart franchise gear.',
+        gems: 0,
+        owned: true,
+        active: this.playerOutfit === 'classic',
+        color: '#16a34a',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>'
+      },
+      {
+        id: 'outfit_gold',
+        name: 'Golden Tycoon Apron',
+        sub: 'Gold Chef Vest & Cap',
+        desc: 'Shine across every store with championship gold attire.',
+        gems: 4,
+        owned: this.unlockedOutfits.includes('gold'),
+        active: this.playerOutfit === 'gold',
+        color: '#d97706',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>'
+      },
+      {
+        id: 'outfit_arcade',
+        name: 'Neon Arcade Jacket',
+        sub: 'Cyan & Magenta Retro Look',
+        desc: 'Stylish dark arcade uniform built for speedruns.',
+        gems: 4,
+        owned: this.unlockedOutfits.includes('arcade'),
+        active: this.playerOutfit === 'arcade',
+        color: '#ec4899',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+      },
+      {
+        id: 'outfit_royal',
+        name: 'Royal Violet Manager',
+        sub: 'Indigo Coat & Violet Crown Cap',
+        desc: 'Signature franchise director uniform.',
+        gems: 5,
+        owned: this.unlockedOutfits.includes('royal'),
+        active: this.playerOutfit === 'royal',
+        color: '#7c3aed',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>'
+      }
+    ];
+  }
+
+  buyDecorItem(itemId) {
+    const item = this.getDecorCatalog().find(d => d.id === itemId);
+    if (!item) return;
+
+    if (item.id.startsWith('outfit_')) {
+      const styleKey = item.id.replace('outfit_', '');
+      if (!item.owned) {
+        if (this.gems < item.gems) return;
+        this.gems -= item.gems;
+        this.unlockedOutfits.push(styleKey);
+      }
+      this.playerOutfit = styleKey;
+      this.player.outfitStyle = styleKey;
+    } else {
+      if (item.owned || this.gems < item.gems) return;
+      this.gems -= item.gems;
+      if (item.id === 'shop_dog') {
+        this.shopDogOwned = true;
+        this.shopDog = new ShopDog(this.player.x - 36, this.player.y + 18);
+      } else if (item.id === 'music_speaker') {
+        this.speakerInstalled = true;
+      } else if (item.id === 'cash_vacuum') {
+        this.cashVacuumInstalled = true;
+      }
+    }
+
+    if (window.miniMartAudio) window.miniMartAudio.playUnlock();
+    if (this.rumble) this.rumble(120, 0.25, 0.35);
+    this.saveGame();
+    this.updateUpgradeModal();
+  }
+
   updateUpgradeModal() {
     if (!this.ui.upgradesList) return;
     const martCfg = MARTS_CONFIG[this.currentMartId] || MARTS_CONFIG.mart_farm;
     if (this.ui.upgradeMartSubtitle) {
-      this.ui.upgradeMartSubtitle.innerText = `Managing: ${martCfg.name} (Wallet: $${this.money})`;
+      this.ui.upgradeMartSubtitle.innerText = `Managing: ${martCfg.name} | Cash: $${this.money} | Gems: ${this.gems}`;
     }
 
-    const cat = this.getUpgradesCatalog();
-    const renderRow = (u) => {
-      const canAfford = !u.isMax && this.money >= u.cost;
-      const btnClass = u.isMax ? 'upgrade-btn maxed' : (canAfford ? 'upgrade-btn' : 'upgrade-btn cannot-afford');
-      const costText = u.isMax ? 'MAXED' : `$${u.cost}`;
-      const labelText = u.isMax ? 'LEVEL' : u.btnLabel;
-      return `
-        <div class="upgrade-item">
-          <div class="upgrade-item-left">
-            <div class="upgrade-icon" style="background: ${u.color};">${u.icon}</div>
-            <div class="upgrade-details">
-              <div class="upgrade-name">${u.name}</div>
-              <div class="upgrade-sub">${u.sub}</div>
-              <div class="upgrade-desc">${u.desc}</div>
-            </div>
-          </div>
-          <button class="${btnClass}" data-upgrade-id="${u.id}" ${u.isMax ? 'disabled' : ''}>
-            <span>${labelText}</span>
-            <span>${costText}</span>
-          </button>
-        </div>
-      `;
-    };
-
-    this.ui.upgradesList.innerHTML = `
-      <div class="upgrade-section-title">GLOBAL OWNER UPGRADES (ALL MARTS)</div>
-      ${cat.global.map(renderRow).join('')}
-      <div class="upgrade-section-title">STORE STAFF &amp; LOGISTICS (${martCfg.shortTitle})</div>
-      ${cat.mart.map(renderRow).join('')}
+    const activeTab = this.upgradeTab || 'upgrades';
+    const readyContracts = (this.contracts || []).filter(c => c.progress >= c.target).length;
+    const tabsHtml = `
+      <div class="up-tabs">
+        <button class="up-tab-btn ${activeTab === 'upgrades' ? 'active' : ''}" data-up-tab="upgrades">Staff &amp; Gear</button>
+        <button class="up-tab-btn ${activeTab === 'decor' ? 'active' : ''}" data-up-tab="decor">Decor &amp; Pets (${this.gems} Gems)</button>
+        <button class="up-tab-btn ${activeTab === 'contracts' ? 'active' : ''}" data-up-tab="contracts">Contracts${readyContracts > 0 ? ` (${readyContracts}!)` : ''}</button>
+      </div>
     `;
+
+    let bodyHtml = '';
+
+    if (activeTab === 'upgrades') {
+      const cat = this.getUpgradesCatalog();
+      const renderRow = (u) => {
+        const canAfford = !u.isMax && this.money >= u.cost;
+        const btnClass = u.isMax ? 'upgrade-btn maxed' : (canAfford ? 'upgrade-btn' : 'upgrade-btn cannot-afford');
+        const costText = u.isMax ? 'MAXED' : `$${u.cost}`;
+        const labelText = u.isMax ? 'LEVEL' : u.btnLabel;
+        return `
+          <div class="upgrade-item">
+            <div class="upgrade-item-left">
+              <div class="upgrade-icon" style="background: ${u.color};">${u.icon}</div>
+              <div class="upgrade-details">
+                <div class="upgrade-name">${u.name}</div>
+                <div class="upgrade-sub">${u.sub}</div>
+                <div class="upgrade-desc">${u.desc}</div>
+              </div>
+            </div>
+            <button class="${btnClass}" data-upgrade-id="${u.id}" ${u.isMax ? 'disabled' : ''}>
+              <span>${labelText}</span>
+              <span>${costText}</span>
+            </button>
+          </div>
+        `;
+      };
+      bodyHtml = `
+        <div class="upgrade-section-title">GLOBAL OWNER UPGRADES (ALL MARTS)</div>
+        ${cat.global.map(renderRow).join('')}
+        <div class="upgrade-section-title">STORE STAFF &amp; LOGISTICS (${martCfg.shortTitle})</div>
+        ${cat.mart.map(renderRow).join('')}
+      `;
+    } else if (activeTab === 'decor') {
+      const items = this.getDecorCatalog();
+      bodyHtml = `<div class="upgrade-section-title">STORE DECOR, PUP COMPANION &amp; UNIFORMS</div>` + items.map(d => {
+        const isOutfit = d.id.startsWith('outfit_');
+        let btnClass = 'upgrade-btn up-gem-cost';
+        let labelText = 'BUY';
+        let costText = `${d.gems} GEMS`;
+        let disabled = '';
+        if (isOutfit && d.active) {
+          btnClass = 'upgrade-btn maxed'; labelText = 'EQUIPPED'; costText = 'ON'; disabled = 'disabled';
+        } else if (isOutfit && d.owned) {
+          btnClass = 'upgrade-btn'; labelText = 'EQUIP'; costText = 'OWNED';
+        } else if (d.owned) {
+          btnClass = 'upgrade-btn maxed'; labelText = 'ACTIVE'; costText = 'OWNED'; disabled = 'disabled';
+        } else if (this.gems < d.gems) {
+          btnClass = 'upgrade-btn cannot-afford';
+        }
+        return `
+          <div class="upgrade-item">
+            <div class="upgrade-item-left">
+              <div class="upgrade-icon" style="background: ${d.color};">${d.icon}</div>
+              <div class="upgrade-details">
+                <div class="upgrade-name">${d.name}</div>
+                <div class="upgrade-sub">${d.sub}</div>
+                <div class="upgrade-desc">${d.desc}</div>
+              </div>
+            </div>
+            <button class="${btnClass}" data-decor-id="${d.id}" ${disabled}>
+              <span>${labelText}</span>
+              <span>${costText}</span>
+            </button>
+          </div>
+        `;
+      }).join('');
+    } else {
+      bodyHtml = `<div class="upgrade-section-title">FRANCHISE CONTRACTS (EARN GEMS FOR DECOR &amp; PETS)</div>` + (this.contracts || []).map(c => {
+        const pct = Math.min(100, Math.round(((c.progress || 0) / c.target) * 100));
+        const ready = c.progress >= c.target;
+        const btnClass = ready ? 'upgrade-btn up-gem-cost' : 'upgrade-btn cannot-afford';
+        return `
+          <div class="upgrade-item">
+            <div class="upgrade-item-left">
+              <div class="upgrade-icon" style="background: #0284c7;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 22 9 12 22 2 9 6 3"/></svg>
+              </div>
+              <div class="upgrade-details">
+                <div class="upgrade-name">${c.title}</div>
+                <div class="upgrade-sub">${c.progress}/${c.target} Complete (Reward: +${c.rewardGems} Gems)</div>
+                <div class="upgrade-desc">${c.desc}</div>
+                <div class="up-progress-bar"><div class="up-progress-fill" style="width:${pct}%;"></div></div>
+              </div>
+            </div>
+            <button class="${btnClass}" data-claim-id="${c.id}" ${ready ? '' : 'disabled'}>
+              <span>${ready ? 'CLAIM' : 'ACTIVE'}</span>
+              <span>+${c.rewardGems} GEMS</span>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    this.ui.upgradesList.innerHTML = tabsHtml + bodyHtml;
+
+    this.ui.upgradesList.querySelectorAll('button[data-up-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.upgradeTab = btn.getAttribute('data-up-tab');
+        this.modalFocusIdx = 0;
+        if (window.miniMartAudio) window.miniMartAudio.playBlip();
+        this.updateUpgradeModal();
+      });
+    });
 
     this.ui.upgradesList.querySelectorAll('button[data-upgrade-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-upgrade-id');
-        this.buyUpgrade(id);
+        this.buyUpgrade(btn.getAttribute('data-upgrade-id'));
+      });
+    });
+
+    this.ui.upgradesList.querySelectorAll('button[data-decor-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.buyDecorItem(btn.getAttribute('data-decor-id'));
+      });
+    });
+
+    this.ui.upgradesList.querySelectorAll('button[data-claim-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.claimContract(btn.getAttribute('data-claim-id'));
       });
     });
   }
@@ -1239,6 +1544,19 @@ class MiniMartGame {
     this.busTriggerLock = true;
   }
 
+  dispatchSupplyVan() {
+    if (this.unlockedMarts.length < 2 || this.vanCooldown > 0) return;
+    const bonus = 45 * this.unlockedMarts.length + Math.round(this.marketingLevel * 12);
+    this.money += bonus;
+    this.vanCooldown = 45;
+    if (window.miniMartAudio) window.miniMartAudio.playDeliveryHorn();
+    if (this.rumble) this.rumble(150, 0.35, 0.45);
+    this.spawnFloatingText(this.player.x, this.player.y - 45, `SUPPLY VAN +$${bonus}!`, '#0284c7', 21);
+    this.showRemoteToast('Supply Van Dispatched!', `Earned +$${bonus} inter-mart wholesale profit`, '#0284c7');
+    this.renderMartsList();
+    this.saveGame();
+  }
+
   toggleMartsModal() {
     if (!this.ui.martsModal) return;
     if (this.ui.martsModal.classList.contains('hidden')) {
@@ -1252,6 +1570,23 @@ class MiniMartGame {
     if (!this.ui.martsList) return;
 
     let html = '';
+    const vanUnlockedCount = this.unlockedMarts.length;
+    if (vanUnlockedCount >= 2) {
+      const vanReady = this.vanCooldown <= 0;
+      const vanPayout = 45 * vanUnlockedCount + Math.round(this.marketingLevel * 12);
+      html += `
+        <div class="van-dispatch-card">
+          <div class="van-dispatch-info">
+            <div class="van-dispatch-title">INTER-MART SUPPLY VAN (${vanUnlockedCount} STORES LINKED)</div>
+            <div class="van-dispatch-sub">${vanReady ? `Ready to haul wholesale goods across your stores for +$${vanPayout}!` : `Supply Van en route... returns in ${Math.ceil(this.vanCooldown)}s`}</div>
+          </div>
+          <button class="mart-action-btn ${vanReady ? 'travel-btn' : 'active-btn'}" ${vanReady ? '' : 'disabled'} onclick="window.miniMartInstance.dispatchSupplyVan()">
+            <span>${vanReady ? `DISPATCH +$${vanPayout}` : `${Math.ceil(this.vanCooldown)}S`}</span>
+          </button>
+        </div>
+      `;
+    }
+
     const martKeys = ['mart_farm', 'mart_beach', 'mart_candy'];
 
     martKeys.forEach((key) => {
@@ -1636,11 +1971,12 @@ class MiniMartGame {
     this.camera.x += (this.camera.targetX - this.camera.x) * camLerp;
     this.camera.y += (this.camera.targetY - this.camera.y) * camLerp;
 
-    // 3. Update Plots, Shelves, Checkout, Pickup Station, Trash Bin, and Unlock Zones
+    // 3. Update Plots, Shelves, Checkout, Pickup Station, Combo Bar, Trash Bin, and Unlock Zones
     this.plots.forEach(plot => plot.update(dt, this));
     this.shelves.forEach(shelf => shelf.update(dt, this));
     if (this.checkout) this.checkout.update(dt, this);
     if (this.pickupStation) this.pickupStation.update(dt, this);
+    if (this.comboStation) this.comboStation.update(dt, this);
     if (this.trashBin) this.trashBin.update(dt, this);
     this.unlockZones.forEach(zone => zone.update(dt, this));
 
@@ -1654,13 +1990,19 @@ class MiniMartGame {
       }
     });
 
-    // 4. Update Staff Helpers & Delivery Courier if hired
+    // 4. Update Staff Helpers, Delivery Courier, and Shop Dog
     for (let i = 0; i < this.staffHelpers.length; i++) {
       this.staffHelpers[i].update(dt, this);
     }
     if (this.deliveryCourier) {
       this.deliveryCourier.update(dt, this);
     }
+    if (this.shopDog) {
+      this.shopDog.update(dt, this);
+    }
+
+    // 4a. Update Dynamic Store Events, Spills, Raccoon & Van Cooldown
+    this.updateDynamicEvents(dt);
 
     // 4b. Simulate Unlocked Remote Marts in Background
     this.updateBackgroundMarts(dt);
@@ -1676,9 +2018,10 @@ class MiniMartGame {
       }
     }
 
-    // 6. Customer Spawner (scaled by Marketing & Ads upgrade)
-    const effectiveSpawnInterval = Math.max(1.4, this.customerSpawnInterval - (this.marketingLevel - 1) * 0.45);
-    const effectiveMaxCustomers = this.maxCustomers + (this.marketingLevel - 1) * 2;
+    // 6. Customer Spawner (scaled by Marketing & Ads upgrade + Rush Hour)
+    const rushFactor = this.rushTimer > 0 ? 0.5 : 1.0;
+    const effectiveSpawnInterval = Math.max(0.85, (this.customerSpawnInterval - (this.marketingLevel - 1) * 0.45) * rushFactor);
+    const effectiveMaxCustomers = this.maxCustomers + (this.marketingLevel - 1) * 2 + (this.rushTimer > 0 ? 4 : 0);
     this.customerSpawnTimer += dt;
     if (this.customerSpawnTimer >= effectiveSpawnInterval && this.customers.length < effectiveMaxCustomers) {
       this.customerSpawnTimer = 0;
@@ -1736,6 +2079,32 @@ class MiniMartGame {
 
     // 11. Update DOM HUD & Live Modals
     if (this.ui.hudMoney) this.ui.hudMoney.innerText = `$${this.money}`;
+    if (this.ui.hudGems) this.ui.hudGems.innerText = `${this.gems}`;
+    if (this.ui.hudRating) {
+      this.ui.hudRating.innerText = this.starRating.toFixed(1);
+      const card = this.ui.hudRating.closest('.rating-card');
+      if (card) card.classList.toggle('golden-mart', this.starRating >= 4.5);
+    }
+    if (this.ui.eventBanner) {
+      if (this.hypeTimer > 0) {
+        this.ui.eventBanner.classList.remove('hidden');
+        this.ui.eventBannerDot.style.background = '#fbbf24';
+        this.ui.eventBannerTitle.innerText = 'VIP HYPE ACTIVE';
+        this.ui.eventBannerSub.innerText = `+25% Prices (${Math.ceil(this.hypeTimer)}s)`;
+      } else if (this.rushTimer > 0) {
+        this.ui.eventBanner.classList.remove('hidden');
+        this.ui.eventBannerDot.style.background = '#f97316';
+        this.ui.eventBannerTitle.innerText = 'RUSH HOUR WAVE';
+        this.ui.eventBannerSub.innerText = `+50% Tips (${Math.ceil(this.rushTimer)}s)`;
+      } else if (this.raccoon && !this.raccoon.scared) {
+        this.ui.eventBanner.classList.remove('hidden');
+        this.ui.eventBannerDot.style.background = '#ef4444';
+        this.ui.eventBannerTitle.innerText = 'RACCOON ALERT';
+        this.ui.eventBannerSub.innerText = 'Walk close to shoo!';
+      } else {
+        this.ui.eventBanner.classList.add('hidden');
+      }
+    }
     if (this.ui.hudStack) this.ui.hudStack.innerText = `${this.player.carryStack.length}/${this.player.maxStack}`;
     const level = 1
       + this.plots.filter(p => p.unlocked).length
@@ -1969,19 +2338,155 @@ class MiniMartGame {
     }
   }
 
-  spawnCustomer() {
+  updateDynamicEvents(dt) {
+    if (this.hypeTimer > 0) this.hypeTimer = Math.max(0, this.hypeTimer - dt);
+    if (this.rushTimer > 0) this.rushTimer = Math.max(0, this.rushTimer - dt);
+    if (this.vanCooldown > 0) this.vanCooldown = Math.max(0, this.vanCooldown - dt);
+
+    // Player sweeps up floor spills automatically by walking/dashing over them
+    for (let i = this.spills.length - 1; i >= 0; i--) {
+      const sp = this.spills[i];
+      if (Math.hypot(this.player.x - sp.x, this.player.y - sp.y) < sp.radius + 14) {
+        this.cleanSpillAt(i, 'CLEAN +$12!');
+      }
+    }
+
+    // Cheeky Raccoon logic: sneaks toward a stocked shelf unless chased away
+    if (this.raccoon) {
+      const r = this.raccoon;
+      r.anim += dt * 10;
+      if (!r.scared) {
+        const dPlayer = Math.hypot(this.player.x - r.x, this.player.y - r.y);
+        if (dPlayer < 46) {
+          this.shooRaccoon('SHOO +$18!');
+        } else {
+          const target = r.targetShelf;
+          if (!target || target.items <= 0) {
+            r.scared = true;
+          } else {
+            const dx = target.x - r.x;
+            const dy = (target.y + 38) - r.y;
+            const d = Math.hypot(dx, dy);
+            if (d > 8) {
+              r.facingRight = dx >= 0;
+              r.x += (dx / d) * 76 * dt;
+              r.y += (dy / d) * 76 * dt;
+            } else {
+              r.stealTimer += dt;
+              if (r.stealTimer >= 2.2) {
+                target.items = Math.max(0, target.items - 1);
+                r.scared = true;
+                this.spawnFloatingText(target.x, target.y - 30, 'STOLE 1 ITEM!', '#ef4444', 15);
+              }
+            }
+          }
+        }
+      } else {
+        const dx = this.entranceX - r.x;
+        const dy = (this.entranceY + 40) - r.y;
+        const d = Math.hypot(dx, dy);
+        r.facingRight = dx >= 0;
+        r.x += (dx / Math.max(1, d)) * 220 * dt;
+        r.y += (dy / Math.max(1, d)) * 220 * dt;
+        if (d < 20) {
+          this.raccoon = null;
+        }
+      }
+    }
+
+    // Periodic Dynamic Events (Spill / Cheeky Raccoon / Rush Hour / VIP Critic)
+    this.eventCooldown -= dt;
+    if (this.eventCooldown <= 0) {
+      this.eventCooldown = 28 + Math.random() * 14;
+      this.triggerRandomEvent();
+    }
+  }
+
+  triggerRandomEvent(forcedType = null) {
+    const roll = forcedType || (['spill', 'vip', 'rush', 'raccoon'][Math.floor(Math.random() * 4)]);
+    if (roll === 'spill') {
+      this.spawnSpill();
+    } else if (roll === 'vip') {
+      this.spawnCustomer(true);
+      this.showRemoteToast('VIP Critic Arrived!', 'Serve them fast to trigger Store Hype (+25%)!', '#eab308');
+    } else if (roll === 'rush') {
+      this.rushTimer = 18;
+      for (let i = 0; i < 2; i++) this.spawnCustomer(false);
+      if (window.miniMartAudio) window.miniMartAudio.playOrderBell();
+      this.showRemoteToast('Rush Hour Wave!', '+50% Tips for the next 18 seconds!', '#f97316');
+    } else if (roll === 'raccoon') {
+      this.spawnRaccoon();
+    }
+  }
+
+  spawnSpill(x = null, y = null) {
+    if (this.spills.length >= 3) return;
+    const sx = x !== null ? x : (480 + Math.random() * 440);
+    const sy = y !== null ? y : (380 + Math.random() * 340);
+    this.spills.push({ x: sx, y: sy, radius: 24, color: ['#38bdf8', '#facc15', '#fb7185'][Math.floor(Math.random() * 3)] });
+    this.showRemoteToast('Floor Spill!', 'Step over it to sweep clean for +$12!', '#0ea5e9');
+  }
+
+  cleanSpillAt(index, label = 'CLEAN +$12!') {
+    const sp = this.spills[index];
+    if (!sp) return;
+    this.spills.splice(index, 1);
+    this.money += 12;
+    this.advanceContract('clean', 1);
+    this.adjustStarRating(0.03);
+    if (window.miniMartAudio) window.miniMartAudio.playHarvest();
+    this.spawnPopEffect(sp.x, sp.y, '#38bdf8');
+    this.spawnFloatingText(sp.x, sp.y - 20, label, '#0284c7', 16);
+  }
+
+  spawnRaccoon() {
+    if (this.raccoon) return;
+    const stockedShelves = this.shelves.filter(s => s.unlocked && s.items > 0);
+    if (stockedShelves.length === 0) {
+      this.spawnSpill();
+      return;
+    }
+    const targetShelf = stockedShelves[Math.floor(Math.random() * stockedShelves.length)];
+    this.raccoon = {
+      x: this.entranceX - 30,
+      y: this.entranceY,
+      targetShelf: targetShelf,
+      stealTimer: 0,
+      scared: false,
+      facingRight: true,
+      anim: 0
+    };
+    if (window.miniMartAudio) window.miniMartAudio.playOrderBell();
+    this.showRemoteToast('Sneaky Raccoon!', 'Walk close to shoo it away for +$18!', '#ef4444');
+  }
+
+  shooRaccoon(label = 'SHOO +$18!') {
+    if (!this.raccoon || this.raccoon.scared) return;
+    this.raccoon.scared = true;
+    this.money += 18;
+    this.advanceContract('clean', 1);
+    this.adjustStarRating(0.05);
+    if (window.miniMartAudio) window.miniMartAudio.playCash();
+    this.spawnPopEffect(this.raccoon.x, this.raccoon.y - 10, '#f59e0b');
+    this.spawnFloatingText(this.raccoon.x, this.raccoon.y - 32, label, '#16a34a', 17);
+  }
+
+  spawnCustomer(forceVip = false) {
     const unlockedTypes = this.plots.filter(p => p.unlocked).map(p => p.type);
     if (unlockedTypes.length === 0) return;
 
-    const maxBasket = this.marketingLevel >= 3 ? 4 : 3;
-    const itemCount = Math.min(maxBasket, Math.floor(Math.random() * 2) + 1 + (this.marketingLevel >= 4 ? 1 : 0));
+    const isVip = forceVip || (Math.random() < 0.08 && !this.customers.some(c => c.isVip));
+    const maxBasket = isVip ? 4 : (this.marketingLevel >= 3 ? 4 : 3);
+    const itemCount = isVip
+      ? Math.min(maxBasket, Math.max(2, unlockedTypes.length))
+      : Math.min(maxBasket, Math.floor(Math.random() * 2) + 1 + (this.marketingLevel >= 4 ? 1 : 0));
     const list = [];
     for (let i = 0; i < itemCount; i++) {
       const randomItem = unlockedTypes[Math.floor(Math.random() * unlockedTypes.length)];
       list.push(randomItem);
     }
 
-    const c = new MartCustomer(this.entranceX, this.entranceY, list);
+    const c = new MartCustomer(this.entranceX, this.entranceY, list, isVip);
     this.customers.push(c);
   }
 
@@ -1996,6 +2501,23 @@ class MiniMartGame {
     // 1. Draw Themed Supermarket & Patio Floor
     this.drawStoreFloor();
 
+    // 1b. Draw Floor Spills
+    this.spills.forEach(sp => {
+      this.ctx.save();
+      this.ctx.translate(sp.x, sp.y);
+      this.ctx.fillStyle = sp.color || '#38bdf8';
+      this.ctx.globalAlpha = 0.72;
+      this.ctx.beginPath();
+      this.ctx.ellipse(0, 0, sp.radius, sp.radius * 0.65, 0.2, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.globalAlpha = 0.9;
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(-6, -3, 6, 3, -0.3, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+    });
+
     // 2. Draw Unlock Zones
     this.unlockZones.forEach(zone => zone.draw(this.ctx));
 
@@ -2003,8 +2525,9 @@ class MiniMartGame {
     this.plots.forEach(plot => plot.draw(this.ctx));
     this.shelves.forEach(shelf => shelf.draw(this.ctx));
 
-    // 4. Draw Trash Can / Disposal Bin
+    // 4. Draw Trash Can & Gourmet Combo Bar
     if (this.trashBin) this.trashBin.draw(this.ctx);
+    if (this.comboStation) this.comboStation.draw(this.ctx);
 
     // 5. Draw Checkout Register & Pickup Delivery Station
     if (this.checkout) this.checkout.draw(this.ctx);
@@ -2015,12 +2538,20 @@ class MiniMartGame {
       this.drawCashier(this.ctx, this.checkout.x - 104, this.checkout.y);
     }
 
-    // 7. Draw Hired Stocker Workers & Delivery Courier
+    // 7. Draw Hired Stocker Workers, Delivery Courier & Shop Dog
     for (let i = 0; i < this.staffHelpers.length; i++) {
       this.staffHelpers[i].draw(this.ctx);
     }
     if (this.deliveryCourier) {
       this.deliveryCourier.draw(this.ctx);
+    }
+    if (this.shopDog) {
+      this.shopDog.draw(this.ctx);
+    }
+
+    // 7b. Draw Sneaky Raccoon (if active)
+    if (this.raccoon) {
+      this.drawRaccoon(this.ctx, this.raccoon);
     }
 
     // 8. Draw Customers
@@ -2349,11 +2880,68 @@ class MiniMartGame {
     ctx.restore();
   }
 
+  drawRaccoon(ctx, r) {
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    if (!r.facingRight) ctx.scale(-1, 1);
+
+    const bounce = Math.abs(Math.sin(r.anim)) * 3;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(0, 11, 13, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Striped Tail
+    ctx.fillStyle = '#64748b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(-14, -2 - bounce, 7, 3.8, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.roundRect(-10, -6 - bounce, 20, 13, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Head & Bandit Eye Mask
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(8, -8 - bounce, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(3, -11 - bounce, 11, 4.5, 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(7, -8.8 - bounce, 1.3, 0, Math.PI * 2);
+    ctx.arc(12, -8.8 - bounce, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
   saveGame() {
     try {
       this.snapshotActiveMart();
       const data = {
         money: this.money,
+        gems: this.gems,
+        starRating: this.starRating,
+        shopDogOwned: this.shopDogOwned,
+        speakerInstalled: this.speakerInstalled,
+        cashVacuumInstalled: this.cashVacuumInstalled,
+        playerOutfit: this.playerOutfit,
+        unlockedOutfits: this.unlockedOutfits,
+        contracts: this.contracts,
         totalProfit: this.totalProfit,
         totalCustomersServed: this.totalCustomersServed,
         speedLevel: this.player.speedLevel,
@@ -2378,6 +2966,21 @@ class MiniMartGame {
       if (!raw) return;
       const data = JSON.parse(raw);
       if (data.money !== undefined) this.money = Math.max(150, data.money);
+      if (data.gems !== undefined) this.gems = Math.max(0, data.gems);
+      if (data.starRating !== undefined) this.starRating = Math.max(1.0, Math.min(5.0, data.starRating));
+      if (data.shopDogOwned) this.shopDogOwned = true;
+      if (data.speakerInstalled) this.speakerInstalled = true;
+      if (data.cashVacuumInstalled) this.cashVacuumInstalled = true;
+      if (data.playerOutfit) {
+        this.playerOutfit = data.playerOutfit;
+        this.player.outfitStyle = data.playerOutfit;
+      }
+      if (Array.isArray(data.unlockedOutfits)) {
+        this.unlockedOutfits = data.unlockedOutfits;
+      }
+      if (Array.isArray(data.contracts) && data.contracts.length > 0) {
+        this.contracts = data.contracts;
+      }
       if (data.totalProfit !== undefined) this.totalProfit = data.totalProfit;
       if (data.totalCustomersServed !== undefined) this.totalCustomersServed = data.totalCustomersServed;
 

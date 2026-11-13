@@ -224,7 +224,56 @@ const ITEM_TYPES = {
     standBorder: '#7e22ce',
     price: 150,
     size: 15
+  },
+  apple_shake: {
+    id: 'apple_shake',
+    name: 'Apple Milkshake',
+    standTitle: 'GOURMET SHAKE',
+    plotTitle: 'COMBO BAR',
+    color: '#ef4444',
+    secondary: '#fef3c7',
+    awning1: '#ef4444',
+    awning2: '#fef3c7',
+    standBg: '#fff1f2',
+    standBorder: '#b91c1c',
+    price: 38,
+    size: 15
+  },
+  island_parfait: {
+    id: 'island_parfait',
+    name: 'Island Parfait',
+    standTitle: 'TROPIC PARFAIT',
+    plotTitle: 'COMBO BAR',
+    color: '#facc15',
+    secondary: '#78350f',
+    awning1: '#f59e0b',
+    awning2: '#fef9c3',
+    standBg: '#fefce8',
+    standBorder: '#a16207',
+    price: 75,
+    size: 15
+  },
+  choco_box: {
+    id: 'choco_box',
+    name: 'Choco Berry Box',
+    standTitle: 'GOURMET BOX',
+    plotTitle: 'COMBO BAR',
+    color: '#451a03',
+    secondary: '#f43f5e',
+    awning1: '#be123c',
+    awning2: '#ffe4e6',
+    standBg: '#fff1f2',
+    standBorder: '#881337',
+    price: 195,
+    size: 15
   }
+};
+
+const PLAYER_OUTFITS = {
+  classic: { shirt: '#0ea5e9', apron: '#22c55e', pocket: '#fde047', cap: '#16a34a', visor: '#15803d', badge: '#facc15' },
+  gold:    { shirt: '#fffbeb', apron: '#f59e0b', pocket: '#ffffff', cap: '#d97706', visor: '#92400e', badge: '#fef08a' },
+  arcade:  { shirt: '#1e293b', apron: '#06b6d4', pocket: '#f43f5e', cap: '#ec4899', visor: '#be185d', badge: '#22d3ee' },
+  royal:   { shirt: '#312e81', apron: '#8b5cf6', pocket: '#facc15', cap: '#6d28d9', visor: '#4c1d95', badge: '#fde047' }
 };
 
 /**
@@ -298,10 +347,11 @@ class MiniMartPlayer {
     this.stackTilt = 0;
     this.targetTilt = 0;
 
-    // Turbo sprint boost
+    // Turbo sprint boost & outfit style
     this.turbo = false;
     this.turboTimer = 0;
     this.turboCooldown = 0;
+    this.outfitStyle = 'classic';
   }
 
   triggerTurbo() {
@@ -354,7 +404,18 @@ class MiniMartPlayer {
         this.facing = normY > 0 ? 'down' : 'up';
       }
 
-      const currentSpeed = (this.speed * (this.turbo ? 1.55 : 1.0)) * Math.min(1, mag);
+      let spillSlow = 1.0;
+      if (game && Array.isArray(game.spills)) {
+        for (let i = 0; i < game.spills.length; i++) {
+          const sp = game.spills[i];
+          if (dist(this.x, this.y, sp.x, sp.y) < sp.radius) {
+            spillSlow = this.turbo ? 0.92 : 0.68;
+            break;
+          }
+        }
+      }
+
+      const currentSpeed = (this.speed * (this.turbo ? 1.55 : 1.0) * spillSlow) * Math.min(1, mag);
       this.vx = normX * currentSpeed;
       this.vy = normY * currentSpeed;
       this.walkAnim += dt * 14;
@@ -406,8 +467,10 @@ class MiniMartPlayer {
     ctx.ellipse(6, 12 - legSwing, 5.5, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Body: Bright Sky-Blue Shirt + Sunny Green Mart Apron
-    ctx.fillStyle = '#0ea5e9';
+    const outfit = PLAYER_OUTFITS[this.outfitStyle] || PLAYER_OUTFITS.classic;
+
+    // Body: Shirt + Mart Apron (styled by selected outfit)
+    ctx.fillStyle = outfit.shirt;
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -415,13 +478,13 @@ class MiniMartPlayer {
     ctx.fill();
     ctx.stroke();
 
-    // Green Mart Apron with yellow pocket
-    ctx.fillStyle = '#22c55e';
+    // Mart Apron with accent pocket
+    ctx.fillStyle = outfit.apron;
     ctx.beginPath();
     ctx.roundRect(-9, -4 - bounce, 18, 15, 5);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#fde047';
+    ctx.fillStyle = outfit.pocket;
     ctx.fillRect(-5, 3 - bounce, 10, 5);
 
     // Cute cartoon hands
@@ -478,8 +541,8 @@ class MiniMartPlayer {
       ctx.stroke();
     }
 
-    // Shopkeeper Green & Yellow Cap
-    ctx.fillStyle = '#16a34a';
+    // Shopkeeper Styled Cap
+    ctx.fillStyle = outfit.cap;
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -487,13 +550,13 @@ class MiniMartPlayer {
     ctx.fill();
     ctx.stroke();
 
-    // Cap visor & yellow badge
-    ctx.fillStyle = '#15803d';
+    // Cap visor & badge
+    ctx.fillStyle = outfit.visor;
     ctx.beginPath();
     ctx.roundRect(-13, -21 - bounce, 26, 4.5, 3);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#facc15';
+    ctx.fillStyle = outfit.badge;
     ctx.beginPath();
     ctx.arc(0, -25 - bounce, 3, 0, Math.PI * 2);
     ctx.fill();
@@ -1442,7 +1505,10 @@ class CheckoutCounter {
       if (this.scanTimer >= activeScanInterval) {
         this.scanTimer = 0;
         const item = this.activeCustomer.basket.shift();
-        const itemVal = ITEM_TYPES[item] ? ITEM_TYPES[item].price : 8;
+        const baseVal = ITEM_TYPES[item] ? ITEM_TYPES[item].price : 8;
+        const hypeMult = game.hypeTimer > 0 ? 1.25 : 1.0;
+        const starMult = (game.starRating || 3.5) >= 4.5 ? 1.15 : 1.0;
+        const itemVal = Math.max(1, Math.round(baseVal * hypeMult * starMult));
         this.cashStash += itemVal;
 
         if (window.miniMartAudio) window.miniMartAudio.playScan();
@@ -1452,11 +1518,44 @@ class CheckoutCounter {
 
         if (this.activeCustomer.basket.length === 0) {
           const finishedCustomer = this.activeCustomer;
+          const pRatio = finishedCustomer.maxPatience > 0
+            ? (finishedCustomer.patience / finishedCustomer.maxPatience)
+            : 1;
+          let tipBonus = 0;
+
+          if (finishedCustomer.isVip) {
+            tipBonus = Math.max(25, Math.round(itemVal * 1.1));
+            game.hypeTimer = 38;
+            if (game.adjustStarRating) game.adjustStarRating(0.18);
+            if (game.advanceContract) game.advanceContract('vip', 1);
+            game.spawnConfetti(this.x, this.y - 24);
+            game.spawnFloatingText(this.x, this.y - 68, `VIP HYPE! +$${tipBonus} TIP!`, '#d97706', 19);
+          } else {
+            if (game.rushTimer > 0) {
+              tipBonus += Math.max(4, Math.round(itemVal * 0.5));
+            }
+            if (pRatio >= 0.52) {
+              tipBonus += Math.max(2, Math.round(2 + ((game.starRating || 3.5) - 3) * 2));
+              if (game.adjustStarRating) game.adjustStarRating(0.05);
+            } else if (pRatio < 0.2) {
+              if (game.adjustStarRating) game.adjustStarRating(-0.07);
+            }
+          }
+
+          if (tipBonus > 0) {
+            this.cashStash += tipBonus;
+            if (game.advanceContract) game.advanceContract('tips', tipBonus);
+            if (!finishedCustomer.isVip) {
+              game.spawnFloatingText(this.x + 28, this.y - 48, `TIP +$${tipBonus}`, '#f59e0b', 14);
+            }
+          }
+
           finishedCustomer.state = 'LEAVING';
           const qIdx = game.customerQueue.indexOf(finishedCustomer);
           if (qIdx !== -1) game.customerQueue.splice(qIdx, 1);
 
           game.totalCustomersServed = (game.totalCustomersServed || 0) + 1;
+          if (game.advanceContract) game.advanceContract('customers', 1);
           if (game.progressTutorial) {
             game.progressTutorial('serve_customers', 1);
           }
@@ -1474,16 +1573,16 @@ class CheckoutCounter {
       }
     }
 
-    // 3. Collect cash stash
-    // Automatically collects cash when attending on mat OR near the desk
+    // 3. Collect cash stash (auto-collected when standing near, attending, or Auto Cash Vacuum is owned)
     if (this.cashStash > 0 && p) {
       const nearDesk = dist(this.x, this.y, p.x, p.y) < 95;
-      if (this.isPlayerAttending || nearDesk) {
+      const autoVacuum = !!game.cashVacuumInstalled;
+      if (this.isPlayerAttending || nearDesk || autoVacuum) {
         const collected = this.cashStash;
         this.cashStash = 0;
         game.money += collected;
         if (window.miniMartAudio) window.miniMartAudio.playCash();
-        if (game.rumble) game.rumble(50, 0.2, 0.15);
+        if (game.rumble && !autoVacuum) game.rumble(50, 0.2, 0.15);
         game.spawnFloatingText(this.x, this.y - 34, `+$${collected}`, '#16a34a', 22);
         game.spawnCashParticles(this.x, this.y, 10);
       }
@@ -1761,24 +1860,35 @@ class TrashBin {
 }
 
 class MartCustomer {
-  constructor(x, y, desiredTypes) {
+  constructor(x, y, desiredTypes, isVip = false) {
     this.x = x;
     this.y = y;
     this.targetX = x;
     this.targetY = y;
-    this.speed = 108;
+    this.isVip = isVip;
+    this.speed = isVip ? 124 : 108;
     this.basket = [];
     this.shoppingList = [...desiredTypes];
     this.currentGoalShelf = null;
     this.state = 'SPAWN';
-    this.shirtColor = ['#38bdf8', '#fb7185', '#a78bfa', '#facc15', '#f97316', '#34d399'][Math.floor(Math.random() * 6)];
+    this.shirtColor = isVip
+      ? '#eab308'
+      : ['#38bdf8', '#fb7185', '#a78bfa', '#facc15', '#f97316', '#34d399'][Math.floor(Math.random() * 6)];
     this.hairColor = ['#78350f', '#1e293b', '#b45309', '#eab308'][Math.floor(Math.random() * 4)];
     this.walkAnim = Math.random() * 10;
     this.waitTimer = 0;
+    this.maxPatience = isVip ? 28 : 22;
+    this.patience = this.maxPatience;
+    this.boughtCombo = false;
   }
 
   update(dt, game) {
     this.walkAnim += dt * 10;
+    const decayRate = (game && game.speakerInstalled) ? 0.65 : 1.0;
+
+    if (this.state === 'WAITING_FOR_RESTOCK' || this.state === 'IN_QUEUE') {
+      this.patience = Math.max(0, this.patience - dt * decayRate);
+    }
 
     if (this.state === 'SPAWN') {
       this.findNextShelf(game);
@@ -1815,6 +1925,7 @@ class MartCustomer {
         game.spawnFlyingItem(this.currentGoalShelf.x, this.currentGoalShelf.y, this, item);
         this.findNextShelf(game);
       } else if (this.waitTimer > 8.0) {
+        if (game.adjustStarRating) game.adjustStarRating(-0.08);
         this.shoppingList.shift();
         this.findNextShelf(game);
       }
@@ -1885,6 +1996,15 @@ class MartCustomer {
     ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // VIP Golden Floor Aura
+    if (this.isVip) {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.85)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 14, 19, 8.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     const leg = Math.sin(this.walkAnim) * 3.5;
 
     // Feet
@@ -1917,12 +2037,37 @@ class MartCustomer {
     ctx.fill();
     ctx.stroke();
 
-    // Eyes & Smile
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.arc(-3.5, -14, 1.8, 0, Math.PI * 2);
-    ctx.arc(3.5, -14, 1.8, 0, Math.PI * 2);
-    ctx.fill();
+    // Eyes & Smile (or VIP Shades & Crown)
+    if (this.isVip) {
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(-8, -16, 7, 4.5, 1.5);
+      ctx.roundRect(1, -16, 7, 4.5, 1.5);
+      ctx.fill();
+      ctx.fillRect(-1.5, -14.8, 3, 1.5);
+
+      // Gold VIP Crown
+      ctx.fillStyle = '#fbbf24';
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-6, -22);
+      ctx.lineTo(-7, -29);
+      ctx.lineTo(-2, -25);
+      ctx.lineTo(0, -31);
+      ctx.lineTo(2, -25);
+      ctx.lineTo(7, -29);
+      ctx.lineTo(6, -22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(-3.5, -14, 1.8, 0, Math.PI * 2);
+      ctx.arc(3.5, -14, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Cute Shopping Basket at side
     ctx.fillStyle = '#f59e0b';
@@ -1968,6 +2113,20 @@ class MartCustomer {
       ctx.font = '700 11px "Fredoka", sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('PAY', 0, -33);
+    }
+
+    // Patience Bar while waiting for restock or waiting in register queue
+    if (this.state === 'WAITING_FOR_RESTOCK' || this.state === 'IN_QUEUE') {
+      const ratio = this.maxPatience > 0 ? Math.max(0, Math.min(1, this.patience / this.maxPatience)) : 1;
+      const barColor = ratio > 0.55 ? '#22c55e' : (ratio > 0.25 ? '#f59e0b' : '#ef4444');
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(-16, -24, 32, 5.5, 2.5);
+      ctx.fill();
+      ctx.fillStyle = barColor;
+      ctx.beginPath();
+      ctx.roundRect(-14.5, -22.8, Math.max(2, 29 * ratio), 3.1, 1.5);
+      ctx.fill();
     }
 
     ctx.restore();
@@ -2667,6 +2826,69 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
     ctx.beginPath();
     ctx.ellipse(-2.5, -4.5, 2.5, 1.2, -0.4, 0, Math.PI * 2);
     ctx.fill();
+
+  } else if (type === 'apple_shake') {
+    // Tall Apple Milkshake Cup with Straw & Cream
+    ctx.fillStyle = '#fecdd3';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-6, -4);
+    ctx.lineTo(-4.5, 9);
+    ctx.lineTo(4.5, 9);
+    ctx.lineTo(6, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Whipped cream top & red straw
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -5, 6.5, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(2, -6);
+    ctx.lineTo(5.5, -13);
+    ctx.stroke();
+
+  } else if (type === 'island_parfait') {
+    // Sunny Island Parfait Cup with Tropical Layers
+    ctx.fillStyle = '#fef08a';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-6.5, -4, 13, 13, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-5.5, 1, 11, 3.5);
+    ctx.fillStyle = '#fef9c3';
+    ctx.beginPath();
+    ctx.arc(0, -5, 5.5, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+  } else if (type === 'choco_box') {
+    // Gourmet Choco Berry Gift Box with Bow
+    ctx.fillStyle = '#be123c';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-8, -6, 16, 13, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-1.5, -6, 3, 13);
+    ctx.fillRect(-8, -1, 16, 3);
+    ctx.beginPath();
+    ctx.arc(-2.5, -7.5, 2.5, 0, Math.PI * 2);
+    ctx.arc(2.5, -7.5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();
@@ -3182,6 +3404,280 @@ class DeliveryCourier {
         drawItemIcon(ctx, 0, -30 - i * 11, this.carryStack[i], 0.9);
       }
     }
+
+    ctx.restore();
+  }
+}
+
+/**
+ * GOURMET COMBO STATION (Combines 2 Store Products into High-Value Treats)
+ */
+const MART_COMBO_RECIPES = {
+  mart_farm:  { ingredients: ['milk', 'apple'],        output: 'apple_shake',    title: 'COMBO BAR',   accent: '#ef4444' },
+  mart_beach: { ingredients: ['banana', 'coconut'],    output: 'island_parfait', title: 'PARFAIT BAR', accent: '#f59e0b' },
+  mart_candy: { ingredients: ['strawberry', 'chocolate'], output: 'choco_box',   title: 'GIFT BOXER',  accent: '#ec4899' }
+};
+
+class ComboStation {
+  constructor(x, y, martId) {
+    this.x = x;
+    this.y = y;
+    this.martId = martId;
+    this.recipe = MART_COMBO_RECIPES[martId] || MART_COMBO_RECIPES.mart_farm;
+    this.ingredientsLoaded = [];
+    this.stock = 0;
+    this.maxStock = 4;
+    this.cookTimer = 0;
+    this.cookDuration = 1.6;
+    this.isCooking = false;
+    this.takeCooldown = 0;
+    this.bobAnim = 0;
+  }
+
+  update(dt, game) {
+    this.bobAnim += dt * 3;
+    if (this.takeCooldown > 0) this.takeCooldown -= dt;
+
+    // 1. Accept required recipe ingredients from nearby player stack
+    const p = game.player;
+    if (p && !this.isCooking && this.stock < this.maxStock && this.takeCooldown <= 0) {
+      if (dist(this.x, this.y, p.x, p.y) < 76 && p.carryStack.length > 0) {
+        const needed = this.recipe.ingredients.filter(ing => !this.ingredientsLoaded.includes(ing));
+        for (let idx = p.carryStack.length - 1; idx >= 0; idx--) {
+          const itemType = p.carryStack[idx];
+          if (needed.includes(itemType)) {
+            p.carryStack.splice(idx, 1);
+            this.ingredientsLoaded.push(itemType);
+            this.takeCooldown = 0.25;
+            if (window.miniMartAudio) window.miniMartAudio.playRestock();
+            game.spawnFlyingItem(p.x, p.y - 24, this, itemType);
+            break;
+          }
+        }
+        if (this.ingredientsLoaded.length >= this.recipe.ingredients.length) {
+          this.isCooking = true;
+          this.cookTimer = 0;
+        }
+      }
+    }
+
+    // 2. Cook gourmet combo into counter display
+    if (this.isCooking) {
+      this.cookTimer += dt;
+      if (this.cookTimer >= this.cookDuration) {
+        this.isCooking = false;
+        this.cookTimer = 0;
+        this.ingredientsLoaded = [];
+        this.stock = Math.min(this.maxStock, this.stock + 1);
+        if (window.miniMartAudio) window.miniMartAudio.playHarvest();
+        game.spawnPopEffect(this.x, this.y - 12, this.recipe.accent);
+        game.spawnFloatingText(this.x, this.y - 44, `${ITEM_TYPES[this.recipe.output].name}!`, this.recipe.accent, 15);
+        if (game.advanceContract) game.advanceContract('combos', 1);
+      }
+    }
+
+    // 3. Auto-serve ready gourmet combos to shoppers entering checkout line
+    if (this.stock > 0 && Array.isArray(game.customers)) {
+      for (let i = 0; i < game.customers.length; i++) {
+        const c = game.customers[i];
+        if (!c.boughtCombo && (c.state === 'WALKING_TO_CHECKOUT' || c.state === 'IN_QUEUE')) {
+          c.boughtCombo = true;
+          c.basket.push(this.recipe.output);
+          this.stock--;
+          game.spawnFlyingItem(this.x, this.y - 10, c, this.recipe.output);
+          if (window.miniMartAudio) window.miniMartAudio.playRestock();
+          break;
+        }
+      }
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(-52, -26, 104, 62, 16);
+    ctx.fill();
+
+    // Base station counter
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-50, -30, 100, 60, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    // Top accent strip
+    ctx.fillStyle = this.recipe.accent;
+    ctx.beginPath();
+    ctx.roundRect(-47, -27, 94, 14, 10);
+    ctx.fill();
+
+    // Recipe ingredients badges or cooking progress bar
+    if (this.isCooking) {
+      const ratio = Math.min(1, this.cookTimer / this.cookDuration);
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(-34, -4, 68, 12, 6);
+      ctx.fill();
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.roundRect(-32, -2, Math.max(4, 64 * ratio), 8, 4);
+      ctx.fill();
+    } else {
+      const ing1 = this.recipe.ingredients[0];
+      const ing2 = this.recipe.ingredients[1];
+      drawItemIcon(ctx, -26, 0, ing1, 0.85);
+      ctx.fillStyle = '#475569';
+      ctx.font = '800 12px "Fredoka", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('+', -8, 4);
+      drawItemIcon(ctx, 10, 0, ing2, 0.85);
+      ctx.fillText('=', 26, 4);
+      drawItemIcon(ctx, 39, 0, this.recipe.output, 0.8);
+
+      // Highlight already loaded ingredients
+      this.recipe.ingredients.forEach((ing, idx) => {
+        if (this.ingredientsLoaded.includes(ing)) {
+          ctx.strokeStyle = '#16a34a';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(idx === 0 ? -26 : 10, 0, 11, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+    }
+
+    // Stock pills at bottom edge
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-36, 17, 72, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = this.stock > 0 ? '#fde047' : '#cbd5e1';
+    ctx.font = '700 10px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`READY: ${this.stock}/${this.maxStock}`, 0, 25);
+
+    drawOverheadSign(ctx, 0, -43, this.recipe.title, this.recipe.output, this.recipe.accent);
+    ctx.restore();
+  }
+}
+
+/**
+ * SHOP DOG COMPANION ("SUNNY PUP" - Sweeps Spills & Shooes Raccoons)
+ */
+class ShopDog {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.speed = 215;
+    this.walkAnim = 0;
+    this.facingRight = true;
+    this.targetDesc = 'follow';
+  }
+
+  update(dt, game) {
+    let tx = game.player.x - 36;
+    let ty = game.player.y + 18;
+    this.targetDesc = 'follow';
+
+    // Prioritize active raccoon or nearby floor spills!
+    if (game.raccoon && !game.raccoon.scared) {
+      tx = game.raccoon.x;
+      ty = game.raccoon.y;
+      this.targetDesc = 'raccoon';
+    } else if (game.spills && game.spills.length > 0) {
+      tx = game.spills[0].x;
+      ty = game.spills[0].y;
+      this.targetDesc = 'spill';
+    }
+
+    const dx = tx - this.x;
+    const dy = ty - this.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 8) {
+      this.facingRight = dx >= 0;
+      const move = Math.min(d, this.speed * dt);
+      this.x += (dx / d) * move;
+      this.y += (dy / d) * move;
+      this.walkAnim += dt * 15;
+    }
+
+    // Auto-clean nearby floor spill
+    if (game.spills && game.spills.length > 0) {
+      for (let i = game.spills.length - 1; i >= 0; i--) {
+        if (dist(this.x, this.y, game.spills[i].x, game.spills[i].y) < 34) {
+          game.cleanSpillAt(i, 'PUP CLEAN!');
+        }
+      }
+    }
+
+    // Auto-chase sneaky raccoon
+    if (game.raccoon && !game.raccoon.scared && dist(this.x, this.y, game.raccoon.x, game.raccoon.y) < 38) {
+      game.shooRaccoon('WOOF! SHOO!');
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    if (!this.facingRight) ctx.scale(-1, 1);
+
+    const bounce = Math.abs(Math.sin(this.walkAnim)) * 2.5;
+
+    // Ground shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 10, 12, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wagging tail
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-10, -1 - bounce);
+    ctx.lineTo(-16, -7 + Math.sin(this.walkAnim * 1.5) * 3 - bounce);
+    ctx.stroke();
+
+    // Cute Corgi/Golden Pup Body
+    ctx.fillStyle = '#fbbf24';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-11, -5 - bounce, 20, 12, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Red bandana collar
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(4, -5 - bounce, 4, 11);
+
+    // Pup Head
+    ctx.fillStyle = '#fcd34d';
+    ctx.beginPath();
+    ctx.arc(9, -7 - bounce, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Floppy ears
+    ctx.fillStyle = '#b45309';
+    ctx.beginPath();
+    ctx.ellipse(5, -13 - bounce, 3, 5, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Nose & eye
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(11, -9 - bounce, 1.5, 0, Math.PI * 2);
+    ctx.arc(16, -6 - bounce, 2, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
   }

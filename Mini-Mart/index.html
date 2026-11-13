@@ -40,13 +40,32 @@
         </div>
       </div>
 
-      <!-- Live Cash Wallet Counter -->
-      <div class="hud-card money-card">
-        <svg class="money-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" x2="12" y1="2" y2="22"/>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-        <span id="hud-money" class="money-val">$150</span>
+      <!-- Live Cash Wallet, Store Star Rating & Gems -->
+      <div class="hud-stats-cluster">
+        <div class="hud-card money-card">
+          <svg class="money-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" x2="12" y1="2" y2="22"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <span id="hud-money" class="money-val">$150</span>
+        </div>
+
+        <div class="hud-card stat-pill-card rating-card" title="Store Star Rating (Serve fast for Tips & 4.5+ Golden Mart Bonus)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fbbf24" stroke="#92400e" stroke-width="2" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span id="hud-rating" class="stat-pill-val">4.0</span>
+        </div>
+
+        <div class="hud-card stat-pill-card gems-card" title="Franchise Gems earned from Contracts (Buy Pets, Decor & Outfits)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0369a1" stroke-width="2" stroke-linejoin="round">
+            <polygon points="6 3 18 3 22 9 12 22 2 9 6 3"/>
+            <polyline points="2 9 22 9"/>
+            <polyline points="12 22 9 9 6 3"/>
+            <polyline points="12 22 15 9 18 3"/>
+          </svg>
+          <span id="hud-gems" class="stat-pill-val">0</span>
+        </div>
       </div>
 
       <!-- Top Action Buttons -->
@@ -109,6 +128,13 @@
       </div>
 
     </header>
+
+    <!-- Live Store Event / Hype Pill Banner -->
+    <div id="event-banner" class="event-banner hidden">
+      <span id="event-banner-dot" class="event-banner-dot"></span>
+      <span id="event-banner-title" class="event-banner-title">RUSH HOUR</span>
+      <span id="event-banner-sub" class="event-banner-sub">+50% Tips!</span>
+    </div>
 
     <!-- Floating Active Goal Milestone Banner -->
     <div id="floating-goal-box" title="Click to view Mini Mart Tutorial & Quests (Hotkey T / Xbox View)">
