@@ -125,12 +125,12 @@ const WEAPONS = {
     color: '#00ff88',
     damage: 32,
     cooldown: 0.14,
-    energyCost: 3,
+    energyCost: 0,
     projectilesPerShot: 3,
     spread: 0.16,
     projectileSpeed: 950,
     lifetime: 1.8,
-    description: 'High-frequency rotary laser discharging a continuous spray of rapid coherent plasma bolts. Consumes 3 Energy.',
+    description: 'High-frequency rotary laser discharging a continuous spray of rapid coherent plasma bolts. Zero-energy primary emitter.',
     sound: 'playLaserShot'
   },
   flak: {
@@ -802,6 +802,518 @@ const UPGRADE_TREES = {
         desc: 'Alternating between melee and ranged strikes yields +75% bonus damage and grants a speed burst.',
         apply: (player) => {
           player.synergyBonus = (player.synergyBonus || 1) + 0.75;
+        }
+      }
+    ]
+  },
+
+  // 10. STARTING LASER AUGMENTS (Tri-Repeater Power-Ups)
+  weapon_tri_laser: {
+    id: 'weapon_tri_laser',
+    name: 'Tri-Repeater',
+    category: 'ranged',
+    weaponId: 'tri_laser',
+    iconSvg: '#icon-crosshair',
+    tiers: [
+      {
+        treeId: 'weapon_tri_laser',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_tri_laser_t1',
+        title: 'Tri-Repeater: Laser Overclock',
+        category: 'ranged',
+        weaponId: 'tri_laser',
+        iconSvg: '#icon-crosshair',
+        rarity: 'uncommon',
+        desc: 'Boosts your Tri-Repeater laser damage by +22% and accelerates fire rate by +18%.',
+        apply: (player) => {
+          player.upgradeWeapon('tri_laser', { damageMult: 1.22, cooldownMult: 0.85 });
+        }
+      },
+      {
+        treeId: 'weapon_tri_laser',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_tri_laser_t2',
+        title: 'Tri-Repeater: Pentagram Emitter',
+        category: 'ranged',
+        weaponId: 'tri_laser',
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Tri-Repeater discharges +2 additional laser bolts per shot with +15% plasma damage.',
+        apply: (player) => {
+          player.upgradeWeapon('tri_laser', { extraProjectiles: 2, damageMult: 1.15 });
+        }
+      },
+      {
+        treeId: 'weapon_tri_laser',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_tri_laser_t3',
+        title: 'Tri-Repeater: Coherent Array',
+        category: 'ranged',
+        weaponId: 'tri_laser',
+        iconSvg: '#icon-crosshair',
+        rarity: 'epic',
+        desc: 'Tri-Repeater bolts gain +2 enemy pierce, +22% faster cycling, and +25% damage.',
+        apply: (player) => {
+          player.upgradeWeapon('tri_laser', { pierceBonus: 2, cooldownMult: 0.82, damageMult: 1.25 });
+        }
+      }
+    ]
+  },
+
+  // 11. CYBER KATANA (UNLOCK + POWER-UPS)
+  weapon_katana: {
+    id: 'weapon_katana',
+    name: 'Cyber Katana',
+    category: 'melee',
+    weaponId: 'katana',
+    iconSvg: '#icon-sword',
+    tiers: [
+      {
+        treeId: 'weapon_katana',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_katana_t1',
+        title: 'Unlock: Cyber Katana',
+        category: 'melee',
+        weaponId: 'katana',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-sword',
+        rarity: 'uncommon',
+        desc: 'Equips the Cyber Katana [Melee]: rapid wide-arc energy slash that deflects hostile shots.',
+        apply: (player) => {
+          player.unlockWeapon('katana');
+        }
+      },
+      {
+        treeId: 'weapon_katana',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_katana_t2',
+        title: 'Katana: Razor Resonance',
+        category: 'melee',
+        weaponId: 'katana',
+        iconSvg: '#icon-sword',
+        rarity: 'rare',
+        desc: 'Cyber Katana gains +30% slash damage and +18% faster swing cadence.',
+        apply: (player) => {
+          player.upgradeWeapon('katana', { damageMult: 1.30, cooldownMult: 0.85 });
+        }
+      },
+      {
+        treeId: 'weapon_katana',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_katana_t3',
+        title: 'Katana: Tempest Edge',
+        category: 'melee',
+        weaponId: 'katana',
+        iconSvg: '#icon-sword',
+        rarity: 'epic',
+        desc: 'Cyber Katana slash reach expands +25% and deals +35% bonus critical slice damage.',
+        apply: (player) => {
+          player.upgradeWeapon('katana', { rangeMult: 1.25, damageMult: 1.35 });
+        }
+      }
+    ]
+  },
+
+  // 12. HYPER LANCE (UNLOCK + POWER-UPS)
+  weapon_lance: {
+    id: 'weapon_lance',
+    name: 'Hyper Lance',
+    category: 'melee',
+    weaponId: 'lance',
+    iconSvg: '#icon-sword',
+    tiers: [
+      {
+        treeId: 'weapon_lance',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_lance_t1',
+        title: 'Unlock: Hyper Lance',
+        category: 'melee',
+        weaponId: 'lance',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-sword',
+        rarity: 'uncommon',
+        desc: 'Equips the Hyper Lance [Melee]: forward kinetic lunge dealing 2.2x critical damage at apex tip.',
+        apply: (player) => {
+          player.unlockWeapon('lance');
+        }
+      },
+      {
+        treeId: 'weapon_lance',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_lance_t2',
+        title: 'Lance: Kinetic Driver',
+        category: 'melee',
+        weaponId: 'lance',
+        iconSvg: '#icon-sword',
+        rarity: 'rare',
+        desc: 'Hyper Lance gains +28% thrust damage and +20% extended spear reach.',
+        apply: (player) => {
+          player.upgradeWeapon('lance', { damageMult: 1.28, rangeMult: 1.20 });
+        }
+      },
+      {
+        treeId: 'weapon_lance',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_lance_t3',
+        title: 'Lance: Mach Impale',
+        category: 'melee',
+        weaponId: 'lance',
+        iconSvg: '#icon-sword',
+        rarity: 'epic',
+        desc: 'Hyper Lance recovers +22% faster between lunges and deals +35% impale damage.',
+        apply: (player) => {
+          player.upgradeWeapon('lance', { cooldownMult: 0.82, damageMult: 1.35 });
+        }
+      }
+    ]
+  },
+
+  // 13. TITAN SMASHER (UNLOCK + POWER-UPS)
+  weapon_hammer: {
+    id: 'weapon_hammer',
+    name: 'Titan Smasher',
+    category: 'melee',
+    weaponId: 'hammer',
+    iconSvg: '#icon-sword',
+    tiers: [
+      {
+        treeId: 'weapon_hammer',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_hammer_t1',
+        title: 'Unlock: Titan Smasher',
+        category: 'melee',
+        weaponId: 'hammer',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-sword',
+        rarity: 'rare',
+        desc: 'Equips the Titan Smasher [Melee]: 360-degree seismic cleave with shockwave and heavy knockback.',
+        apply: (player) => {
+          player.unlockWeapon('hammer');
+        }
+      },
+      {
+        treeId: 'weapon_hammer',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_hammer_t2',
+        title: 'Hammer: Faultline Core',
+        category: 'melee',
+        weaponId: 'hammer',
+        iconSvg: '#icon-sword',
+        rarity: 'rare',
+        desc: 'Titan Smasher shockwave radius expands +30% and boosts smash impact damage by +30%.',
+        apply: (player) => {
+          player.upgradeWeapon('hammer', { rangeMult: 1.30, damageMult: 1.30 });
+        }
+      },
+      {
+        treeId: 'weapon_hammer',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_hammer_t3',
+        title: 'Hammer: Tectonic Overdrive',
+        category: 'melee',
+        weaponId: 'hammer',
+        iconSvg: '#icon-sword',
+        rarity: 'epic',
+        desc: 'Titan Smasher swings +25% faster and crushes shapes for +40% seismic damage.',
+        apply: (player) => {
+          player.upgradeWeapon('hammer', { cooldownMult: 0.80, damageMult: 1.40, knockbackMult: 1.25 });
+        }
+      }
+    ]
+  },
+
+  // 14. ORBITING GLAIVES (UNLOCK + POWER-UPS)
+  weapon_glaives: {
+    id: 'weapon_glaives',
+    name: 'Orbiting Glaives',
+    category: 'melee',
+    weaponId: 'glaives',
+    iconSvg: '#icon-sword',
+    tiers: [
+      {
+        treeId: 'weapon_glaives',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_glaives_t1',
+        title: 'Unlock: Orbiting Glaives',
+        category: 'melee',
+        weaponId: 'glaives',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-sword',
+        rarity: 'rare',
+        desc: 'Equips Orbiting Glaives [Melee]: 3 razor satellites orbit your hull, shredding foes and parrying fire.',
+        apply: (player) => {
+          player.unlockWeapon('glaives');
+        }
+      },
+      {
+        treeId: 'weapon_glaives',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_glaives_t2',
+        title: 'Glaives: Twin Satellites',
+        category: 'melee',
+        weaponId: 'glaives',
+        iconSvg: '#icon-sword',
+        rarity: 'rare',
+        desc: 'Adds +2 extra orbiting razor blades (5 total) and increases glaive damage by +25%.',
+        apply: (player) => {
+          player.upgradeWeapon('glaives', { extraBlades: 2, damageMult: 1.25 });
+        }
+      },
+      {
+        treeId: 'weapon_glaives',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_glaives_t3',
+        title: 'Glaives: Sawblade Vortex',
+        category: 'melee',
+        weaponId: 'glaives',
+        iconSvg: '#icon-sword',
+        rarity: 'epic',
+        desc: 'Adds +2 more orbiting blades (7 total), +35% radial sweep speed, and +30% damage.',
+        apply: (player) => {
+          player.upgradeWeapon('glaives', { extraBlades: 2, cooldownMult: 0.74, damageMult: 1.30 });
+        }
+      }
+    ]
+  },
+
+  // 15. PULSE BEAM RAILGUN (UNLOCK + POWER-UPS)
+  weapon_railgun: {
+    id: 'weapon_railgun',
+    name: 'Pulse Beam',
+    category: 'ranged',
+    weaponId: 'railgun',
+    iconSvg: '#icon-crosshair',
+    tiers: [
+      {
+        treeId: 'weapon_railgun',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_railgun_t1',
+        title: 'Unlock: Pulse Beam',
+        category: 'ranged',
+        weaponId: 'railgun',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Equips the Pulse Beam [Ranged]: instantaneous hyper-velocity beam piercing every target in line (15E).',
+        apply: (player) => {
+          player.unlockWeapon('railgun');
+        }
+      },
+      {
+        treeId: 'weapon_railgun',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_railgun_t2',
+        title: 'Pulse Beam: Capacitor Bore',
+        category: 'ranged',
+        weaponId: 'railgun',
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Widens Pulse Beam ionization envelope by +30% and boosts piercing damage by +30%.',
+        apply: (player) => {
+          player.upgradeWeapon('railgun', { rangeMult: 1.30, damageMult: 1.30 });
+        }
+      },
+      {
+        treeId: 'weapon_railgun',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_railgun_t3',
+        title: 'Pulse Beam: Omega Lance',
+        category: 'ranged',
+        weaponId: 'railgun',
+        iconSvg: '#icon-crosshair',
+        rarity: 'epic',
+        desc: 'Reduces Pulse Beam cost by 5 Energy, speeds recharge by +22%, and adds +35% beam damage.',
+        apply: (player) => {
+          player.upgradeWeapon('railgun', { energyDiscount: 5, cooldownMult: 0.78, damageMult: 1.35 });
+        }
+      }
+    ]
+  },
+
+  // 16. SWARM SEEKERS (UNLOCK + POWER-UPS)
+  weapon_seekers: {
+    id: 'weapon_seekers',
+    name: 'Swarm Seekers',
+    category: 'ranged',
+    weaponId: 'seekers',
+    iconSvg: '#icon-crosshair',
+    tiers: [
+      {
+        treeId: 'weapon_seekers',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_seekers_t1',
+        title: 'Unlock: Swarm Seekers',
+        category: 'ranged',
+        weaponId: 'seekers',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-crosshair',
+        rarity: 'uncommon',
+        desc: 'Equips Swarm Seekers [Ranged]: launches 3 homing micro-missiles that track hostiles (14E).',
+        apply: (player) => {
+          player.unlockWeapon('seekers');
+        }
+      },
+      {
+        treeId: 'weapon_seekers',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_seekers_t2',
+        title: 'Seekers: Extended Salvo',
+        category: 'ranged',
+        weaponId: 'seekers',
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Launches +2 extra homing missiles per salvo and boosts warhead yield by +20%.',
+        apply: (player) => {
+          player.upgradeWeapon('seekers', { extraProjectiles: 2, damageMult: 1.20 });
+        }
+      },
+      {
+        treeId: 'weapon_seekers',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_seekers_t3',
+        title: 'Seekers: Hydra Pod',
+        category: 'ranged',
+        weaponId: 'seekers',
+        iconSvg: '#icon-crosshair',
+        rarity: 'epic',
+        desc: 'Adds +3 more seeker missiles per volley, cuts cooldown by 20%, and saves 4 Energy per launch.',
+        apply: (player) => {
+          player.upgradeWeapon('seekers', { extraProjectiles: 3, cooldownMult: 0.80, energyDiscount: 4 });
+        }
+      }
+    ]
+  },
+
+  // 17. SCATTER FLAK (UNLOCK + POWER-UPS)
+  weapon_flak: {
+    id: 'weapon_flak',
+    name: 'Scatter Flak',
+    category: 'ranged',
+    weaponId: 'flak',
+    iconSvg: '#icon-crosshair',
+    tiers: [
+      {
+        treeId: 'weapon_flak',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_flak_t1',
+        title: 'Unlock: Scatter Flak',
+        category: 'ranged',
+        weaponId: 'flak',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-crosshair',
+        rarity: 'uncommon',
+        desc: 'Equips Scatter Flak [Ranged]: close-range kinetic shotgun blast with heavy knockback (12E).',
+        apply: (player) => {
+          player.unlockWeapon('flak');
+        }
+      },
+      {
+        treeId: 'weapon_flak',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_flak_t2',
+        title: 'Flak: Magnum Shells',
+        category: 'ranged',
+        weaponId: 'flak',
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Scatter Flak blasts +4 additional shrapnel pellets per shot with +25% pellet damage.',
+        apply: (player) => {
+          player.upgradeWeapon('flak', { extraProjectiles: 4, damageMult: 1.25 });
+        }
+      },
+      {
+        treeId: 'weapon_flak',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_flak_t3',
+        title: 'Flak: Riot Autocannon',
+        category: 'ranged',
+        weaponId: 'flak',
+        iconSvg: '#icon-crosshair',
+        rarity: 'epic',
+        desc: 'Fires +25% faster, deals +30% shrapnel damage, and lowers cost by 4 Energy per blast.',
+        apply: (player) => {
+          player.upgradeWeapon('flak', { cooldownMult: 0.75, damageMult: 1.30, energyDiscount: 4 });
+        }
+      }
+    ]
+  },
+
+  // 18. VOID VORTEX (UNLOCK + POWER-UPS)
+  weapon_void_orb: {
+    id: 'weapon_void_orb',
+    name: 'Void Vortex',
+    category: 'ranged',
+    weaponId: 'void_orb',
+    iconSvg: '#icon-crosshair',
+    tiers: [
+      {
+        treeId: 'weapon_void_orb',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_void_t1',
+        title: 'Unlock: Void Vortex',
+        category: 'ranged',
+        weaponId: 'void_orb',
+        isWeaponUnlock: true,
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Equips Void Vortex [Ranged]: tactical gravity orb that pulls enemies together before detonating (22E).',
+        apply: (player) => {
+          player.unlockWeapon('void_orb');
+        }
+      },
+      {
+        treeId: 'weapon_void_orb',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_void_t2',
+        title: 'Void Vortex: Singularity Well',
+        category: 'ranged',
+        weaponId: 'void_orb',
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Expands Void Vortex gravity pull radius by +35% and increases implosion damage by +30%.',
+        apply: (player) => {
+          player.upgradeWeapon('void_orb', { pullRadiusMult: 1.35, damageMult: 1.30 });
+        }
+      },
+      {
+        treeId: 'weapon_void_orb',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_void_t3',
+        title: 'Void Vortex: Event Horizon',
+        category: 'ranged',
+        weaponId: 'void_orb',
+        iconSvg: '#icon-crosshair',
+        rarity: 'epic',
+        desc: 'Cuts orb cooldown by 28%, saves 6 Energy per cast, and amplifies detonation damage by +40%.',
+        apply: (player) => {
+          player.upgradeWeapon('void_orb', { cooldownMult: 0.72, energyDiscount: 6, damageMult: 1.40 });
         }
       }
     ]

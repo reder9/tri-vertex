@@ -49,11 +49,12 @@ class Player {
     this.invulnerable = false;
     this.invulnerableTimer = 0;
 
-    // Loadout
-    this.meleeWeapons = ['katana', 'lance', 'hammer', 'glaives'];
-    this.rangedWeapons = ['railgun', 'seekers', 'tri_laser', 'flak', 'void_orb'];
+    // Loadout (Start exclusively with the Tri-Repeater laser; unlock other weapons via power-ups)
+    this.meleeWeapons = [];
+    this.rangedWeapons = ['tri_laser'];
     this.activeMeleeIndex = 0;
     this.activeRangedIndex = 0;
+    this.weaponMods = {};
 
     this.meleeCooldown = 0;
     this.rangedCooldown = 0;
@@ -131,11 +132,74 @@ class Player {
   }
 
   get equippedMelee() {
-    return WEAPONS[this.meleeWeapons[this.activeMeleeIndex]];
+    if (!this.meleeWeapons || this.meleeWeapons.length === 0) return null;
+    return WEAPONS[this.meleeWeapons[this.activeMeleeIndex]] || null;
   }
 
   get equippedRanged() {
-    return WEAPONS[this.rangedWeapons[this.activeRangedIndex]];
+    if (!this.rangedWeapons || this.rangedWeapons.length === 0) return null;
+    return WEAPONS[this.rangedWeapons[this.activeRangedIndex]] || null;
+  }
+
+  hasWeapon(weaponId) {
+    return this.meleeWeapons.includes(weaponId) || this.rangedWeapons.includes(weaponId);
+  }
+
+  getWeaponMods(weaponId) {
+    return (this.weaponMods && this.weaponMods[weaponId]) || null;
+  }
+
+  getEffectiveWeaponCooldown(weapon) {
+    if (!weapon) return 0.5;
+    const mods = this.getWeaponMods(weapon.id);
+    return Math.max(0.05, weapon.cooldown * (mods && mods.cooldownMult ? mods.cooldownMult : 1));
+  }
+
+  unlockWeapon(weaponId) {
+    const weapon = WEAPONS[weaponId];
+    if (!weapon) return false;
+    if (weapon.type === 'melee') {
+      if (!this.meleeWeapons.includes(weaponId)) {
+        this.meleeWeapons.push(weaponId);
+        this.activeMeleeIndex = this.meleeWeapons.length - 1;
+        return true;
+      }
+    } else if (weapon.type === 'ranged') {
+      if (!this.rangedWeapons.includes(weaponId)) {
+        this.rangedWeapons.push(weaponId);
+        this.activeRangedIndex = this.rangedWeapons.length - 1;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  upgradeWeapon(weaponId, patch) {
+    if (!this.weaponMods) this.weaponMods = {};
+    const cur = this.weaponMods[weaponId] || {
+      level: 0,
+      damageMult: 1,
+      cooldownMult: 1,
+      rangeMult: 1,
+      knockbackMult: 1,
+      pullRadiusMult: 1,
+      extraProjectiles: 0,
+      extraBlades: 0,
+      pierceBonus: 0,
+      energyDiscount: 0
+    };
+    cur.level += 1;
+    if (patch.damageMult) cur.damageMult *= patch.damageMult;
+    if (patch.cooldownMult) cur.cooldownMult *= patch.cooldownMult;
+    if (patch.rangeMult) cur.rangeMult *= patch.rangeMult;
+    if (patch.knockbackMult) cur.knockbackMult *= patch.knockbackMult;
+    if (patch.pullRadiusMult) cur.pullRadiusMult *= patch.pullRadiusMult;
+    if (patch.extraProjectiles) cur.extraProjectiles += patch.extraProjectiles;
+    if (patch.extraBlades) cur.extraBlades += patch.extraBlades;
+    if (patch.pierceBonus) cur.pierceBonus += patch.pierceBonus;
+    if (patch.energyDiscount) cur.energyDiscount += patch.energyDiscount;
+    this.weaponMods[weaponId] = cur;
+    return cur;
   }
 
   setMeleeIndex(idx) {
@@ -447,7 +511,7 @@ class Player {
     this.orbitAngle += dt * 3.2;
 
     // Passive Glaives contact damage if equipped
-    if (this.equippedMelee.id === 'glaives') {
+    if (this.equippedMelee && this.equippedMelee.id === 'glaives') {
       this.updatePassiveGlaives(game);
     }
 
@@ -466,14 +530,22 @@ class Player {
     let performedManualMelee = false;
     let performedManualRanged = false;
 
-    if (input.leftMouseDown && this.meleeCooldown <= 0) {
-      this.performMeleeAttack(game);
-      performedManualMelee = true;
-    }
-
-    if (input.rightMouseDown && this.rangedCooldown <= 0) {
+    if (input.rightMouseDown && this.equippedRanged && this.rangedCooldown <= 0) {
       this.performRangedAttack(game);
       performedManualRanged = true;
+    }
+
+    if (input.leftMouseDown) {
+      if (this.equippedMelee) {
+        if (this.meleeCooldown <= 0) {
+          this.performMeleeAttack(game);
+          performedManualMelee = true;
+        }
+      } else if (!performedManualRanged && this.equippedRanged && this.rangedCooldown <= 0) {
+        // Before a melee weapon is unlocked, primary click/trigger fires the equipped laser
+        this.performRangedAttack(game);
+        performedManualRanged = true;
+      }
     }
 
     // Smart Auto-Combat (Active on Touch / Mobile for silky, one-thumb dodging & automatic weapon engagement)
@@ -499,13 +571,13 @@ class Player {
       }
 
       // Auto-Melee strike when enemy breaches close perimeter
-      if (!performedManualMelee && this.meleeCooldown <= 0 && nearestMeleeTarget) {
+      if (!performedManualMelee && this.equippedMelee && this.meleeCooldown <= 0 && nearestMeleeTarget) {
         this.angle = Math.atan2(nearestMeleeTarget.y - this.y, nearestMeleeTarget.x - this.x);
         this.performMeleeAttack(game);
       }
 
       // Auto-Ranged discharge towards nearest threat
-      if (!performedManualRanged && this.rangedCooldown <= 0 && nearestRangedTarget && !input.touchDragAiming) {
+      if (!performedManualRanged && this.equippedRanged && this.rangedCooldown <= 0 && nearestRangedTarget && !input.touchDragAiming) {
         input.mouseX = nearestRangedTarget.x;
         input.mouseY = nearestRangedTarget.y;
         this.performRangedAttack(game);
@@ -578,7 +650,13 @@ class Player {
 
   performMeleeAttack(game) {
     const weapon = this.equippedMelee;
-    this.meleeCooldown = weapon.cooldown;
+    if (!weapon) return;
+
+    const mods = this.getWeaponMods(weapon.id);
+    const dmgMod = mods ? (mods.damageMult || 1) : 1;
+    const rangeMod = mods ? (mods.rangeMult || 1) : 1;
+    const kbMod = mods ? (mods.knockbackMult || 1) : 1;
+    this.meleeCooldown = this.getEffectiveWeaponCooldown(weapon);
 
     // Audio
     if (window.soundEngine[weapon.sound]) {
@@ -593,8 +671,9 @@ class Player {
       else game.rumble(75, 0.25, 0.35); // katana
     }
 
-    const reach = weapon.range * this.meleeRangeMult;
+    const reach = weapon.range * this.meleeRangeMult * rangeMod;
     const arc = weapon.arcAngle;
+    const totalDamageMult = (this.meleeDamageMult || 1) * dmgMod;
 
     this.meleeAttackAnim = {
       type: weapon.id,
@@ -620,7 +699,7 @@ class Player {
         y: this.y + Math.sin(this.angle) * 20,
         vx: Math.cos(this.angle) * 850,
         vy: Math.sin(this.angle) * 850,
-        damage: weapon.damage * 0.55 * (this.meleeDamageMult || 1),
+        damage: weapon.damage * 0.55 * totalDamageMult,
         color: weapon.color,
         isMeleeWave: true,
         pierce: this.vorpalInfinitePierce ? 999 : 3,
@@ -631,7 +710,7 @@ class Player {
 
     // Hammer shockwave
     if (weapon.id === 'hammer') {
-      game.spawnShockwave(this.x, this.y, weapon.shockwaveRadius, weapon.color, weapon.damage * (this.meleeDamageMult || 1));
+      game.spawnShockwave(this.x, this.y, weapon.shockwaveRadius * rangeMod, weapon.color, weapon.damage * totalDamageMult);
       game.screenShake(7, 0.2);
     }
 
@@ -649,7 +728,7 @@ class Player {
         if (angDiff <= arc / 2 || weapon.id === 'hammer') {
           // HIT!
           hitCount++;
-          let dmg = weapon.damage * (this.meleeDamageMult || 1);
+          let dmg = weapon.damage * totalDamageMult;
 
           // Tip critical multiplier for lance
           if (weapon.id === 'lance' && d >= reach * 0.7) {
@@ -668,8 +747,8 @@ class Player {
 
           // Knockback
           const kbAngle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-          enemy.vx += Math.cos(kbAngle) * weapon.knockback;
-          enemy.vy += Math.sin(kbAngle) * weapon.knockback;
+          enemy.vx += Math.cos(kbAngle) * weapon.knockback * kbMod;
+          enemy.vy += Math.sin(kbAngle) * weapon.knockback * kbMod;
 
           // Spark particles
           game.spawnSparks(enemy.x, enemy.y, weapon.color, 10);
@@ -739,7 +818,11 @@ class Player {
   }
 
   updatePassiveGlaives(game) {
-    const orbitCount = this.equippedMelee.orbitBladesCount || 3;
+    const glaiveWeapon = this.equippedMelee;
+    if (!glaiveWeapon || glaiveWeapon.id !== 'glaives') return;
+    const mods = this.getWeaponMods('glaives');
+    const orbitCount = (glaiveWeapon.orbitBladesCount || 3) + (mods ? (mods.extraBlades || 0) : 0);
+    const dmgMod = (this.meleeDamageMult || 1) * (mods ? (mods.damageMult || 1) : 1);
     const orbitDist = 65;
 
     for (let i = 0; i < orbitCount; i++) {
@@ -750,7 +833,7 @@ class Player {
       // Check collision with enemies
       game.enemies.forEach(enemy => {
         if (dist(bx, by, enemy.x, enemy.y) < enemy.radius + 12) {
-          enemy.takeDamage(this.equippedMelee.damage * 0.12, game, 'melee');
+          enemy.takeDamage(glaiveWeapon.damage * 0.12 * dmgMod, game, 'melee');
           enemy.vx += Math.cos(ang) * 40;
           enemy.vy += Math.sin(ang) * 40;
         }
@@ -771,7 +854,10 @@ class Player {
 
   performRangedAttack(game) {
     const weapon = this.equippedRanged;
-    const baseEnergy = weapon.energyCost || (weapon.id === 'railgun' ? 15 : 0);
+    if (!weapon) return;
+
+    const mods = this.getWeaponMods(weapon.id);
+    const baseEnergy = Math.max(0, (weapon.energyCost !== undefined ? weapon.energyCost : (weapon.id === 'railgun' ? 15 : 0)) - (mods ? (mods.energyDiscount || 0) : 0));
     const energyRequired = Math.round(baseEnergy * (this.globalEnergyCostMult || 1) * (this.rangedEnergyDiscount || 1));
 
     // Energy requirement check
@@ -784,11 +870,11 @@ class Player {
 
     // Deduct energy cost
     this.energy = Math.max(0, this.energy - energyRequired);
-    this.rangedCooldown = weapon.cooldown;
+    this.rangedCooldown = this.getEffectiveWeaponCooldown(weapon);
 
     // Overcharge bonus: If synergy meter is full, ranged attack deals 2x damage and triggers explosion
     let isOverchargeShot = this.synergyMeter >= 100;
-    let dmgMult = (isOverchargeShot ? 2.0 : 1.0) * (this.rangedDamageMult || 1);
+    let dmgMult = (isOverchargeShot ? 2.0 : 1.0) * (this.rangedDamageMult || 1) * (mods ? (mods.damageMult || 1) : 1);
     if (isOverchargeShot) {
       this.synergyMeter = 0; // Consume overcharge
       game.spawnFloatingText(this.x, this.y - 18, 'OVERCHARGED DISCHARGE!', '#ffb700');
@@ -813,6 +899,10 @@ class Player {
 
     const tipX = this.x + Math.cos(this.angle) * 20;
     const tipY = this.y + Math.sin(this.angle) * 20;
+    const modExtraProj = mods ? (mods.extraProjectiles || 0) : 0;
+    const modPierceBonus = mods ? (mods.pierceBonus || 0) : 0;
+    const modRangeMult = mods ? (mods.rangeMult || 1) : 1;
+    const modPullMult = mods ? (mods.pullRadiusMult || 1) : 1;
 
     // Weapon specific behaviors
     if (weapon.id === 'railgun') {
@@ -829,7 +919,7 @@ class Player {
         color: weapon.color,
         alpha: 1.0,
         decay: 3.5,
-        width: isOverchargeShot ? 8 : 4
+        width: (isOverchargeShot ? 8 : 4) * modRangeMult
       });
 
       // Check beam line vs circles
@@ -837,7 +927,7 @@ class Player {
       game.enemies.forEach(enemy => {
         // Line-point distance
         const lDist = pointToSegmentDist(enemy.x, enemy.y, tipX, tipY, endX, endY);
-        if (lDist <= enemy.radius + 12) {
+        if (lDist <= enemy.radius + (12 * modRangeMult)) {
           hits++;
           enemy.takeDamage(weapon.damage * dmgMult, game, 'ranged');
           enemy.applyVulnerability(this.vulnerabilityDuration || 4.0); // Ranged applies melee vulnerability!
@@ -859,9 +949,9 @@ class Player {
         }
       }
     } else if (weapon.id === 'seekers') {
-      const count = (weapon.projectilesPerShot || 3) + this.extraProjectiles;
+      const count = (weapon.projectilesPerShot || 3) + this.extraProjectiles + modExtraProj;
       for (let i = 0; i < count; i++) {
-        const spreadAng = (i - (count - 1) / 2) * (weapon.spread / count);
+        const spreadAng = (i - (count - 1) / 2) * (weapon.spread / Math.max(1, count));
         const launchAng = this.angle + spreadAng;
         const pSpd = weapon.projectileSpeed * (this.projectileSpeedMult || 1);
         game.projectiles.push(new Projectile({
@@ -879,7 +969,7 @@ class Player {
         }));
       }
     } else if (weapon.id === 'tri_laser') {
-      const count = (weapon.projectilesPerShot || 3) + this.extraProjectiles;
+      const count = (weapon.projectilesPerShot || 3) + this.extraProjectiles + modExtraProj;
       for (let i = 0; i < count; i++) {
         const spreadAng = (i - (count - 1) / 2) * weapon.spread;
         const boltAng = this.angle + spreadAng;
@@ -893,12 +983,12 @@ class Player {
           color: weapon.color,
           owner: 'player',
           lifetime: weapon.lifetime,
-          pierce: this.bonusPiercing,
+          pierce: (this.bonusPiercing || 0) + modPierceBonus,
           radius: 4
         }));
       }
     } else if (weapon.id === 'flak') {
-      const count = (weapon.projectilesPerShot || 7) + this.extraProjectiles;
+      const count = (weapon.projectilesPerShot || 7) + this.extraProjectiles + modExtraProj;
       for (let i = 0; i < count; i++) {
         const spreadAng = (Math.random() - 0.5) * weapon.spread;
         const spd = weapon.projectileSpeed * (0.85 + Math.random() * 0.3) * (this.projectileSpeedMult || 1);
@@ -928,7 +1018,7 @@ class Player {
         owner: 'player',
         lifetime: weapon.lifetime,
         isVoidOrb: true,
-        pullRadius: weapon.pullRadius,
+        pullRadius: weapon.pullRadius * modPullMult,
         pullForce: weapon.pullForce,
         radius: 9
       }));
@@ -1163,7 +1253,7 @@ class Player {
     }
 
     // 6. Draw Orbiting Glaives (if equipped)
-    if (this.equippedMelee.id === 'glaives') {
+    if (this.equippedMelee && this.equippedMelee.id === 'glaives') {
       this.drawOrbitingGlaives(ctx);
     }
 
@@ -1380,7 +1470,10 @@ class Player {
   }
 
   drawOrbitingGlaives(ctx) {
-    const orbitCount = this.equippedMelee.orbitBladesCount || 3;
+    const glaiveWeapon = this.equippedMelee;
+    if (!glaiveWeapon || glaiveWeapon.id !== 'glaives') return;
+    const mods = this.getWeaponMods('glaives');
+    const orbitCount = (glaiveWeapon.orbitBladesCount || 3) + (mods ? (mods.extraBlades || 0) : 0);
     const orbitDist = 65;
 
     for (let i = 0; i < orbitCount; i++) {

@@ -1692,6 +1692,22 @@ const Sprites = {
       wallFace = '#475569';
       wainscoting = '#334155';
       roomTitle = "QUARRY GEMSTONE CAVERN";
+    } else if (locType === 'interior_barn') {
+      floorBase = '#a16207';
+      floorPlank = '#854d0e';
+      floorLine = '#451a03';
+      wallTop = '#7f1d1d';
+      wallFace = '#fef3c7';
+      wainscoting = '#991b1b';
+      roomTitle = "HOMESTEAD RED BARN";
+    } else if (locType === 'interior_greenhouse') {
+      floorBase = '#d6d3d1';
+      floorPlank = '#e7e5e4';
+      floorLine = '#a8a29e';
+      wallTop = '#0f766e';
+      wallFace = '#bae6fd';
+      wainscoting = '#15803d';
+      roomTitle = "HOMESTEAD CRYSTAL GREENHOUSE";
     }
 
     // 1. Draw Floor Planks (cols 1..16, rows 3..12)
@@ -1972,6 +1988,76 @@ const Sprites = {
       ctx.textAlign = 'center';
       ctx.fillText('KITCHEN COOKING (E)', 3.9 * s, 5.15 * s + 12 + bob);
 
+      // Carpenter Crafting Workbench (cols 13..15.2, rows 8.8..10.3)
+      const wbX = 13.0 * s;
+      const wbY = 9.0 * s;
+      this.drawOutlinedBox(ctx, wbX, wbY, 68, 36, '#78350f', '#b45309', '#451a03');
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(wbX + 10, wbY + 8, 16, 6);
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(wbX + 38, wbY + 10, 14, 14);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.fillRect(wbX - 6, wbY - 22 + bob, 80, 17);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(wbX - 6, wbY - 22 + bob, 80, 17);
+      ctx.fillStyle = '#bae6fd';
+      ctx.font = 'bold 8.5px sans-serif';
+      ctx.fillText('CRAFT BENCH (E)', wbX + 34, wbY - 10 + bob);
+
+    } else if (locType === 'interior_barn') {
+      // --- HOMESTEAD RED BARN INTERIOR ---
+      // Cozy Timber Animal Stalls & Golden Hay Bedding (rows 3.4..6.2)
+      for (let st = 0; st < 4; st++) {
+        const sx = (2.0 + st * 3.6) * s;
+        this.drawOutlinedBox(ctx, sx, 3.4 * s, 3.0 * s, 2.2 * s, '#92400e', '#b45309', '#451a03');
+        // Golden straw mat
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(sx + 6, 3.7 * s, 3.0 * s - 12, 1.7 * s);
+        ctx.fillStyle = '#fef08a';
+        for (let h = 0; h < 6; h++) {
+          ctx.fillRect(sx + 10 + (h % 3) * 24, 3.9 * s + Math.floor(h / 3) * 18, 12, 3);
+        }
+      }
+      // Hay Feeding Trough on left wall
+      this.drawOutlinedBox(ctx, 1.5 * s, 7.6 * s, 1.8 * s, 2.8 * s, '#78350f', '#a16207', '#451a03');
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(1.7 * s, 7.8 * s, 1.4 * s, 2.4 * s);
+      // Livestock Management Ledger Desk (right side cols 13.5..16, rows 8..9.5)
+      this.drawOutlinedBox(ctx, 13.6 * s, 8.0 * s, 2.2 * s, 1.4 * s, '#78350f', '#b45309', '#451a03');
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(14.1 * s, 8.3 * s, 28, 20);
+      const bob = Math.round(Math.sin(time * 0.004) * 2.5);
+      this.drawOutlinedBox(ctx, 12.6 * s, 7.0 * s + bob, 4.0 * s, 18, '#1e293b', '#475569', '#0f172a');
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 8.5px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('LIVESTOCK LEDGER (E)', 14.6 * s, 7.0 * s + 12 + bob);
+
+    } else if (locType === 'interior_greenhouse') {
+      // --- CRYSTAL GREENHOUSE INTERIOR (Year-Round 6x6 Fertile Beds) ---
+      // Sunlit glass skylight wall panes
+      for (let gx = 2 * s; gx < 16 * s; gx += 2.2 * s) {
+        this.drawOutlinedBox(ctx, gx, 1.2 * s, 1.8 * s, 1.5 * s, '#7dd3fc', '#e0f2fe', '#0284c7');
+      }
+      // Stone Garden Planter Border around cols 6..11, rows 4..9
+      this.drawOutlinedBox(ctx, 5.75 * s, 3.75 * s, 6.5 * s, 6.5 * s, '#78350f', '#b45309', '#451a03');
+      // Indoor Crystal Water Trough (col 2, row 7..8.5)
+      this.drawOutlinedBox(ctx, 1.8 * s, 7.0 * s, 2.0 * s, 1.5 * s, '#64748b', '#94a3b8', '#334155');
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(2.0 * s, 7.25 * s, 1.6 * s, 1.0 * s);
+      const bob = Math.round(Math.sin(time * 0.004) * 2.5);
+      this.drawOutlinedBox(ctx, 1.4 * s, 6.1 * s + bob, 2.8 * s, 16, '#1e293b', '#475569', '#0f172a');
+      ctx.fillStyle = '#bae6fd';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('WATER TROUGH (E)', 2.8 * s, 6.1 * s + 11 + bob);
+      // Warm Botanical Banner
+      this.drawOutlinedBox(ctx, 5.5 * s, 2.7 * s, 7.0 * s, 16, '#065f46', '#10b981', '#022c22');
+      ctx.fillStyle = '#ecfdf5';
+      ctx.font = 'bold 8.5px sans-serif';
+      ctx.fillText('YEAR-ROUND WARM SOIL (NO WINTER FROST)', 9 * s, 2.7 * s + 11);
+
     } else if (locType === 'interior_cave') {
       // --- HILLSIDE QUARRY CAVERN INTERIOR ---
       // Minecart iron rails running across the cavern floor
@@ -2085,7 +2171,7 @@ const Sprites = {
         ctx.fillRect(2.3 * s, 6.3 * s, 60, 12);
       } else if (locType === 'interior_townhall') {
         npcType = 'mayor';
-        actionLabel = 'SPEAK WITH MAYOR CLARA (E)';
+        actionLabel = 'CITY HALL & BUNDLES (E)';
         // Bookshelves & Town Banners
         ctx.fillStyle = '#1e3a8a';
         ctx.fillRect(2.5 * s, 1.3 * s, 28, 48);
@@ -2204,7 +2290,7 @@ const Sprites = {
     ctx.fillStyle = '#fef08a';
     ctx.font = 'bold 8.5px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('ANIMAL BARN (E)', x + w / 2, y - 7 + bob);
+    ctx.fillText('ENTER BARN (E)', x + w / 2, y - 7 + bob);
   },
 
   drawFarmAnimal(ctx, animal, time = 0) {
@@ -2408,6 +2494,25 @@ const Sprites = {
       ctx.fillRect(cx - 4, cy - 3, 3, 3);
       ctx.fillRect(cx + 1, cy - 2, 3, 3);
       ctx.fillRect(cx - 2, cy + 1, 3, 3);
+    } else if (type === 'seashell') {
+      ctx.fillStyle = '#fda4af';
+      ctx.strokeStyle = '#be123c';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 7, Math.PI, Math.PI * 2);
+      ctx.lineTo(cx + 4, cy + 5);
+      ctx.lineTo(cx - 4, cy + 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff1f2';
+      ctx.fillRect(cx - 2, cy - 3, 4, 3);
+    } else if (type === 'sea_kelp') {
+      ctx.fillStyle = '#0d9488';
+      ctx.fillRect(cx - 4, cy - 6, 4, 13);
+      ctx.fillRect(cx + 1, cy - 4, 4, 11);
+      ctx.fillStyle = '#5eead4';
+      ctx.fillRect(cx - 3, cy - 5, 2, 6);
     }
   },
 
@@ -2575,6 +2680,202 @@ const Sprites = {
     ctx.fill();
     ctx.stroke();
     ctx.restore();
+  },
+
+  drawGreenhouse(ctx, x, y, isRepaired, time = 0) {
+    const s = this.TILE_SIZE;
+    const w = 5 * s;
+    const h = 4 * s;
+    const o = this.colors.outline;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.24)';
+    ctx.fillRect(x + 6, y + h - 8, w - 12, 12);
+
+    // Stone foundation
+    this.drawOutlinedBox(ctx, x + 6, y + 40, w - 12, h - 40, '#64748b', '#94a3b8', '#334155', o);
+
+    if (isRepaired) {
+      // Crystal cyan glass walls & vaulted roof
+      this.drawOutlinedBox(ctx, x + 10, y + 34, w - 20, h - 44, '#0284c7', '#7dd3fc', '#0369a1', o);
+      // Warm greenery visible inside glass
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(x + 18, y + 54, w - 36, 36);
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(x + 24, y + 58, 22, 16);
+      ctx.fillRect(x + 62, y + 56, 26, 20);
+      ctx.fillRect(x + 102, y + 60, 22, 16);
+      // Glass arched roof ribs
+      this.drawOutlinedBox(ctx, x + 4, y + 10, w - 8, 28, '#38bdf8', '#e0f2fe', '#0284c7', o);
+      for (let gx = x + 24; gx < x + w - 16; gx += 24) {
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillRect(gx, y + 12, 3, h - 22);
+      }
+      // Double Glass Door
+      this.drawOutlinedBox(ctx, x + w / 2 - 16, y + h - 38, 32, 38, '#92400e', '#bae6fd', '#451a03', o);
+    } else {
+      // Weathered Ruined Greenhouse
+      this.drawOutlinedBox(ctx, x + 10, y + 34, w - 20, h - 44, '#475569', '#64748b', '#1e293b', o);
+      // Cracked glass shards & overgrown vines
+      ctx.fillStyle = '#0ea5e9';
+      ctx.fillRect(x + 18, y + 48, 26, 20);
+      ctx.fillRect(x + w - 48, y + 52, 22, 16);
+      ctx.fillStyle = '#166534';
+      ctx.fillRect(x + 28, y + 40, 12, 48);
+      ctx.fillRect(x + 74, y + 20, 18, 42);
+      this.drawOutlinedBox(ctx, x + 4, y + 10, w - 8, 28, '#78350f', '#92400e', '#451a03', o);
+      // Boarded door
+      this.drawOutlinedBox(ctx, x + w / 2 - 16, y + h - 38, 32, 38, '#78350f', '#b45309', '#451a03', o);
+    }
+
+    const bob = Math.round(Math.sin(time * 0.004) * 2);
+    this.drawOutlinedBox(ctx, x + 18, y - 16 + bob, w - 36, 16, '#1e293b', '#475569', '#0f172a', o);
+    ctx.fillStyle = isRepaired ? '#7dd3fc' : '#fde047';
+    ctx.font = 'bold 8.5px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(isRepaired ? 'GREENHOUSE (E)' : 'REPAIR GREENHOUSE (E)', x + w / 2, y - 5 + bob);
+    ctx.restore();
+  },
+
+  drawOrchardTree(ctx, x, y, kind = 'apple', isRipe = true, time = 0) {
+    const o = this.colors.outline;
+    this.drawPixelDisc(ctx, x + 16, y + 28, 12, 'rgba(0,0,0,0.22)');
+    this.drawOutlinedBox(ctx, x + 12, y + 14, 8, 16, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark, o);
+    let leafMid = '#22c55e';
+    let leafHi = '#86efac';
+    if (this._season === 'Fall') { leafMid = '#ea580c'; leafHi = '#fbbf24'; }
+    else if (this._season === 'Winter') { leafMid = '#94a3b8'; leafHi = '#e2e8f0'; }
+    else if (kind === 'cherry' && this._season === 'Spring') { leafMid = '#22c55e'; leafHi = '#fbcfe8'; }
+
+    this.drawPixelDisc(ctx, x + 16, y + 4, 17, '#132a0c');
+    this.drawPixelDisc(ctx, x + 16, y + 4, 15, leafMid);
+    this.drawPixelDisc(ctx, x + 13, y, 10, leafHi);
+
+    if (isRipe && this._season !== 'Winter') {
+      const fCol = kind === 'peach' ? '#fb923c' : (kind === 'cherry' ? '#be123c' : '#ef4444');
+      const fHi = kind === 'peach' ? '#fed7aa' : '#fecdd3';
+      const bob = Math.round(Math.sin(time * 0.005 + x) * 1);
+      [[9, 2], [20, 4], [14, -4]].forEach(([ox, oy]) => {
+        ctx.fillStyle = o;
+        ctx.fillRect(x + ox - 1, y + oy - 1 + bob, 6, 6);
+        ctx.fillStyle = fCol;
+        ctx.fillRect(x + ox, y + oy + bob, 4, 4);
+        ctx.fillStyle = fHi;
+        ctx.fillRect(x + ox, y + oy + bob, 2, 2);
+      });
+    }
+  },
+
+  drawWishingShrine(ctx, x, y, canPray = true, time = 0) {
+    const o = this.colors.outline;
+    this.drawPixelDisc(ctx, x + 16, y + 26, 14, 'rgba(0,0,0,0.25)');
+    this.drawOutlinedBox(ctx, x + 4, y + 14, 24, 16, '#64748b', '#cbd5e1', '#334155', o);
+    this.drawOutlinedBox(ctx, x + 8, y + 2, 16, 14, '#94a3b8', '#e2e8f0', '#475569', o);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.006);
+    ctx.fillStyle = canPray ? `rgba(56, 189, 248, ${0.65 + pulse * 0.35})` : '#475569';
+    ctx.fillRect(x + 12, y + 5, 8, 8);
+    if (canPray) {
+      const bob = Math.round(Math.sin(time * 0.004) * 2);
+      this.drawOutlinedBox(ctx, x - 14, y - 16 + bob, 60, 14, '#1e293b', '#475569', '#0f172a', o);
+      ctx.fillStyle = '#7dd3fc';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SHRINE (E)', x + 16, y - 6 + bob);
+    }
+  },
+
+  drawMachine(ctx, x, y, kind, state, time = 0) {
+    const o = this.colors.outline;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x + 5, y + 26, 22, 5);
+
+    if (kind === 'cheese_press') {
+      this.drawOutlinedBox(ctx, x + 6, y + 10, 20, 18, '#b45309', '#f59e0b', '#78350f', o);
+      this.drawOutlinedBox(ctx, x + 10, y + 4, 12, 6, '#94a3b8', '#e2e8f0', '#475569', o);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(x + 10, y + 15, 12, 8);
+    } else if (kind === 'mayo_maker') {
+      this.drawOutlinedBox(ctx, x + 7, y + 9, 18, 19, '#e2e8f0', '#ffffff', '#94a3b8', o);
+      this.drawOutlinedBox(ctx, x + 11, y + 4, 10, 5, '#eab308', '#fef08a', '#a16207', o);
+    } else if (kind === 'loom') {
+      this.drawOutlinedBox(ctx, x + 4, y + 8, 24, 20, '#92400e', '#d97706', '#451a03', o);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(x + 8, y + 12, 16, 10);
+      ctx.fillStyle = '#ec4899';
+      ctx.fillRect(x + 8, y + 15, 16, 3);
+    } else if (kind === 'preserves_jar') {
+      this.drawOutlinedBox(ctx, x + 7, y + 8, 18, 20, '#9a3412', '#ea580c', '#451a03', o);
+      this.drawOutlinedBox(ctx, x + 9, y + 5, 14, 4, '#ca8a04', '#fde047', '#713f12', o);
+      ctx.fillStyle = '#e11d48';
+      ctx.fillRect(x + 11, y + 13, 10, 8);
+    } else if (kind === 'bee_house') {
+      this.drawOutlinedBox(ctx, x + 6, y + 8, 20, 20, '#ca8a04', '#facc15', '#854d0e', o);
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(x + 12, y + 19, 8, 5);
+      const bx = x + 16 + Math.round(Math.sin(time * 0.012) * 8);
+      const by = y + 6 + Math.round(Math.cos(time * 0.015) * 3);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(bx, by, 3, 3);
+    } else if (kind === 'quality_sprinkler') {
+      this.drawOutlinedBox(ctx, x + 10, y + 10, 12, 16, '#eab308', '#fef08a', '#854d0e', o);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(x + 6, y + 14, 4, 4);
+      ctx.fillRect(x + 22, y + 14, 4, 4);
+      ctx.fillRect(x + 14, y + 6, 4, 4);
+    } else if (kind === 'scarecrow') {
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(x + 14, y + 12, 4, 18);
+      this.drawOutlinedBox(ctx, x + 7, y + 13, 18, 9, '#b91c1c', '#ef4444', '#7f1d1d', o);
+      this.drawOutlinedBox(ctx, x + 10, y + 5, 12, 9, '#f97316', '#fdba74', '#9a3412', o);
+      this.drawOutlinedBox(ctx, x + 8, y + 2, 16, 4, '#ca8a04', '#fef08a', '#78350f', o);
+    } else if (kind === 'chest') {
+      this.drawOutlinedBox(ctx, x + 5, y + 9, 22, 18, '#92400e', '#d97706', '#451a03', o);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(x + 9, y + 9, 3, 18);
+      ctx.fillRect(x + 20, y + 9, 3, 18);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(x + 14, y + 15, 4, 5);
+    }
+
+    if (state && state.ready) {
+      const bob = Math.round(Math.sin(time * 0.008) * 2.5);
+      this.drawOutlinedBox(ctx, x + 4, y - 10 + bob, 24, 12, '#facc15', '#fef08a', '#b45309', o);
+      ctx.fillStyle = '#78350f';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('READY', x + 16, y - 1 + bob);
+    } else if (state && state.outputId) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+      ctx.fillRect(x + 6, y - 6, 20, 8);
+      ctx.fillStyle = '#bae6fd';
+      ctx.font = 'bold 7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('BUSY', x + 16, y + 1);
+    }
+  },
+
+  drawFestivalBunting(ctx, plazaLeftX, plazaTopY, season, time = 0) {
+    const colors = season === 'Spring'
+      ? ['#f472b6', '#4ade80', '#facc15', '#38bdf8']
+      : (season === 'Summer'
+        ? ['#38bdf8', '#facc15', '#fb923c', '#22d3ee']
+        : (season === 'Fall'
+          ? ['#ea580c', '#f59e0b', '#dc2626', '#fde047']
+          : ['#e0f2fe', '#7dd3fc', '#facc15', '#c084fc']));
+    const s = this.TILE_SIZE;
+    for (let i = 0; i < 14; i++) {
+      const fx = plazaLeftX + i * 36;
+      const fy = plazaTopY + Math.round(Math.sin(time * 0.004 + i) * 2);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fillRect(fx, fy, 12, 10);
+      ctx.fillRect(fx + 2, fy + 10, 8, 4);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(fx, fy - 2, 36, 2);
+    }
+    this.drawOutlinedBox(ctx, plazaLeftX + 6 * s, plazaTopY - 22, 6 * s, 18, '#78350f', '#f59e0b', '#451a03');
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 9.5px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${season.toUpperCase()} FESTIVAL IN OAKHAVEN!`, plazaLeftX + 9 * s, plazaTopY - 10);
   }
 };
 

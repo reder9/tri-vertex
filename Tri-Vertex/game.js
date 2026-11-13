@@ -252,7 +252,7 @@ class GameEngine {
 
       // Q: Cycle Melee
       if (e.code === 'KeyQ') {
-        if (this.player) {
+        if (this.player && this.player.meleeWeapons.length > 0) {
           const next = (this.player.activeMeleeIndex + 1) % this.player.meleeWeapons.length;
           this.player.setMeleeIndex(next);
           this.renderWeaponSlots();
@@ -261,7 +261,7 @@ class GameEngine {
 
       // E: Cycle Ranged
       if (e.code === 'KeyE') {
-        if (this.player) {
+        if (this.player && this.player.rangedWeapons.length > 0) {
           const next = (this.player.activeRangedIndex + 1) % this.player.rangedWeapons.length;
           this.player.setRangedIndex(next);
           this.renderWeaponSlots();
@@ -693,7 +693,7 @@ class GameEngine {
       const handleSwapMelee = (e) => {
         e.preventDefault();
         unlockAudio();
-        if (this.player) {
+        if (this.player && this.player.meleeWeapons.length > 0) {
           const next = (this.player.activeMeleeIndex + 1) % this.player.meleeWeapons.length;
           this.player.setMeleeIndex(next);
           this.renderWeaponSlots();
@@ -708,7 +708,7 @@ class GameEngine {
       const handleSwapRanged = (e) => {
         e.preventDefault();
         unlockAudio();
-        if (this.player) {
+        if (this.player && this.player.rangedWeapons.length > 0) {
           const next = (this.player.activeRangedIndex + 1) % this.player.rangedWeapons.length;
           this.player.setRangedIndex(next);
           this.renderWeaponSlots();
@@ -826,11 +826,18 @@ class GameEngine {
 
   updateTouchWeaponLabels() {
     if (!this.player) return;
-    if (this.ui.touchMeleeLabel && this.player.equippedMelee) {
-      this.ui.touchMeleeLabel.innerText = this.player.equippedMelee.name.split(' ')[0].toUpperCase();
+    if (this.ui.touchMeleeLabel) {
+      this.ui.touchMeleeLabel.innerText = this.player.equippedMelee
+        ? this.player.equippedMelee.name.split(' ')[0].toUpperCase()
+        : 'LOCKED';
     }
-    if (this.ui.touchRangedLabel && this.player.equippedRanged) {
-      this.ui.touchRangedLabel.innerText = this.player.equippedRanged.name.split(' ')[0].toUpperCase();
+    if (this.ui.touchBtnSwapMelee) {
+      this.ui.touchBtnSwapMelee.classList.toggle('disabled', !this.player.equippedMelee);
+    }
+    if (this.ui.touchRangedLabel) {
+      this.ui.touchRangedLabel.innerText = this.player.equippedRanged
+        ? this.player.equippedRanged.name.split(' ')[0].toUpperCase()
+        : 'NONE';
     }
   }
 
@@ -1159,7 +1166,7 @@ class GameEngine {
 
       // RB (5): Cycle Melee Weapon forward
       if (isJustPressed(5)) {
-        if (this.player) {
+        if (this.player && this.player.meleeWeapons.length > 0) {
           const next = (this.player.activeMeleeIndex + 1) % this.player.meleeWeapons.length;
           this.player.setMeleeIndex(next);
           this.renderWeaponSlots();
@@ -1170,7 +1177,7 @@ class GameEngine {
 
       // Button B (1): Cycle Ranged Weapon forward
       if (isJustPressed(1)) {
-        if (this.player) {
+        if (this.player && this.player.rangedWeapons.length > 0) {
           const next = (this.player.activeRangedIndex + 1) % this.player.rangedWeapons.length;
           this.player.setRangedIndex(next);
           this.renderWeaponSlots();
@@ -1322,9 +1329,14 @@ class GameEngine {
     // 1. Gather all eligible next tiers across all power-up trees
     // Only the NEXT unacquired tier in each tree can ever be offered!
     const eligibleUpgrades = [];
+    const hasMeleeWeapon = this.player && this.player.meleeWeapons.length > 0;
     if (typeof UPGRADE_TREES !== 'undefined') {
       for (const treeKey in UPGRADE_TREES) {
         const tree = UPGRADE_TREES[treeKey];
+        // Skip generic melee stat trees until player unlocks at least one melee weapon
+        if (!hasMeleeWeapon && (tree.id === 'melee_reach' || tree.id === 'melee_defense')) {
+          continue;
+        }
         const currentTier = this.playerUpgradeTiers[tree.id] || 0;
         const nextTierIndex = currentTier; // 0-indexed: tier 1 is index 0
 
@@ -1345,7 +1357,16 @@ class GameEngine {
     // 2. Shuffle eligible candidates
     let shuffled = [...eligibleUpgrades].sort(() => 0.5 - Math.random());
 
-    // 3. Early Magnet Progression: If player has 0 magnet tiers, guarantee Tier 1 Magnet is offered!
+    // 3. Ensure early players see Weapon Unlock / Weapon Power-Up cards regularly!
+    const totalUnlockedWeapons = this.player
+      ? (this.player.meleeWeapons.length + this.player.rangedWeapons.length)
+      : 1;
+    const weaponUnlockCard = shuffled.find(u => u.isWeaponUnlock);
+    if (totalUnlockedWeapons < 4 && weaponUnlockCard) {
+      shuffled = [weaponUnlockCard, ...shuffled.filter(u => u.id !== weaponUnlockCard.id)];
+    }
+
+    // 4. Early Magnet Progression: If player has 0 magnet tiers, guarantee Tier 1 Magnet is offered!
     const magnetTier = this.playerUpgradeTiers['magnet'] || 0;
     if (magnetTier === 0) {
       const magnetT1 = shuffled.find(u => u.treeId === 'magnet' && u.tier === 1);
@@ -1354,7 +1375,7 @@ class GameEngine {
       }
     }
 
-    // 4. Select top 3 distinct upgrades
+    // 5. Select top 3 distinct upgrades (resorting order so guaranteed card isn't always slot 1)
     let choices = shuffled.slice(0, 3);
 
     // 5. Late-Game Fallback: If fewer than 3 available, fill with repeatable emergency repair / catalyst cards
@@ -1441,6 +1462,7 @@ class GameEngine {
         }
 
         up.apply(this.player, this);
+        this.renderWeaponSlots();
         const tierText = (up.tier && up.maxTier && up.treeId !== 'fallback') ? ` [TIER ${up.tier}/${up.maxTier}]` : '';
         this.showToast('AUGMENT EQUIPPED', `${up.title}${tierText}`, '#00ff88');
         this.ui.screenUpgrade.classList.add('hidden');
@@ -1459,36 +1481,54 @@ class GameEngine {
 
     // Melee Slots
     this.ui.meleeSlots.innerHTML = '';
-    this.player.meleeWeapons.forEach((wKey, idx) => {
-      const w = WEAPONS[wKey];
-      const isActive = idx === this.player.activeMeleeIndex;
-      const slot = document.createElement('div');
-      slot.className = `w-slot ${isActive ? 'active-melee' : ''}`;
-      slot.innerHTML = `
-        <span class="w-slot-key">${idx + 1}</span>
-        <svg class="ui-icon w-slot-icon" style="color: ${w.color}"><use href="#${w.icon}"></use></svg>
-        <span class="w-slot-name">${w.name.split(' ')[0]}</span>
-        <div class="w-cooldown" id="cd-melee-${idx}"></div>
+    if (this.player.meleeWeapons.length === 0) {
+      const lockedSlot = document.createElement('div');
+      lockedSlot.className = 'w-slot w-slot-locked';
+      lockedSlot.title = 'Unlock melee weapons via Level-Up Power-Ups';
+      lockedSlot.innerHTML = `
+        <svg class="ui-icon w-slot-icon" style="color: #64748b"><use href="#icon-sword"></use></svg>
+        <span class="w-slot-name">LOCKED</span>
       `;
-      slot.addEventListener('click', () => {
-        this.player.setMeleeIndex(idx);
-        this.renderWeaponSlots();
+      this.ui.meleeSlots.appendChild(lockedSlot);
+    } else {
+      this.player.meleeWeapons.forEach((wKey, idx) => {
+        const w = WEAPONS[wKey];
+        const mods = this.player.getWeaponMods(wKey);
+        const modLevel = mods && mods.level ? mods.level : 0;
+        const isActive = idx === this.player.activeMeleeIndex;
+        const slot = document.createElement('div');
+        slot.className = `w-slot ${isActive ? 'active-melee' : ''}`;
+        slot.innerHTML = `
+          <span class="w-slot-key">${idx + 1}</span>
+          ${modLevel > 0 ? `<span class="w-slot-level">+${modLevel}</span>` : ''}
+          <svg class="ui-icon w-slot-icon" style="color: ${w.color}"><use href="#${w.icon}"></use></svg>
+          <span class="w-slot-name">${w.name.split(' ')[0]}</span>
+          <div class="w-cooldown" id="cd-melee-${idx}"></div>
+        `;
+        slot.addEventListener('click', () => {
+          this.player.setMeleeIndex(idx);
+          this.renderWeaponSlots();
+        });
+        this.ui.meleeSlots.appendChild(slot);
       });
-      this.ui.meleeSlots.appendChild(slot);
-    });
+    }
 
     // Ranged Slots
     this.ui.rangedSlots.innerHTML = '';
     this.player.rangedWeapons.forEach((wKey, idx) => {
       const w = WEAPONS[wKey];
+      const mods = this.player.getWeaponMods(wKey);
+      const modLevel = mods && mods.level ? mods.level : 0;
+      const effectiveCost = Math.max(0, (w.energyCost || 0) - (mods && mods.energyDiscount ? mods.energyDiscount : 0));
       const isActive = idx === this.player.activeRangedIndex;
       const slot = document.createElement('div');
       slot.className = `w-slot ${isActive ? 'active-ranged' : ''}`;
       slot.innerHTML = `
         <span class="w-slot-key">${idx + 5}</span>
+        ${modLevel > 0 ? `<span class="w-slot-level">+${modLevel}</span>` : ''}
         <svg class="ui-icon w-slot-icon" style="color: ${w.color}"><use href="#${w.icon}"></use></svg>
         <span class="w-slot-name">${w.name.split(' ')[0]}</span>
-        ${w.energyCost ? `<span class="w-slot-cost">${w.energyCost}E</span>` : ''}
+        ${effectiveCost > 0 ? `<span class="w-slot-cost">${effectiveCost}E</span>` : ''}
         <div class="w-cooldown" id="cd-ranged-${idx}"></div>
       `;
       slot.addEventListener('click', () => {
@@ -2016,14 +2056,16 @@ class GameEngine {
 
     // Cooldown sweeps on weapon slots
     const mSlotCd = document.getElementById(`cd-melee-${this.player.activeMeleeIndex}`);
-    if (mSlotCd) {
-      const cdPct = (this.player.meleeCooldown / this.player.equippedMelee.cooldown) * 100;
+    if (mSlotCd && this.player.equippedMelee) {
+      const mMax = this.player.getEffectiveWeaponCooldown(this.player.equippedMelee);
+      const cdPct = (this.player.meleeCooldown / mMax) * 100;
       mSlotCd.style.height = `${Math.max(0, cdPct)}%`;
     }
 
     const rSlotCd = document.getElementById(`cd-ranged-${this.player.activeRangedIndex}`);
-    if (rSlotCd) {
-      const cdPct = (this.player.rangedCooldown / this.player.equippedRanged.cooldown) * 100;
+    if (rSlotCd && this.player.equippedRanged) {
+      const rMax = this.player.getEffectiveWeaponCooldown(this.player.equippedRanged);
+      const cdPct = (this.player.rangedCooldown / rMax) * 100;
       rSlotCd.style.height = `${Math.max(0, cdPct)}%`;
     }
   }

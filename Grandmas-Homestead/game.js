@@ -27,14 +27,19 @@
     trout: { id: 'trout', name: 'Brook Trout', sellPrice: 95, rarity: 'Uncommon', difficulty: 1.1, locations: ['city', 'farm'], desc: 'Silver mountain trout thriving in cool canal currents.' },
     catfish: { id: 'catfish', name: 'Whiskered Catfish', sellPrice: 145, rarity: 'Rare', difficulty: 1.3, locations: ['farm'], desc: 'Heavy bottom-dweller that loves rainy lakeside mornings.' },
     koi: { id: 'koi', name: 'Oakhaven Koi', sellPrice: 220, rarity: 'Rare', difficulty: 1.45, locations: ['city', 'farm'], desc: 'Gem-scaled ornamental carp prized by city collectors.' },
-    legend_carp: { id: 'legend_carp', name: 'Emperor Hazel Carp', sellPrice: 480, rarity: 'Legendary', difficulty: 1.75, locations: ['farm'], desc: 'Ancient golden giant rumored to guard Lake Hazel.' }
+    legend_carp: { id: 'legend_carp', name: 'Emperor Hazel Carp', sellPrice: 480, rarity: 'Legendary', difficulty: 1.75, locations: ['farm'], desc: 'Ancient golden giant rumored to guard Lake Hazel.' },
+    snapper: { id: 'snapper', name: 'Crimson Snapper', sellPrice: 115, rarity: 'Common', difficulty: 1.0, locations: ['harbor'], desc: 'Bright reef snapper caught off Oakhaven Harbor Pier.' },
+    halibut: { id: 'halibut', name: 'Harbor Halibut', sellPrice: 210, rarity: 'Rare', difficulty: 1.4, locations: ['harbor'], desc: 'Flat ocean floor dweller feeding beside deep pilings.' },
+    seahorse: { id: 'seahorse', name: 'Gilded Seahorse', sellPrice: 360, rarity: 'Legendary', difficulty: 1.55, locations: ['harbor'], desc: 'Shimmering golden coastal treasure from Southern Ocean tides.' }
   };
 
   const FORAGE_DEFS = {
     wildflower: { id: 'wildflower', name: 'Brook Wildflower', sellPrice: 28, desc: 'Fragrant meadow blossom gathered around the homestead.' },
     morel: { id: 'morel', name: 'Forest Morel', sellPrice: 55, desc: 'Earthy woodland mushroom prized in country soups.' },
     wild_berry: { id: 'wild_berry', name: 'Foraged Blackberries', sellPrice: 38, heal: 18, desc: 'Sweet wild bramble berries. Eat for +18 Energy or sell.' },
-    honeycomb: { id: 'honeycomb', name: 'Wild Honeycomb', sellPrice: 85, heal: 35, desc: 'Golden comb dripping with clover honey. Restores 35 Energy.' }
+    honeycomb: { id: 'honeycomb', name: 'Wild Honeycomb', sellPrice: 85, heal: 35, desc: 'Golden comb dripping with clover honey. Restores 35 Energy.' },
+    seashell: { id: 'seashell', name: 'Mother-of-Pearl Shell', sellPrice: 65, desc: 'Iridescent spiral shell washed up along Oakhaven Harbor.' },
+    sea_kelp: { id: 'sea_kelp', name: 'Briny Sea Kelp', sellPrice: 40, heal: 15, desc: 'Crisp ocean greens gathered along the boardwalk. Restores +15 Energy.' }
   };
 
   const COOKING_RECIPES = [
@@ -108,15 +113,129 @@
     wood: 5,
     stone: 6,
     fiber: 4,
-    honey: 30,
+    honey: 65,
     apple_pie: 55,
     egg: 35,
     milk: 75,
     wool: 110,
     copper_ore: 28,
     gold_ore: 65,
-    quartz: 120
+    quartz: 120,
+    apple: 65,
+    peach: 85,
+    cherry: 95,
+    artisan_cheese: 190,
+    gold_mayo: 115,
+    loom_cloth: 260,
+    country_jam: 155,
+    quality_sprinkler: 200,
+    scarecrow: 60,
+    chest: 50,
+    cheese_press: 90,
+    mayo_maker: 85,
+    loom: 110,
+    preserves_jar: 95,
+    bee_house: 120
   };
+
+  const CRAFT_RECIPES = [
+    {
+      id: 'chest',
+      name: 'Wooden Storage Chest',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 12 }],
+      desc: 'Place on the farm to store extra crops, tools, and ores safely.'
+    },
+    {
+      id: 'scarecrow',
+      name: 'Homestead Scarecrow',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 8 }, { id: 'turnip', count: 1 }],
+      desc: 'Guards nearby crops and enriches farm charm.'
+    },
+    {
+      id: 'quality_sprinkler',
+      name: 'Quality Brass Sprinkler',
+      type: 'machine',
+      ingredients: [{ id: 'copper_ore', count: 3 }, { id: 'stone', count: 5 }],
+      desc: 'Auto-waters all 8 surrounding tiles (3x3 ring) every morning!'
+    },
+    {
+      id: 'mayo_maker',
+      name: 'Mayonnaise Churn',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 10 }, { id: 'stone', count: 5 }, { id: 'copper_ore', count: 1 }],
+      desc: 'Place down & insert Egg -> Golden Mayo (115 G) next morning.'
+    },
+    {
+      id: 'cheese_press',
+      name: 'Artisan Cheese Press',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 12 }, { id: 'stone', count: 8 }, { id: 'copper_ore', count: 2 }],
+      desc: 'Place down & insert Milk -> Aged Farmhouse Cheese (190 G).'
+    },
+    {
+      id: 'loom',
+      name: 'Weaving Loom',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 16 }, { id: 'gold_ore', count: 1 }],
+      desc: 'Place down & insert Wool -> Artisan Woven Cloth (260 G).'
+    },
+    {
+      id: 'preserves_jar',
+      name: 'Country Preserves Jar',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 10 }, { id: 'stone', count: 8 }],
+      desc: 'Place down & insert any Crop or Orchard Fruit -> Country Jam (155 G).'
+    },
+    {
+      id: 'bee_house',
+      name: 'Cedar Bee House',
+      type: 'machine',
+      ingredients: [{ id: 'wood', count: 15 }, { id: 'copper_ore', count: 2 }, { id: 'wildflower', count: 1 }],
+      desc: 'Place outdoors to harvest Wildflower Honey automatically every 2 mornings!'
+    }
+  ];
+
+  const TOWN_BUNDLES = [
+    {
+      id: 'bundle_crops',
+      title: 'Harvest Pantry Bundle',
+      desc: 'Celebrate Oakhaven’s soil by donating fresh valley produce.',
+      reqs: [{ id: 'turnip', count: 2 }, { id: 'carrot', count: 2 }, { id: 'strawberry', count: 1 }],
+      rewardDesc: 'Reward: 2x Quality Brass Sprinklers + 250 Gold'
+    },
+    {
+      id: 'bundle_artisan',
+      title: 'Pasture & Orchard Bundle',
+      desc: 'Share country dairy, eggs, and tree-ripened orchard fruit.',
+      reqs: [{ id: 'egg', count: 2 }, { id: 'milk', count: 1 }, { id: 'apple', count: 1 }],
+      rewardDesc: 'Reward: Cedar Bee House + 300 Gold'
+    },
+    {
+      id: 'bundle_catch',
+      title: 'Lake & Harbor Catch Bundle',
+      desc: 'Showcase fish from both Lake Hazel and Oakhaven Harbor tides.',
+      reqs: [{ id: 'sunfish', count: 1 }, { id: 'bass', count: 1 }, { id: 'snapper', count: 1 }],
+      rewardDesc: 'Reward: 3x Starfruit Seeds + 400 Gold'
+    },
+    {
+      id: 'bundle_quarry',
+      title: 'Quarry & Crystal Bundle',
+      desc: 'Supply town masons with sturdy ores and luminous quartz.',
+      reqs: [{ id: 'copper_ore', count: 4 }, { id: 'gold_ore', count: 2 }, { id: 'quartz', count: 1 }],
+      rewardDesc: 'Reward: Free Crystal Greenhouse Repair (or +800 Gold if built)'
+    }
+  ];
+
+  const NOTICE_BOARD_POOL = [
+    { title: 'Nora’s Orchard Glaze', desc: 'Deliver 2 Orchard Apples for warm spiced tarts.', itemReq: 'apple', countReq: 2, rewardGold: 220, npcId: 'baker' },
+    { title: 'Barnaby’s Harbor Line', desc: 'Deliver 1 Crimson Snapper for tonight’s harbor chowder.', itemReq: 'snapper', countReq: 1, rewardGold: 210, npcId: 'fisherman' },
+    { title: 'Garth’s Anvil Ore', desc: 'Deliver 3 Copper Ore ingots for horseshoe repairs.', itemReq: 'copper_ore', countReq: 3, rewardGold: 195, npcId: 'blacksmith' },
+    { title: 'Penny’s Herbal Remedy', desc: 'Deliver 2 Brook Wildflowers for pressed botanicals.', itemReq: 'wildflower', countReq: 2, rewardGold: 130, npcId: 'penny' },
+    { title: 'Clara’s Artisan Cheese', desc: 'Deliver 1 Aged Farmhouse Cheese for Council dinner.', itemReq: 'artisan_cheese', countReq: 1, rewardGold: 320, npcId: 'mayor' },
+    { title: 'Maeve’s Glowing Exhibit', desc: 'Deliver 1 Cavern Quartz for the Town Library display.', itemReq: 'quartz', countReq: 1, rewardGold: 260, npcId: 'librarian' }
+  ];
 
   const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'];
 
@@ -133,15 +252,20 @@
     dog: ['egg', 'milk', 'trout']
   };
 
-  function getSellPrice(item) {
+  function getSellPrice(item, game = null) {
     if (!item) return 0;
-    if (CROP_DEFS[item.id]) return CROP_DEFS[item.id].sellPrice;
-    if (FISH_DEFS[item.id]) return FISH_DEFS[item.id].sellPrice;
-    if (FORAGE_DEFS[item.id]) return FORAGE_DEFS[item.id].sellPrice;
-    const recipe = COOKING_RECIPES.find(r => r.id === item.id);
-    if (recipe) return recipe.sellPrice;
-    if (EXTRA_ITEM_PRICES[item.id] !== undefined) return EXTRA_ITEM_PRICES[item.id];
-    return 0;
+    let base = 0;
+    if (CROP_DEFS[item.id]) base = CROP_DEFS[item.id].sellPrice;
+    else if (FISH_DEFS[item.id]) base = FISH_DEFS[item.id].sellPrice;
+    else if (FORAGE_DEFS[item.id]) base = FORAGE_DEFS[item.id].sellPrice;
+    else {
+      const recipe = COOKING_RECIPES.find(r => r.id === item.id);
+      if (recipe) base = recipe.sellPrice;
+      else if (EXTRA_ITEM_PRICES[item.id] !== undefined) base = EXTRA_ITEM_PRICES[item.id];
+    }
+    if (base <= 0) return 0;
+    const bonusMult = (game && game.townBundles && Object.keys(game.townBundles).length >= TOWN_BUNDLES.length) ? 1.15 : 1.0;
+    return Math.round(base * bonusMult);
   }
 
   const TUTORIAL_QUESTS = [
@@ -300,14 +424,24 @@
 
       // Tool Upgrades & Cozy Homestead State
       this.player.hasCopperHoe = false;
+      this.player.hasGoldHoe = false;
       this.player.hasSteelAxe = false;
       this.player.hasSteelPickaxe = false;
+      this.player.hasCopperScythe = false;
+      this.player.hasGoldCan = false;
       this.player.hasProRod = false;
       this.fishing = null;
       this.fishingLog = {};
       this.dailyTeaClaimed = false;
       this.dailyBlessingClaimed = false;
+      this.shrineUsedToday = false;
+      this.festivalRewardClaimedDay = 0;
       this.ambientCritters = [];
+      this.greenhouseRepaired = false;
+      this.greenhouseTiles = [];
+      this.greenhouseCrops = {};
+      this.storageChest = [];
+      this.townBundles = {};
 
       // Town Community Notice Board Tasks
       this.noticeBoardTasks = [
@@ -324,13 +458,14 @@
         tiles: [],
         crops: {},
         objects: {},
-        debrisHealth: {}
+        debrisHealth: {},
+        machineStates: {}
       };
 
-      // City World Data
+      // City World Data (extended south to Oakhaven Harbor & Pier!)
       this.city = {
         cols: 48,
-        rows: 34,
+        rows: 40,
         tiles: [],
         objects: {},
         buildings: [
@@ -458,6 +593,15 @@
       this.shopCartPos = { x: 36 * TILE_SIZE, y: 41 * TILE_SIZE };
       this.barnPos = { x: 31 * TILE_SIZE, y: 4 * TILE_SIZE };
       this.cavePos = { x: 6 * TILE_SIZE, y: 35 * TILE_SIZE };
+      this.greenhousePos = { x: 3 * TILE_SIZE, y: 6 * TILE_SIZE };
+      this.shrinePos = { x: 51 * TILE_SIZE, y: 8 * TILE_SIZE };
+      this.orchardTrees = [
+        { id: 'apple_1', tx: 45, ty: 7, fruit: 'apple', daysUntilRipe: 0 },
+        { id: 'apple_2', tx: 48, ty: 7, fruit: 'apple', daysUntilRipe: 0 },
+        { id: 'peach_1', tx: 54, ty: 7, fruit: 'peach', daysUntilRipe: 0 },
+        { id: 'cherry_1', tx: 46, ty: 12, fruit: 'cherry', daysUntilRipe: 0 },
+        { id: 'cherry_2', tx: 53, ty: 12, fruit: 'cherry', daysUntilRipe: 0 }
+      ];
 
       // Barn Animals, Cave Ore Nodes, and Villager Friendships
       this.farmAnimals = [
@@ -550,8 +694,12 @@
           if ((c >= 15 && c <= 17) && r >= 8 && r < this.farm.rows) {
             type = 'path';
           }
-          // B. Homestead terrace path (row 9, cols 12 to 28)
-          else if (r === 9 && c >= 12 && c <= 28) {
+          // B. Homestead terrace path (row 9, cols 8 to 28)
+          else if (r === 9 && c >= 8 && c <= 28) {
+            type = 'path';
+          }
+          // F. Woodland Orchard & Wishing Shrine Path (row 9, cols 38 to 51)
+          else if (r === 9 && c >= 38 && c <= 51) {
             type = 'path';
           }
           // C. Central East-West avenue (row 25, cols 8 to 43 connecting to lake dock)
@@ -619,8 +767,9 @@
           const tile = this.farm.tiles[r][c];
           if (tile.type !== 'grass' || tile.isTilled) continue;
 
-          // Avoid cottage/barn/pasture area & cave entrance
+          // Avoid cottage/barn/pasture, greenhouse lot, orchard glade/shrine & cave entrance
           if (r < 15 && c < 39) continue;
+          if (c >= 44 && c <= 56 && r >= 5 && r <= 14) continue;
           if (c >= 5 && c <= 10 && r >= 34 && r <= 37) continue;
 
           const rand = Math.random();
@@ -715,9 +864,18 @@
           else if ((c === 34 || c === 35) && r >= 5 && r <= 25) {
             type = 'path';
           }
+      // Stone Arched Bridge & Harbor Pier (rows 30 to 39)
           // 8. Southern River / Canal (rows 30 to 33)
           else if (r >= 30 && r <= 33) {
             type = 'water';
+          }
+          // 8b. Oakhaven Harbor Seaside Boardwalk (rows 34 to 35, cols 2 to 45)
+          else if (r >= 34 && r <= 35 && c >= 2 && c <= 45) {
+            type = 'path';
+          }
+          // 8c. Southern Ocean & Timber Pier (rows 36 to 39)
+          else if (r >= 36) {
+            type = (c >= 21 && c <= 26 && r >= 36 && r <= 38) ? 'dock' : 'water';
           }
 
           // 9. Stone Arched Bridge over the canal (cols 22 to 25, rows 30 to 33)
@@ -743,20 +901,22 @@
       this.city.objects['20,15'] = 'notice_board'; // Community Notice Board
       this.city.objects['24,2'] = 'sign_farm'; // Signpost to Grandma's Farm
 
-      // Street Lamps (warm gas lamps)
+      // Street Lamps (warm gas lamps + Harbor boardwalk lamps)
       const lampCoords = [
         [17, 12], [30, 12], [17, 23], [30, 23],
         [21, 5], [26, 5], [21, 28], [26, 28],
-        [5, 10], [42, 10], [5, 24], [42, 24]
+        [5, 10], [42, 10], [5, 24], [42, 24],
+        [12, 34], [20, 34], [27, 34], [35, 34]
       ];
       lampCoords.forEach(([lx, ly]) => {
         this.city.objects[`${lx},${ly}`] = 'lamp';
       });
 
-      // City Park Benches
+      // City Park & Harbor Benches
       const benchCoords = [
         [18, 18], [29, 18], [18, 14], [29, 14],
-        [21, 27], [26, 27]
+        [21, 27], [26, 27],
+        [15, 34], [32, 34]
       ];
       benchCoords.forEach(([bx, by]) => {
         this.city.objects[`${bx},${by}`] = 'bench';
@@ -793,10 +953,33 @@
       return tiles;
     }
 
+    createGreenhouseTiles() {
+      const tiles = this.createInteriorTiles(18, 14);
+      for (let r = 4; r <= 9; r++) {
+        for (let c = 6; c <= 11; c++) {
+          tiles[r][c] = { type: 'soil', isTilled: true, isWatered: false, isFertilized: false, seed: (r * 17 + c * 11) % 100 };
+        }
+      }
+      return tiles;
+    }
+
+    ensureGreenhouseInitialized() {
+      if (!this.greenhouseTiles || this.greenhouseTiles.length !== 14) {
+        this.greenhouseTiles = this.createGreenhouseTiles();
+      }
+      if (!this.greenhouseCrops || typeof this.greenhouseCrops !== 'object') {
+        this.greenhouseCrops = {};
+      }
+    }
+
     exitCurrentInterior() {
       this.player.inBed = false;
       if (this.currentLocation === 'interior_cottage') {
         this.transitionTo('farm', 15 * TILE_SIZE, 9.2 * TILE_SIZE);
+      } else if (this.currentLocation === 'interior_barn') {
+        this.transitionTo('farm', 33 * TILE_SIZE, 8.2 * TILE_SIZE);
+      } else if (this.currentLocation === 'interior_greenhouse') {
+        this.transitionTo('farm', 5 * TILE_SIZE, 10.6 * TILE_SIZE);
       } else if (this.currentLocation === 'interior_store') {
         this.transitionTo('city', 8.5 * TILE_SIZE, 9.5 * TILE_SIZE);
       } else if (this.currentLocation === 'interior_church') {
@@ -826,6 +1009,9 @@
         } else if (this.activeLocation === 'city') {
           this.city.tiles = this.tiles;
           this.city.objects = this.objects;
+        } else if (this.activeLocation === 'interior_greenhouse') {
+          this.greenhouseTiles = this.tiles;
+          this.greenhouseCrops = this.crops;
         }
       }
 
@@ -846,7 +1032,7 @@
         this.objects = this.farm.objects;
         this.debrisHealth = this.farm.debrisHealth;
       } else if (loc === 'city') {
-        if (!this.city.tiles || this.city.tiles.length === 0) {
+        if (!this.city.tiles || this.city.tiles.length !== this.city.rows) {
           this.initCityMap();
         }
         this.mapCols = this.city.cols;
@@ -854,6 +1040,14 @@
         this.tiles = this.city.tiles;
         this.crops = {};
         this.objects = this.city.objects;
+        this.debrisHealth = {};
+      } else if (loc === 'interior_greenhouse') {
+        this.ensureGreenhouseInitialized();
+        this.mapCols = 18;
+        this.mapRows = 14;
+        this.tiles = this.greenhouseTiles;
+        this.crops = this.greenhouseCrops;
+        this.objects = {};
         this.debrisHealth = {};
       } else if (this.isInteriorLocation(loc)) {
         this.mapCols = 18;
@@ -876,6 +1070,8 @@
         farm: "Grandma's Farm",
         city: "Oakhaven City",
         interior_cottage: "Farmhouse Cottage",
+        interior_barn: "Homestead Red Barn",
+        interior_greenhouse: "Crystal Greenhouse",
         interior_store: "General Store",
         interior_church: "Oakhaven Chapel",
         interior_library: "Town Library",
@@ -1009,6 +1205,10 @@
         // 'I' for Full Inventory / Backpack
         if (e.key.toLowerCase() === 'i') {
           this.toggleInventoryModal();
+        }
+        // 'C' for Crafting Bench
+        if (e.key.toLowerCase() === 'c') {
+          this.openCraftingModal();
         }
         // 'B' or 'P' for Shop (Boutique/Peddler) - NOT 'S' which is reserved for downward movement
         if (e.key.toLowerCase() === 'b' || e.key.toLowerCase() === 'p') {
@@ -1155,6 +1355,7 @@
       document.getElementById('btnInventory')?.addEventListener('click', () => this.toggleInventoryModal());
       document.getElementById('btnOpenBackpack')?.addEventListener('click', () => this.toggleInventoryModal());
       document.getElementById('btnShop')?.addEventListener('click', () => this.openShopModal());
+      document.getElementById('btnCraft')?.addEventListener('click', () => this.openCraftingModal());
       document.getElementById('btnTutorial')?.addEventListener('click', () => this.openTutorialModal());
       document.getElementById('btnGrandma')?.addEventListener('click', () => this.talkToGrandma());
       document.getElementById('btnSleep')?.addEventListener('click', () => this.sleepAndAdvanceDay());
@@ -1814,6 +2015,28 @@
               box.bottom > 6.5 * TILE_SIZE && box.top < 8.3 * TILE_SIZE) {
             return true;
           }
+          // Craft Bench collision (cols 13..15.3, rows 9..10.4)
+          if (box.right > 13.0 * TILE_SIZE && box.left < 15.3 * TILE_SIZE &&
+              box.bottom > 9.0 * TILE_SIZE && box.top < 10.4 * TILE_SIZE) {
+            return true;
+          }
+        } else if (this.currentLocation === 'interior_barn') {
+          // Feeding Trough collision (cols 5..13, rows 2.0..3.6)
+          if (box.right > 5.0 * TILE_SIZE && box.left < 13.0 * TILE_SIZE &&
+              box.bottom > 2.0 * TILE_SIZE && box.top < 3.6 * TILE_SIZE) {
+            return true;
+          }
+          // Livestock Ledger Desk collision (cols 13.6..16.2, rows 8.8..10.6)
+          if (box.right > 13.6 * TILE_SIZE && box.left < 16.2 * TILE_SIZE &&
+              box.bottom > 8.8 * TILE_SIZE && box.top < 10.6 * TILE_SIZE) {
+            return true;
+          }
+        } else if (this.currentLocation === 'interior_greenhouse') {
+          // Indoor Watering Trough collision (cols 1.8..3.8, rows 7.0..8.5)
+          if (box.right > 1.8 * TILE_SIZE && box.left < 3.8 * TILE_SIZE &&
+              box.bottom > 7.0 * TILE_SIZE && box.top < 8.5 * TILE_SIZE) {
+            return true;
+          }
         } else if (this.currentLocation === 'interior_cave') {
           // Cavern Ladder & Ore Node collision
           if (box.right > 14 * TILE_SIZE && box.left < 15.6 * TILE_SIZE &&
@@ -1952,10 +2175,44 @@
         return true;
       }
 
-      // Check Red Barn (5x3 tiles at (31, 4))
+      // Check Red Barn (5x3 tiles at (31, 4)) -> Walk through doors into Red Barn interior!
       if (this.barnPos && box.right > this.barnPos.x + 8 && box.left < this.barnPos.x + 5 * TILE_SIZE - 8 &&
           box.bottom > this.barnPos.y + 18 && box.top < this.barnPos.y + 3.2 * TILE_SIZE) {
+        if (box.left >= this.barnPos.x + 1.4 * TILE_SIZE && box.right <= this.barnPos.x + 3.6 * TILE_SIZE &&
+            box.bottom >= this.barnPos.y + 2.3 * TILE_SIZE) {
+          this.transitionTo('interior_barn', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
+        }
         return true;
+      }
+
+      // Check Crystal Greenhouse (5x4 tiles at (3, 6))
+      if (this.greenhousePos && box.right > this.greenhousePos.x + 8 && box.left < this.greenhousePos.x + 5 * TILE_SIZE - 8 &&
+          box.bottom > this.greenhousePos.y + 16 && box.top < this.greenhousePos.y + 3.7 * TILE_SIZE) {
+        if (box.left >= this.greenhousePos.x + 1.5 * TILE_SIZE && box.right <= this.greenhousePos.x + 3.5 * TILE_SIZE &&
+            box.bottom >= this.greenhousePos.y + 2.7 * TILE_SIZE) {
+          if (this.greenhouseRepaired) {
+            this.transitionTo('interior_greenhouse', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
+          } else {
+            this.showToast('The Crystal Greenhouse is in ruins! Click it or press E to repair it.');
+          }
+        }
+        return true;
+      }
+
+      // Check Woodland Wishing Shrine (2x2 tiles at (51, 8))
+      if (this.shrinePos && box.right > this.shrinePos.x + 6 && box.left < this.shrinePos.x + 2 * TILE_SIZE - 6 &&
+          box.bottom > this.shrinePos.y + 6 && box.top < this.shrinePos.y + 2 * TILE_SIZE - 6) {
+        return true;
+      }
+
+      // Check Orchard Fruit Trees
+      if (this.orchardTrees) {
+        for (const t of this.orchardTrees) {
+          if (box.right > t.tx * TILE_SIZE + 4 && box.left < (t.tx + 1) * TILE_SIZE - 4 &&
+              box.bottom > t.ty * TILE_SIZE + 6 && box.top < (t.ty + 1) * TILE_SIZE - 2) {
+            return true;
+          }
+        }
       }
 
       // Check Hillside Quarry Cave Entrance (3x2 tiles at (6, 35))
@@ -1974,6 +2231,7 @@
       const tileTop = Math.floor(box.top / TILE_SIZE);
       const tileBottom = Math.floor(box.bottom / TILE_SIZE);
 
+      const solidObjs = ['rock', 'tree', 'chest', 'scarecrow', 'cheese_press', 'mayo_maker', 'loom', 'preserves_jar', 'bee_house', 'sprinkler', 'quality_sprinkler'];
       for (let r = tileTop; r <= tileBottom; r++) {
         for (let c = tileLeft; c <= tileRight; c++) {
           if (r < 0 || r >= this.mapRows || c < 0 || c >= this.mapCols) continue;
@@ -1982,7 +2240,7 @@
             return true;
           }
           const obj = this.objects[`${c},${r}`];
-          if (obj === 'rock' || obj === 'tree') {
+          if (solidObjs.includes(obj)) {
             return true;
           }
         }
@@ -2051,7 +2309,48 @@
             this.showToast('The crackling hearth fire fills the cottage with a cozy amber glow.');
             return;
           }
-          this.showToast('Walk over to your cozy bed on the right to lie down and sleep!');
+          // 5. Homestead Crafting Bench (cols 13..15, rows 8..11)
+          if (tileX >= 13 && tileX <= 15 && tileY >= 8 && tileY <= 11) {
+            this.openCraftingModal();
+            return;
+          }
+          this.showToast('Visit your bed to sleep, kitchen table to cook, or the oak bench (right) to craft!');
+          return;
+        }
+
+        if (this.currentLocation === 'interior_barn') {
+          // Livestock Ledger & Supply Desk (cols 13..16, rows 8..11)
+          if (tileX >= 13 && tileX <= 16 && tileY >= 8 && tileY <= 11) {
+            this.openBarnModal();
+            return;
+          }
+          // Check indoor stalled animals (matches render positions)
+          const animals = this.farmAnimals || [];
+          for (let i = 0; i < animals.length; i++) {
+            const ac = 3 + (i % 5) * 2.5;
+            const ar = 4.8 + Math.floor(i / 5) * 2.8;
+            if (Math.hypot(tileX + 0.5 - (ac + 0.5), tileY + 0.5 - (ar + 0.5)) <= 1.5) {
+              this.interactWithAnimal(animals[i]);
+              return;
+            }
+          }
+          // Feeding Trough refill note
+          if (tileX >= 5 && tileX <= 13 && tileY >= 2 && tileY <= 4) {
+            this.showToast('Golden straw trough is stocked for your animals! Check the Ledger Desk to adopt livestock.');
+            return;
+          }
+          this.showToast('Click an animal to collect produce & pet them, or inspect the Livestock Ledger (right).');
+          return;
+        }
+
+        if (this.currentLocation === 'interior_greenhouse') {
+          // Indoor Watering Trough (cols 1..4, rows 6..9)
+          if (tileX >= 1 && tileX <= 4 && tileY >= 6 && tileY <= 9) {
+            this.refillWateringCan();
+            return;
+          }
+          // Allow direct planting, watering, fertilizing & harvesting inside the 6x6 fertile beds
+          this.applyToolToTile(tileX, tileY);
           return;
         }
 
@@ -2099,7 +2398,7 @@
           } else if (this.currentLocation === 'interior_blacksmith') {
             this.openBlacksmithModal();
           } else if (this.currentLocation === 'interior_townhall') {
-            this.talkToCityNPC('mayor');
+            this.openCityHallModal();
           } else if (this.currentLocation === 'interior_church') {
             this.talkToCityNPC('pastor');
           } else if (this.currentLocation === 'interior_library') {
@@ -2172,9 +2471,14 @@
           return;
         }
 
-        // 6. Park Benches
-        if (this.objects[`${tileX},${tileY}`] === 'bench') {
-          this.showToast('You rested comfortably on the town plaza bench.');
+        // 6. Park Benches & Harbor Coastal Forage
+        const cityObj = this.objects[`${tileX},${tileY}`];
+        if (cityObj && FORAGE_DEFS[cityObj]) {
+          this.collectForage(tileX, tileY);
+          return;
+        }
+        if (cityObj === 'bench') {
+          this.showToast('You rested comfortably on the town bench.');
           return;
         }
 
@@ -2205,10 +2509,36 @@
         return;
       }
 
-      // Check if clicking Red Barn (cols 31..35, rows 4..7) -> Open Barn & Livestock Panel
+      // Check if clicking Red Barn (cols 31..35, rows 4..7) -> Enter Red Barn Interior!
       if (tileX >= 31 && tileX <= 35 && tileY >= 4 && tileY <= 7) {
-        this.openBarnModal();
+        this.transitionTo('interior_barn', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
         return;
+      }
+
+      // Check if clicking Crystal Greenhouse (cols 3..7, rows 6..9)
+      if (tileX >= 3 && tileX <= 7 && tileY >= 6 && tileY <= 9) {
+        if (this.greenhouseRepaired) {
+          this.transitionTo('interior_greenhouse', 8.5 * TILE_SIZE, 10.8 * TILE_SIZE);
+        } else {
+          this.openGreenhouseRepairModal();
+        }
+        return;
+      }
+
+      // Check if clicking Woodland Wishing Shrine (cols 51..52, rows 8..9)
+      if (tileX >= 50 && tileX <= 53 && tileY >= 7 && tileY <= 10) {
+        this.interactWishingShrine();
+        return;
+      }
+
+      // Check if clicking an Orchard Fruit Tree
+      if (this.orchardTrees) {
+        for (const tree of this.orchardTrees) {
+          if (Math.hypot(tileX - tree.tx, tileY - tree.ty) <= 1.25) {
+            this.harvestOrchardTree(tree);
+            return;
+          }
+        }
       }
 
       // Check if clicking Hillside Quarry Cave Mouth (cols 6..8, rows 35..37) -> Enter Quarry Cavern
@@ -2309,6 +2639,12 @@
         return;
       }
 
+      // 1c. Interact with Placed Artisan Machines, Storage Chest, or Scarecrow
+      if (obj && ['chest', 'cheese_press', 'mayo_maker', 'loom', 'preserves_jar', 'bee_house', 'scarecrow'].includes(obj)) {
+        this.interactMachineTile(tx, ty, obj);
+        return;
+      }
+
       // Require active item
       if (!activeItem) return;
 
@@ -2329,69 +2665,105 @@
         return;
       }
 
-      // A. Hoe -> Till dry ground (Only GRASS can be tilled!)
+      // A. Hoe -> Till dry ground (Only GRASS can be tilled! Gold Hoe tills 3 tiles in a row)
       if (activeItem.id === 'hoe') {
-        if (tile.type === 'grass') {
-          if (!obj) {
-            tile.type = 'soil';
-            tile.isTilled = true;
-            this.player.toolAction = 'hoe';
-            this.player.toolTimer = 0.25;
-            const staminaCost = this.player.hasCopperHoe ? 1 : 2;
-            this.player.stamina = Math.max(0, this.player.stamina - staminaCost);
-            window.soundSystem?.playHoe();
-            this.rumble(50, 0.35, 0.5);
-            this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#8b5a2b', 6);
+        const offsets = this.player.hasGoldHoe
+          ? [[0, 0], [this.player.dir === 3 ? 1 : (this.player.dir === 2 ? -1 : 0), this.player.dir === 0 ? 1 : (this.player.dir === 1 ? -1 : 0)], [this.player.dir === 3 ? 2 : (this.player.dir === 2 ? -2 : 0), this.player.dir === 0 ? 2 : (this.player.dir === 1 ? -2 : 0)]]
+          : [[0, 0]];
+        let tilledAny = false;
+        for (const [ox, oy] of offsets) {
+          const cx = tx + ox;
+          const cy = ty + oy;
+          if (cx < 0 || cy < 0 || cx >= this.mapCols || cy >= this.mapRows) continue;
+          const tTile = this.tiles[cy] && this.tiles[cy][cx];
+          if (tTile && tTile.type === 'grass' && !this.objects[`${cx},${cy}`]) {
+            tTile.type = 'soil';
+            tTile.isTilled = true;
+            this.spawnParticles(cx * TILE_SIZE + 16, cy * TILE_SIZE + 16, '#8b5a2b', 6);
             this.progressQuest('till_soil');
-            this.updateHUD();
+            tilledAny = true;
           }
-        } else if (tile.type === 'path') {
-          this.showToast('You cannot till cobblestone pathways! Only grass soil can be tilled.');
+        }
+        if (tilledAny) {
+          this.player.toolAction = 'hoe';
+          this.player.toolTimer = 0.25;
+          const staminaCost = (this.player.hasCopperHoe || this.player.hasGoldHoe) ? 1 : 2;
+          this.player.stamina = Math.max(0, this.player.stamina - staminaCost);
+          window.soundSystem?.playHoe();
+          this.rumble(50, 0.35, 0.5);
+          this.updateHUD();
+        } else if (tile.type === 'path' || this.currentLocation === 'interior_greenhouse') {
+          this.showToast(this.currentLocation === 'interior_greenhouse'
+            ? 'Greenhouse planting beds are already fertile and tilled!'
+            : 'You cannot till cobblestone pathways! Only grass soil can be tilled.');
         }
         return;
       }
 
-      // B. Watering Can -> Water tilled soil
+      // B. Watering Can -> Water tilled soil (Gold Rainmaker Can waters 3 tiles ahead)
       if (activeItem.id === 'watering_can') {
-        // Check if clicking water tile to refill
         if (tile.type === 'water') {
           this.refillWateringCan();
           return;
         }
-
         if (this.player.water <= 0) {
           this.showToast('Your watering can is empty! Refill it at the well, pond, or city fountain.');
           return;
         }
-
-        if (tile.isTilled || tile.type === 'soil') {
-          tile.isWatered = true;
-          this.player.water--;
+        const offsets = this.player.hasGoldCan
+          ? [[0, 0], [this.player.dir === 3 ? 1 : (this.player.dir === 2 ? -1 : 0), this.player.dir === 0 ? 1 : (this.player.dir === 1 ? -1 : 0)], [this.player.dir === 3 ? 2 : (this.player.dir === 2 ? -2 : 0), this.player.dir === 0 ? 2 : (this.player.dir === 1 ? -2 : 0)]]
+          : [[0, 0]];
+        let wateredAny = false;
+        for (const [ox, oy] of offsets) {
+          if (this.player.water <= 0) break;
+          const cx = tx + ox;
+          const cy = ty + oy;
+          if (cx < 0 || cy < 0 || cx >= this.mapCols || cy >= this.mapRows) continue;
+          const wTile = this.tiles[cy] && this.tiles[cy][cx];
+          if (wTile && (wTile.isTilled || wTile.type === 'soil')) {
+            wTile.isWatered = true;
+            this.player.water--;
+            this.spawnParticles(cx * TILE_SIZE + 16, cy * TILE_SIZE + 16, '#38bdf8', 6);
+            this.progressQuest('water_crops');
+            wateredAny = true;
+          }
+        }
+        if (wateredAny) {
           this.player.toolAction = 'watering_can';
           this.player.toolTimer = 0.25;
           this.player.stamina = Math.max(0, this.player.stamina - 1);
           window.soundSystem?.playWater();
           this.rumble(30, 0.2, 0.35);
-          this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#38bdf8', 8);
-          this.progressQuest('water_crops');
           this.updateHUD();
         }
         return;
       }
 
-      // C. Scythe -> Cut weeds & clear tall grass
+      // C. Scythe -> Cut weeds & clear tall grass (Copper Scythe sweeps 3x3 area!)
       if (activeItem.id === 'scythe') {
         this.player.toolAction = 'scythe';
         this.player.toolTimer = 0.25;
         this.player.stamina = Math.max(0, this.player.stamina - 2);
 
-        if (obj === 'weed') {
-          delete this.objects[key];
+        const radius = this.player.hasCopperScythe ? 1 : 0;
+        let clearedWeeds = 0;
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const cx = tx + dx;
+            const cy = ty + dy;
+            const cKey = `${cx},${cy}`;
+            if (this.objects[cKey] === 'weed') {
+              delete this.objects[cKey];
+              this.spawnParticles(cx * TILE_SIZE + 16, cy * TILE_SIZE + 16, '#4ade80', 6);
+              this.progressQuest('clear_debris');
+              clearedWeeds++;
+            }
+          }
+        }
+        if (clearedWeeds > 0) {
           window.soundSystem?.playNoise(0.12, 1400, 0.2);
           this.rumble(45, 0.35, 0.45);
-          this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#4ade80', 8);
-          this.showFloatingText('+1 Fiber', tx * TILE_SIZE + 16, ty * TILE_SIZE + 8, '#86efac');
-          this.progressQuest('clear_debris');
+          this.showFloatingText(`Cleared ${clearedWeeds}x Weed`, tx * TILE_SIZE + 16, ty * TILE_SIZE + 8, '#86efac');
         } else {
           window.soundSystem?.playNoise(0.1, 1600, 0.15);
           this.rumble(25, 0.15, 0.2);
@@ -2500,16 +2872,28 @@
         return;
       }
 
-      // I. Install Sprinkler
-      if (activeItem.id === 'sprinkler') {
+      // I. Install Sprinklers, Artisan Machines, Chests & Scarecrows
+      if (activeItem.id === 'sprinkler' || CRAFT_RECIPES.some(r => r.id === activeItem.id)) {
+        if (this.currentLocation !== 'farm') {
+          this.showToast('Place farm machines and storage chests outdoors on Grandma’s Farm!');
+          return;
+        }
         if (!obj && !crop && (tile.type === 'grass' || tile.type === 'soil' || tile.type === 'path')) {
-          this.objects[key] = 'sprinkler';
+          this.objects[key] = activeItem.id;
+          if (!this.farm.machineStates) this.farm.machineStates = {};
+          if (activeItem.id === 'bee_house') {
+            this.farm.machineStates[key] = { type: 'bee_house', input: 'nectar', readyOutput: null, daysLeft: 2 };
+          }
+          const placedName = activeItem.name;
           this.useItem(this.activeSlot);
           window.soundSystem?.playHit();
           this.rumble(45, 0.3, 0.4);
           this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 16, '#ecc94b', 8);
-          this.showToast('Installed Farm Sprinkler! Adjacent tiles will be auto-watered daily.');
+          this.showToast(`Placed ${placedName} on your farm!`);
           this.updateHUD();
+          this.saveGame();
+        } else {
+          this.showToast('Clear an empty grass or path tile before placing that down!');
         }
         return;
       }
@@ -2627,7 +3011,7 @@
         targetStart: targetStart,
         targetWidth: targetWidth,
         attemptsLeft: this.player.hasProRod ? 3 : 2,
-        fish: this.rollFishCatch(),
+        fish: this.rollFishCatch(ty * TILE_SIZE),
         bobTime: 0
       };
 
@@ -2638,8 +3022,11 @@
       this.updateHUD();
     }
 
-    rollFishCatch() {
-      const loc = this.currentLocation === 'city' ? 'city' : 'farm';
+    rollFishCatch(waterY = 0) {
+      let loc = this.currentLocation === 'city' ? 'city' : 'farm';
+      if (this.currentLocation === 'city' && waterY >= 36 * TILE_SIZE) {
+        loc = 'harbor';
+      }
       const rainBonus = this.weather === 'rainy' ? 1.5 : 1.0;
       const rodBonus = this.player.hasProRod ? 1.45 : 1.0;
       const candidates = Object.values(FISH_DEFS).filter(f => f.locations.includes(loc));
@@ -2783,6 +3170,26 @@
         this.farm.objects[key] = pick;
         currentForageCount++;
         targetCount--;
+      }
+
+      // Coastal shells & kelp on Oakhaven Harbor boardwalk
+      if (this.city && this.city.tiles && this.city.tiles.length >= 36) {
+        const coastalTypes = ['seashell', 'sea_kelp'];
+        let harborForage = 0;
+        for (const k of Object.keys(this.city.objects || {})) {
+          if (this.city.objects[k] === 'seashell' || this.city.objects[k] === 'sea_kelp') harborForage++;
+        }
+        let cAttempts = 0;
+        while (harborForage < 4 && cAttempts < 40) {
+          cAttempts++;
+          const col = 4 + Math.floor(Math.random() * 40);
+          const row = Math.random() < 0.5 ? 34 : 35;
+          const k = `${col},${row}`;
+          if (!this.city.objects[k] && !(col >= 21 && col <= 26)) {
+            this.city.objects[k] = coastalTypes[Math.floor(Math.random() * coastalTypes.length)];
+            harborForage++;
+          }
+        }
       }
     }
 
@@ -2941,6 +3348,47 @@
             name = 'Cavern Quartz';
             type = 'material';
             desc = 'Luminous earth crystal from Quarry Cavern. Sells for 120 G.';
+          } else if (itemId === 'apple') {
+            name = 'Orchard Apple';
+            type = 'food';
+            heal = 28;
+            desc = 'Crisp orchard apple. Eat for +28 Energy, brew Jam, or sell for 65 G.';
+          } else if (itemId === 'peach') {
+            name = 'Sun-Ripened Peach';
+            type = 'food';
+            heal = 34;
+            desc = 'Velvety sweet peach. Eat for +34 Energy, brew Jam, or sell for 85 G.';
+          } else if (itemId === 'cherry') {
+            name = 'Ruby Cherries';
+            type = 'food';
+            heal = 36;
+            desc = 'Cluster of tart orchard cherries. Eat for +36 Energy or sell for 95 G.';
+          } else if (itemId === 'artisan_cheese') {
+            name = 'Aged Farmhouse Cheese';
+            type = 'food';
+            heal = 70;
+            desc = 'Pressed cellar wheel of rich country cheese. Restores +70 Energy or sells for 190 G.';
+          } else if (itemId === 'gold_mayo') {
+            name = 'Golden Mayonnaise';
+            type = 'food';
+            heal = 45;
+            desc = 'Velvety whisked farm mayo. Restores +45 Energy or sells for 115 G.';
+          } else if (itemId === 'loom_cloth') {
+            name = 'Artisan Woven Cloth';
+            type = 'material';
+            desc = 'Soft loom-woven countryside textile. Sells for 260 G.';
+          } else if (itemId === 'country_jam') {
+            name = 'Country Preserves Jam';
+            type = 'food';
+            heal = 65;
+            desc = 'Sweet home-canned orchard preserves. Restores +65 Energy or sells for 155 G.';
+          } else {
+            const craftDef = CRAFT_RECIPES.find(c => c.id === itemId);
+            if (craftDef) {
+              name = craftDef.name;
+              type = craftDef.type || 'machine';
+              desc = craftDef.desc;
+            }
           }
         }
 
@@ -3127,6 +3575,7 @@
       this.player.inBed = false;
       this.dailyTeaClaimed = false;
       this.dailyBlessingClaimed = false;
+      this.shrineUsedToday = false;
       this.giftedToday = {};
       this.fishing = null;
       this.spawnDailyForage(5);
@@ -3137,6 +3586,13 @@
           a.pettedToday = false;
         });
       }
+      if (this.orchardTrees) {
+        this.orchardTrees.forEach(t => {
+          if (t.daysUntilRipe > 0) t.daysUntilRipe--;
+        });
+      }
+      this.processMachinesOvernight();
+      this.rotateCompletedNoticeTasks();
       if (prevSeason !== this.season) {
         this.showToast(`A new season has arrived: ${this.season}! Enjoy the changing homestead scenery.`);
       }
@@ -3166,12 +3622,22 @@
               tile.isWatered = true;
             }
           } else {
-            // Check adjacent sprinklers
-            const hasSprinklerNearby = 
+            // Check adjacent sprinklers (classic 4-way + 3x3 quality brass sprinklers)
+            let hasSprinklerNearby =
               farmObjects[`${c+1},${r}`] === 'sprinkler' ||
               farmObjects[`${c-1},${r}`] === 'sprinkler' ||
               farmObjects[`${c},${r+1}`] === 'sprinkler' ||
               farmObjects[`${c},${r-1}`] === 'sprinkler';
+            if (!hasSprinklerNearby) {
+              for (let dy = -1; dy <= 1 && !hasSprinklerNearby; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  if (farmObjects[`${c+dx},${r+dy}`] === 'quality_sprinkler') {
+                    hasSprinklerNearby = true;
+                    break;
+                  }
+                }
+              }
+            }
 
             if (hasSprinklerNearby) {
               tile.isWatered = true;
@@ -3181,7 +3647,7 @@
         }
       }
 
-      // 4. Grow Crops that were watered
+      // 4. Grow Crops that were watered (Farm + Year-round Crystal Greenhouse)
       let maturedCrops = 0;
       for (const key in farmCrops) {
         const crop = farmCrops[key];
@@ -3207,6 +3673,28 @@
         tile.isWatered = false;
       }
 
+      if (this.greenhouseRepaired && this.greenhouseCrops && this.greenhouseTiles) {
+        for (const key in this.greenhouseCrops) {
+          const gCrop = this.greenhouseCrops[key];
+          const [gx, gy] = key.split(',').map(Number);
+          const gTile = this.greenhouseTiles[gy] && this.greenhouseTiles[gy][gx];
+          if (gTile && gTile.isWatered) {
+            gCrop.daysGrown++;
+            const gBoost = gTile.isFertilized ? 1.5 : 1.0;
+            const gRatio = (gCrop.daysGrown * gBoost) / gCrop.totalDays;
+            if (gRatio >= 1.0) {
+              gCrop.stage = 3;
+              maturedCrops++;
+            } else if (gRatio >= 0.6) {
+              gCrop.stage = 2;
+            } else {
+              gCrop.stage = 1;
+            }
+          }
+          if (gTile) gTile.isWatered = false;
+        }
+      }
+
       // Complete sleep quest
       this.progressQuest('sleep_grow');
 
@@ -3227,12 +3715,19 @@
       const detailsElem = document.getElementById('summaryDetails');
 
       if (modal && dayTitle && detailsElem) {
-        dayTitle.textContent = `Day ${this.day} - ${this.season}`;
+        const festivalTitle = this.getFestivalNameForDay(this.day);
+        dayTitle.textContent = `Day ${this.day} - ${this.season}${festivalTitle ? ' (' + festivalTitle + ')' : ''}`;
         const weatherText = this.weather === 'rainy'
           ? (this.season === 'Winter' ? 'Snowy Flurries (All crops automatically watered!)' : 'Gentle Rain (All crops automatically watered!)')
           : 'Bright & Sunny';
-        
+
         detailsElem.innerHTML = `
+          ${festivalTitle ? `
+            <div class="summary-row" style="background:#fef3c7;padding:8px 10px;border-radius:8px;margin-bottom:6px;border:1px solid #f59e0b;">
+              <span class="summary-label" style="color:#b45309;font-weight:800;">Town Festival:</span>
+              <span class="summary-val" style="color:#b45309;font-weight:800;">${festivalTitle} — Visit Mayor Clara in Oakhaven!</span>
+            </div>
+          ` : ''}
           <div class="summary-row">
             <span class="summary-label">Weather Forecast:</span>
             <span class="summary-val">${weatherText}</span>
@@ -3264,6 +3759,9 @@
         } else if (this.currentLocation === 'city') {
           this.city.tiles = this.tiles;
           this.city.objects = this.objects;
+        } else if (this.currentLocation === 'interior_greenhouse') {
+          this.greenhouseTiles = this.tiles;
+          this.greenhouseCrops = this.crops;
         }
 
         const data = {
@@ -3273,8 +3771,12 @@
           grandmaApprovedSleep: this.grandmaApprovedSleep,
           hasProRod: this.player.hasProRod,
           hasCopperHoe: this.player.hasCopperHoe,
+          hasGoldHoe: this.player.hasGoldHoe,
           hasSteelAxe: this.player.hasSteelAxe,
           hasSteelPickaxe: this.player.hasSteelPickaxe,
+          hasCopperScythe: this.player.hasCopperScythe,
+          hasGoldCan: this.player.hasGoldCan,
+          waterCapacity: this.player.waterCapacity,
           fishingLog: this.fishingLog,
           inventory: this.inventory,
           currentLocation: this.currentLocation,
@@ -3282,7 +3784,8 @@
             tiles: this.farm.tiles,
             crops: this.farm.crops,
             objects: this.farm.objects,
-            debrisHealth: this.farm.debrisHealth
+            debrisHealth: this.farm.debrisHealth,
+            machineStates: this.farm.machineStates || {}
           },
           tiles: this.farm.tiles,
           crops: this.farm.crops,
@@ -3290,11 +3793,20 @@
           debrisHealth: this.debrisHealth,
           quests: this.quests,
           activeQuestIdx: this.activeQuestIdx,
+          noticeBoardTasks: this.noticeBoardTasks,
           farmAnimals: this.farmAnimals,
           friendships: this.friendships,
           friendshipMilestones: this.friendshipMilestones,
           giftedToday: this.giftedToday,
-          caveNodes: this.caveNodes
+          caveNodes: this.caveNodes,
+          greenhouseRepaired: this.greenhouseRepaired,
+          greenhouseTiles: this.greenhouseTiles,
+          greenhouseCrops: this.greenhouseCrops,
+          storageChest: this.storageChest,
+          orchardTrees: this.orchardTrees,
+          townBundles: this.townBundles,
+          shrineUsedToday: this.shrineUsedToday,
+          festivalRewardClaimedDay: this.festivalRewardClaimedDay
         };
         localStorage.setItem('grandmas_homestead_save', JSON.stringify(data));
       } catch (e) {
@@ -3313,8 +3825,15 @@
           if (data.grandmaApprovedSleep !== undefined) this.grandmaApprovedSleep = data.grandmaApprovedSleep;
           if (data.hasProRod !== undefined) this.player.hasProRod = data.hasProRod;
           if (data.hasCopperHoe !== undefined) this.player.hasCopperHoe = data.hasCopperHoe;
+          if (data.hasGoldHoe !== undefined) this.player.hasGoldHoe = data.hasGoldHoe;
           if (data.hasSteelAxe !== undefined) this.player.hasSteelAxe = data.hasSteelAxe;
           if (data.hasSteelPickaxe !== undefined) this.player.hasSteelPickaxe = data.hasSteelPickaxe;
+          if (data.hasCopperScythe !== undefined) this.player.hasCopperScythe = data.hasCopperScythe;
+          if (data.hasGoldCan !== undefined) this.player.hasGoldCan = data.hasGoldCan;
+          if (data.waterCapacity !== undefined) {
+            this.player.waterCapacity = data.waterCapacity;
+            this.player.water = Math.min(this.player.waterCapacity, Math.max(this.player.water, 0));
+          }
           if (data.fishingLog) this.fishingLog = data.fishingLog;
           if (data.inventory) {
             this.inventory = data.inventory;
@@ -3330,11 +3849,21 @@
           }
           if (data.quests) this.quests = data.quests;
           if (data.activeQuestIdx !== undefined) this.activeQuestIdx = data.activeQuestIdx;
+          if (Array.isArray(data.noticeBoardTasks) && data.noticeBoardTasks.length > 0) this.noticeBoardTasks = data.noticeBoardTasks;
           if (Array.isArray(data.farmAnimals) && data.farmAnimals.length > 0) this.farmAnimals = data.farmAnimals;
           if (data.friendships) this.friendships = Object.assign(this.friendships || {}, data.friendships);
           if (data.friendshipMilestones) this.friendshipMilestones = data.friendshipMilestones;
           if (data.giftedToday) this.giftedToday = data.giftedToday;
           if (data.caveNodes) this.caveNodes = data.caveNodes;
+          if (data.greenhouseRepaired !== undefined) this.greenhouseRepaired = data.greenhouseRepaired;
+          if (Array.isArray(data.greenhouseTiles) && data.greenhouseTiles.length === 14) this.greenhouseTiles = data.greenhouseTiles;
+          if (data.greenhouseCrops) this.greenhouseCrops = data.greenhouseCrops;
+          if (Array.isArray(data.storageChest)) this.storageChest = data.storageChest;
+          if (Array.isArray(data.orchardTrees) && data.orchardTrees.length > 0) this.orchardTrees = data.orchardTrees;
+          if (data.townBundles) this.townBundles = data.townBundles;
+          if (data.shrineUsedToday !== undefined) this.shrineUsedToday = data.shrineUsedToday;
+          if (data.festivalRewardClaimedDay !== undefined) this.festivalRewardClaimedDay = data.festivalRewardClaimedDay;
+          if (data.farm && data.farm.machineStates) this.farm.machineStates = data.farm.machineStates;
 
           // Only restore tiles and objects if dimensions match new expanded map and tiles are valid!
           const candidateTiles = (data.farm && data.farm.tiles) || data.tiles;
@@ -3347,6 +3876,30 @@
             if (candidateObjects) this.farm.objects = candidateObjects;
             const candidateDebris = (data.farm && data.farm.debrisHealth) || data.debrisHealth;
             if (candidateDebris) this.farm.debrisHealth = candidateDebris;
+
+            // Backfill Greenhouse lot, Orchard glade & Wishing Shrine cleanly on legacy saves
+            for (let c = 8; c <= 12; c++) {
+              if (this.farm.tiles[9] && this.farm.tiles[9][c] && !this.farm.objects[`${c},9`]) {
+                this.farm.tiles[9][c].type = 'path';
+              }
+            }
+            for (let c = 38; c <= 51; c++) {
+              if (this.farm.tiles[9] && this.farm.tiles[9][c]) {
+                this.farm.tiles[9][c].type = 'path';
+                delete this.farm.objects[`${c},9`];
+              }
+            }
+            for (let r = 6; r <= 10; r++) {
+              for (let c = 3; c <= 8; c++) {
+                delete this.farm.objects[`${c},${r}`];
+              }
+            }
+            for (let r = 6; r <= 14; r++) {
+              for (let c = 44; c <= 55; c++) {
+                const o = this.farm.objects[`${c},${r}`];
+                if (o === 'tree' || o === 'rock' || o === 'weed') delete this.farm.objects[`${c},${r}`];
+              }
+            }
 
             // Ensure southern road gates are open & paved without old perimeter fences
             for (let r = 43; r < this.farm.rows; r++) {
@@ -3436,7 +3989,7 @@
         html += `</div>`;
       } else {
         // Sell Tab: show individual items (crops, fish, forage, materials, cooked dishes)
-        const sellableItems = this.inventory.filter(i => getSellPrice(i) > 0);
+        const sellableItems = this.inventory.filter(i => getSellPrice(i, this) > 0);
 
         if (sellableItems.length === 0) {
           html += `
@@ -3455,7 +4008,7 @@
           `;
 
           sellableItems.forEach(item => {
-            const unitPrice = getSellPrice(item);
+            const unitPrice = getSellPrice(item, this);
             const totalPrice = unitPrice * item.count;
 
             html += `
@@ -3532,7 +4085,7 @@
         let totalEarned = 0;
         for (let i = this.inventory.length - 1; i >= 0; i--) {
           const item = this.inventory[i];
-          const unitPrice = getSellPrice(item);
+          const unitPrice = getSellPrice(item, this);
           if (unitPrice > 0) {
             totalEarned += item.count * unitPrice;
             this.inventory.splice(i, 1);
@@ -3555,7 +4108,7 @@
       const item = this.inventory.find(i => i.id === itemId);
       if (!item) return 0;
 
-      const unitPrice = getSellPrice(item);
+      const unitPrice = getSellPrice(item, this);
       if (unitPrice <= 0) return 0;
 
       const qty = Math.min(item.count, Math.max(1, requestedQty));
@@ -3714,10 +4267,15 @@
 
             task.isDone = true;
             this.player.gold += task.rewardGold;
+            const npcMap = { turnips: 'mayor', berries: 'baker', wood: 'blacksmith', stone: 'mayor' };
+            const targetNpc = task.npcId || npcMap[task.id] || 'mayor';
+            if (!this.friendships) this.friendships = {};
+            this.friendships[targetNpc] = Math.min(5, (this.friendships[targetNpc] || 0) + 1);
             window.soundSystem?.playCoin();
-            this.showToast(`Completed "${task.title}"! (+${task.rewardGold} Gold)`);
+            this.showToast(`Completed "${task.title}"! (+${task.rewardGold} Gold & +1 Friendship Heart)`);
             this.showFloatingText(`+${task.rewardGold} G`, this.player.x + 16, this.player.y - 12, '#facc15');
             this.updateHUD();
+            this.saveGame();
             this.openNoticeBoardModal();
           }
         });
@@ -3823,6 +4381,30 @@
           reqStone: 6,
           desc: 'Double-capacity chamber holding 40 water units before needing a refill at the well.',
           isUnlocked: this.player.waterCapacity >= 40
+        },
+        {
+          id: 'copper_scythe',
+          title: 'Copper Reinforced Scythe',
+          costGold: 260,
+          reqStone: 10,
+          desc: 'Broad tempered scythe arc that clears weeds across a 3x3 area in a single swing!',
+          isUnlocked: this.player.hasCopperScythe
+        },
+        {
+          id: 'gold_hoe',
+          title: 'Gold Wide-Tiller Hoe',
+          costGold: 420,
+          reqStone: 14,
+          desc: 'Masterwork wide blade that tills 3 soil tiles ahead for just 1 Energy.',
+          isUnlocked: this.player.hasGoldHoe
+        },
+        {
+          id: 'gold_can',
+          title: 'Gold Rainmaker Can',
+          costGold: 460,
+          reqStone: 14,
+          desc: 'Upgrades capacity to 60 water units and waters 3 soil tiles forward at once!',
+          isUnlocked: this.player.hasGoldCan
         }
       ];
 
@@ -3875,8 +4457,18 @@
             if (id === 'steel_axe') this.player.hasSteelAxe = true;
             if (id === 'steel_pickaxe') this.player.hasSteelPickaxe = true;
             if (id === 'deluxe_can') {
-              this.player.waterCapacity = 40;
-              this.player.water = 40;
+              this.player.waterCapacity = Math.max(this.player.waterCapacity, 40);
+              this.player.water = this.player.waterCapacity;
+            }
+            if (id === 'copper_scythe') this.player.hasCopperScythe = true;
+            if (id === 'gold_hoe') {
+              this.player.hasCopperHoe = true;
+              this.player.hasGoldHoe = true;
+            }
+            if (id === 'gold_can') {
+              this.player.hasGoldCan = true;
+              this.player.waterCapacity = 60;
+              this.player.water = 60;
             }
 
             window.soundSystem?.playHit();
@@ -3914,15 +4506,29 @@
             <path d="M20 21a8 8 0 1 0-16 0"/>
           </svg>
         `;
-        textElem.textContent = `"Welcome to Oakhaven, dear friend! I remember when your grandfather tended the homestead to the north. With Grandma Hazel’s guidance, I have no doubt your farm will feed our entire community. Make sure to check our Notice Board for town requests!"`;
+        const festivalName = this.getFestivalNameForDay(this.day);
+        const canClaimFestival = festivalName && this.festivalRewardClaimedDay !== this.day;
+        textElem.textContent = festivalName
+          ? `"Happy ${festivalName}, neighbor! Oakhaven Plaza is decked out in bunting today — take a festival keepsake from the Town Council, or inspect our City Hall Bundles!"`
+          : `"Welcome to Oakhaven, dear friend! I remember when your grandfather tended the homestead to the north. With Grandma Hazel’s guidance, I have no doubt your farm will feed our entire community. Make sure to check City Hall Bundles & the Notice Board!"`;
         actionsElem.innerHTML = `
+          ${canClaimFestival ? `<button class="btn-primary" id="btnMayorFestivalGift">Claim ${festivalName} Gift</button>` : ''}
+          <button class="btn-secondary" onclick="document.getElementById('cityNpcModal').classList.remove('active'); window.game.openCityHallModal();">
+            City Hall Bundles
+          </button>
           <button class="btn-secondary" onclick="document.getElementById('cityNpcModal').classList.remove('active'); window.game.openNoticeBoardModal();">
-            View Community Requests
+            Notice Board
           </button>
           <button class="btn-primary" onclick="document.getElementById('cityNpcModal').classList.remove('active')">
-            Thank you, Mayor Clara!
+            Close
           </button>
         `;
+        setTimeout(() => {
+          document.getElementById('btnMayorFestivalGift')?.addEventListener('click', () => {
+            this.claimFestivalReward();
+            modal.classList.remove('active');
+          });
+        }, 30);
       } else if (npcType === 'baker') {
         nameElem.textContent = 'Nora the Baker';
         titleElem.textContent = 'Nora the Baker';
@@ -4332,6 +4938,479 @@
       }
     }
 
+    // --- World Expansion, Artisan Machines, Crafting & Bundles ---
+    getFestivalNameForDay(dayNum = this.day) {
+      const seasonDay = ((dayNum - 1) % 14) + 1;
+      const season = SEASONS[Math.floor((dayNum - 1) / 14) % SEASONS.length];
+      if (seasonDay === 7) return `${season} Blossoming Fair`;
+      if (seasonDay === 14) return `${season} Grand Festival`;
+      return null;
+    }
+
+    claimFestivalReward() {
+      const fest = this.getFestivalNameForDay(this.day);
+      if (!fest) return;
+      if (this.festivalRewardClaimedDay === this.day) {
+        this.showToast(`You already received today’s ${fest} keepsake!`);
+        return;
+      }
+      this.festivalRewardClaimedDay = this.day;
+      this.player.gold += 175;
+      this.addItem('starfruit_seed', 1);
+      this.addItem('apple_pie', 1);
+      window.soundSystem?.playCatch();
+      this.spawnParticles(this.player.x + 16, this.player.y + 8, '#facc15', 16);
+      this.showFloatingText(`+${fest} Gift!`, this.player.x + 16, this.player.y - 10, '#facc15');
+      this.showToast(`Happy ${fest}! Mayor Clara gifted +175 Gold, 1x Starfruit Seed & Grandma’s Berry Pie!`);
+      this.updateHUD();
+      this.saveGame();
+    }
+
+    rotateCompletedNoticeTasks() {
+      if (!Array.isArray(this.noticeBoardTasks) || NOTICE_BOARD_POOL.length === 0) return;
+      this.noticeBoardTasks = this.noticeBoardTasks.map((task, idx) => {
+        if (!task.isDone) return task;
+        const pick = NOTICE_BOARD_POOL[(this.day + idx) % NOTICE_BOARD_POOL.length];
+        return {
+          id: `rot_${this.day}_${idx}`,
+          title: pick.title,
+          desc: pick.desc,
+          itemReq: pick.itemReq,
+          countReq: pick.countReq,
+          rewardGold: pick.rewardGold,
+          npcId: pick.npcId,
+          isDone: false
+        };
+      });
+    }
+
+    processMachinesOvernight() {
+      if (!this.farm) return;
+      if (!this.farm.machineStates) this.farm.machineStates = {};
+      const objects = this.farm.objects || {};
+
+      for (const key in objects) {
+        const type = objects[key];
+        if (!['cheese_press', 'mayo_maker', 'loom', 'preserves_jar', 'bee_house'].includes(type)) continue;
+        let state = this.farm.machineStates[key];
+        if (!state) {
+          if (type === 'bee_house') {
+            state = { type: 'bee_house', input: 'nectar', readyOutput: null, daysLeft: 2 };
+            this.farm.machineStates[key] = state;
+          } else {
+            continue;
+          }
+        }
+        if (state.readyOutput) continue;
+
+        if (state.daysLeft > 0) {
+          state.daysLeft--;
+        }
+        if (state.daysLeft <= 0) {
+          if (type === 'cheese_press') state.readyOutput = 'artisan_cheese';
+          else if (type === 'mayo_maker') state.readyOutput = 'gold_mayo';
+          else if (type === 'loom') state.readyOutput = 'loom_cloth';
+          else if (type === 'preserves_jar') state.readyOutput = 'country_jam';
+          else if (type === 'bee_house') state.readyOutput = 'honey';
+        }
+      }
+    }
+
+    interactMachineTile(tx, ty, machineId) {
+      if (machineId === 'chest') {
+        this.openChestModal();
+        return;
+      }
+      if (machineId === 'scarecrow') {
+        this.showToast('This cheerful Scarecrow watches faithfully over your surrounding crops.');
+        return;
+      }
+
+      if (!this.farm.machineStates) this.farm.machineStates = {};
+      const key = `${tx},${ty}`;
+      let state = this.farm.machineStates[key];
+
+      // 1. Collect ready artisan product!
+      if (state && state.readyOutput) {
+        const outId = state.readyOutput;
+        this.addItem(outId, 1);
+        window.soundSystem?.playHarvest();
+        this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 8, '#facc15', 10);
+        this.showFloatingText(`+1 ${outId.replace(/_/g, ' ')}`, tx * TILE_SIZE + 16, ty * TILE_SIZE, '#fde047');
+        this.showToast(`Collected fresh ${outId.replace(/_/g, ' ')} from your ${machineId.replace(/_/g, ' ')}!`);
+
+        if (machineId === 'bee_house') {
+          this.farm.machineStates[key] = { type: 'bee_house', input: 'nectar', readyOutput: null, daysLeft: 2 };
+        } else {
+          delete this.farm.machineStates[key];
+        }
+        this.updateHUD();
+        this.saveGame();
+        return;
+      }
+
+      // 2. Currently processing?
+      if (state && state.daysLeft > 0) {
+        this.showToast(`${machineId.replace(/_/g, ' ')} is busy crafting! Ready in ${state.daysLeft} morning(s).`);
+        return;
+      }
+
+      // 3. Load matching input ingredient from inventory or active slot
+      const inputMap = {
+        cheese_press: { valid: ['milk'], label: 'Rich Barn Milk', outputName: 'Aged Farmhouse Cheese' },
+        mayo_maker: { valid: ['egg'], label: 'Fresh Farm Egg', outputName: 'Golden Mayonnaise' },
+        loom: { valid: ['wool'], label: 'Soft Cloud Wool', outputName: 'Artisan Woven Cloth' },
+        preserves_jar: {
+          valid: ['turnip', 'carrot', 'strawberry', 'blueberry', 'tomato', 'corn', 'melon', 'pumpkin', 'starfruit', 'apple', 'peach', 'cherry'],
+          label: 'a Crop or Orchard Fruit',
+          outputName: 'Country Preserves Jam'
+        }
+      };
+      const rule = inputMap[machineId];
+      if (!rule) return;
+
+      const active = this.inventory[this.activeSlot];
+      let chosenId = (active && rule.valid.includes(active.id)) ? active.id : null;
+      if (!chosenId) {
+        const found = this.inventory.find(i => i.count > 0 && rule.valid.includes(i.id));
+        if (found) chosenId = found.id;
+      }
+
+      if (!chosenId) {
+        this.showToast(`Load ${rule.label} to craft ${rule.outputName} overnight.`);
+        return;
+      }
+
+      this.removeItem(chosenId, 1);
+      this.farm.machineStates[key] = { type: machineId, input: chosenId, readyOutput: null, daysLeft: 1 };
+      window.soundSystem?.playPlant();
+      this.spawnParticles(tx * TILE_SIZE + 16, ty * TILE_SIZE + 12, '#fb923c', 8);
+      this.showToast(`Loaded ${chosenId.replace(/_/g, ' ')}! Come back tomorrow morning for ${rule.outputName}.`);
+      this.updateHUD();
+      this.saveGame();
+    }
+
+    interactWishingShrine() {
+      window.soundSystem?.playDialogue();
+      if (this.shrineUsedToday) {
+        this.showToast('The mossy Woodland Shrine hums softly — return tomorrow morning for a new wish.');
+        return;
+      }
+      this.shrineUsedToday = true;
+      this.player.stamina = Math.min(this.player.maxStamina, this.player.stamina + 30);
+      const boons = [
+        () => { this.player.gold += 85; return '+85 Gold & +30 Energy'; },
+        () => { this.addItem('starfruit_seed', 1); return '+1 Starfruit Seed & +30 Energy'; },
+        () => { this.addItem('gold_ore', 1); return '+1 Gold Ore & +30 Energy'; },
+        () => { this.addItem('quartz', 1); return '+1 Cavern Quartz & +30 Energy'; }
+      ];
+      const rewardMsg = boons[Math.floor(Math.random() * boons.length)]();
+      window.soundSystem?.playCatch();
+      this.spawnParticles(this.shrinePos.x + 32, this.shrinePos.y + 16, '#38bdf8', 18);
+      this.showFloatingText(rewardMsg, this.shrinePos.x + 32, this.shrinePos.y, '#38bdf8');
+      this.showToast(`Made a wish at the Woodland Shrine! Boon received: ${rewardMsg}!`);
+      this.updateHUD();
+      this.saveGame();
+    }
+
+    harvestOrchardTree(tree) {
+      if (!tree) return;
+      if (tree.daysUntilRipe > 0) {
+        this.showToast(`Orchard ${tree.fruit} blossoms are ripening (${tree.daysUntilRipe} day(s) left).`);
+        return;
+      }
+      tree.daysUntilRipe = 3;
+      this.addItem(tree.fruit, 2);
+      window.soundSystem?.playHarvest();
+      this.spawnParticles(tree.tx * TILE_SIZE + 16, tree.ty * TILE_SIZE, '#f87171', 12);
+      this.showFloatingText(`+2 ${tree.fruit}`, tree.tx * TILE_SIZE + 16, tree.ty * TILE_SIZE - 8, '#fde047');
+      this.showToast(`Harvested 2x ${tree.fruit} from the Northeast Orchard!`);
+      this.updateHUD();
+      this.saveGame();
+    }
+
+    openCraftingModal() {
+      const modal = document.getElementById('cookingModal');
+      const container = document.getElementById('cookingContent');
+      if (!modal || !container) return;
+
+      const titleSpan = modal.querySelector('.modal-title-wrap span');
+      if (titleSpan) titleSpan.textContent = 'Homestead Crafting Bench (C)';
+
+      let html = `
+        <p style="font-size:0.9rem;color:#475569;margin-bottom:12px;">
+          Build artisan processors, chests, and Brass Sprinklers from timber, stone, and cavern ores. Select a crafted machine on your hotbar and click an open farm tile to place it!
+        </p>
+        <div class="shop-items-grid">
+      `;
+
+      CRAFT_RECIPES.forEach(recipe => {
+        const canCraft = recipe.ingredients.every(ing => this.getItemCount(ing.id) >= ing.count);
+        const ingText = recipe.ingredients.map(ing => {
+          const have = this.getItemCount(ing.id);
+          const color = have >= ing.count ? '#10b981' : '#ef4444';
+          return `<span style="color:${color};font-weight:700;">${ing.count}x ${ing.id.replace(/_/g, ' ')} (${have})</span>`;
+        }).join(', ');
+
+        html += `
+          <div class="shop-card">
+            <div class="shop-card-left">
+              <div class="shop-item-icon">${this.getItemIconSvg({ id: recipe.id, type: 'machine' })}</div>
+              <div class="shop-card-info">
+                <div class="shop-card-name">${recipe.name}</div>
+                <div class="shop-card-desc">${recipe.desc}</div>
+                <div style="font-size:0.78rem;margin-top:4px;">Requires: ${ingText}</div>
+              </div>
+            </div>
+            <button class="shop-buy-btn craft-make-btn" data-craft-id="${recipe.id}" ${!canCraft ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : ''}>
+              Craft
+            </button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll('.craft-make-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-craft-id');
+          const recipe = CRAFT_RECIPES.find(r => r.id === id);
+          if (!recipe) return;
+          if (!recipe.ingredients.every(ing => this.getItemCount(ing.id) >= ing.count)) return;
+          recipe.ingredients.forEach(ing => this.removeItem(ing.id, ing.count));
+          this.addItem(recipe.id, 1);
+          window.soundSystem?.playHit();
+          this.showToast(`Crafted ${recipe.name}! Select it from your bag or hotbar to place on the farm.`);
+          this.updateHUD();
+          this.saveGame();
+          this.openCraftingModal();
+        });
+      });
+
+      modal.classList.add('active');
+    }
+
+    openGreenhouseRepairModal() {
+      const modal = document.getElementById('cookingModal');
+      const container = document.getElementById('cookingContent');
+      if (!modal || !container) return;
+
+      const titleSpan = modal.querySelector('.modal-title-wrap span');
+      if (titleSpan) titleSpan.textContent = 'Repair Crystal Greenhouse';
+
+      const reqWood = 25;
+      const reqStone = 20;
+      const reqGold = 300;
+      const haveWood = this.getItemCount('wood');
+      const haveStone = this.getItemCount('stone');
+      const canRepair = haveWood >= reqWood && haveStone >= reqStone && this.player.gold >= reqGold;
+
+      container.innerHTML = `
+        <div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:12px;padding:14px;margin-bottom:12px;">
+          <p style="font-size:0.92rem;color:#334155;margin-bottom:10px;line-height:1.5;">
+            Restore Grandma’s heirloom <strong>Crystal Greenhouse</strong> to unlock 36 year-round fertile beds (6x6) that grow any crop cleanly — even through Winter snows! (Or complete the Quarry Bundle at City Hall for free.)
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.86rem;font-weight:700;">
+            <span style="color:${haveWood >= reqWood ? '#15803d' : '#dc2626'};">Wood: ${haveWood}/${reqWood}</span>
+            <span style="color:${haveStone >= reqStone ? '#15803d' : '#dc2626'};">Stone: ${haveStone}/${reqStone}</span>
+            <span style="color:${this.player.gold >= reqGold ? '#b45309' : '#dc2626'};">Gold: ${this.player.gold}/${reqGold} G</span>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button class="btn-primary" id="btnConfirmGreenhouseRepair" ${!canRepair ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+            Restore Greenhouse (${reqGold} G)
+          </button>
+        </div>
+      `;
+
+      document.getElementById('btnConfirmGreenhouseRepair')?.addEventListener('click', () => {
+        if (this.getItemCount('wood') >= reqWood && this.getItemCount('stone') >= reqStone && this.player.gold >= reqGold) {
+          this.removeItem('wood', reqWood);
+          this.removeItem('stone', reqStone);
+          this.player.gold -= reqGold;
+          this.greenhouseRepaired = true;
+          this.ensureGreenhouseInitialized();
+          window.soundSystem?.playCatch();
+          this.spawnParticles(this.greenhousePos.x + 80, this.greenhousePos.y + 64, '#38bdf8', 20);
+          this.showToast('Crystal Greenhouse restored! Walk inside to plant year-round crops!');
+          modal.classList.remove('active');
+          this.updateHUD();
+          this.saveGame();
+        }
+      });
+
+      modal.classList.add('active');
+    }
+
+    openChestModal() {
+      const modal = document.getElementById('cookingModal');
+      const container = document.getElementById('cookingContent');
+      if (!modal || !container) return;
+
+      const titleSpan = modal.querySelector('.modal-title-wrap span');
+      if (titleSpan) titleSpan.textContent = 'Wooden Storage Chest';
+
+      if (!Array.isArray(this.storageChest)) this.storageChest = [];
+      const storable = this.inventory.filter(i => i.type !== 'tool' && i.count > 0);
+
+      container.innerHTML = `
+        <p style="font-size:0.86rem;color:#475569;margin-bottom:10px;">Store extra seeds, crops, ores, and meals safely on your homestead.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-weight:800;color:#0f172a;font-size:0.85rem;margin-bottom:6px;">Backpack (Deposit 1)</div>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;">
+              ${storable.length === 0 ? '<div style="font-size:0.8rem;color:#64748b;">No non-tool items.</div>' : storable.map(item => `
+                <button class="btn-secondary chest-deposit-btn" style="text-align:left;padding:6px 10px;font-size:0.8rem;" data-item-id="${item.id}">
+                  + ${item.name} (x${item.count})
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div>
+            <div style="font-weight:800;color:#92400e;font-size:0.85rem;margin-bottom:6px;">Inside Chest (Withdraw 1)</div>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;">
+              ${this.storageChest.length === 0 ? '<div style="font-size:0.8rem;color:#64748b;">Chest is empty.</div>' : this.storageChest.map(entry => `
+                <button class="btn-secondary chest-withdraw-btn" style="text-align:left;padding:6px 10px;font-size:0.8rem;" data-item-id="${entry.id}">
+                  - ${entry.name} (x${entry.count})
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.querySelectorAll('.chest-deposit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-item-id');
+          const invItem = this.inventory.find(i => i.id === id);
+          if (!invItem) return;
+          const label = invItem.name;
+          this.removeItem(id, 1);
+          const existing = this.storageChest.find(c => c.id === id);
+          if (existing) existing.count++;
+          else this.storageChest.push({ id, name: label, count: 1 });
+          this.saveGame();
+          this.openChestModal();
+        });
+      });
+
+      container.querySelectorAll('.chest-withdraw-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-item-id');
+          const idx = this.storageChest.findIndex(c => c.id === id);
+          if (idx === -1) return;
+          this.addItem(id, 1);
+          this.storageChest[idx].count--;
+          if (this.storageChest[idx].count <= 0) this.storageChest.splice(idx, 1);
+          this.saveGame();
+          this.openChestModal();
+        });
+      });
+
+      modal.classList.add('active');
+    }
+
+    openCityHallModal() {
+      const modal = document.getElementById('cookingModal');
+      const container = document.getElementById('cookingContent');
+      if (!modal || !container) return;
+
+      const titleSpan = modal.querySelector('.modal-title-wrap span');
+      if (titleSpan) titleSpan.textContent = 'Oakhaven City Hall Community Bundles';
+
+      if (!this.townBundles) this.townBundles = {};
+      const completedCount = Object.keys(this.townBundles).length;
+
+      let html = `
+        <p style="font-size:0.88rem;color:#475569;margin-bottom:10px;line-height:1.45;">
+          Restore Oakhaven Valley’s heritage! Complete all <strong>${TOWN_BUNDLES.length} Bundles</strong> (${completedCount}/${TOWN_BUNDLES.length} done) to earn <strong>+15% permanent sell prices</strong> &amp; celebrate with town neighbors.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+      `;
+
+      TOWN_BUNDLES.forEach(bundle => {
+        const isDone = !!this.townBundles[bundle.id];
+        const canComplete = !isDone && bundle.reqs.every(r => this.getItemCount(r.id) >= r.count);
+        const reqHtml = bundle.reqs.map(r => {
+          const have = this.getItemCount(r.id);
+          const color = have >= r.count || isDone ? '#15803d' : '#dc2626';
+          return `<span style="color:${color};font-weight:700;">${r.count}x ${r.id.replace(/_/g, ' ')} (${isDone ? r.count : have})</span>`;
+        }).join(' | ');
+
+        html += `
+          <div class="tutorial-item ${isDone ? 'done' : (canComplete ? 'active-step' : 'pending')}" style="padding:10px 14px;">
+            <div class="tutorial-item-header">
+              <span class="tutorial-title">${bundle.title}</span>
+              <span class="tutorial-badge ${isDone ? 'done' : (canComplete ? 'active-step' : 'pending')}">
+                ${isDone ? 'Completed' : (canComplete ? 'Ready to Donate' : 'In Progress')}
+              </span>
+            </div>
+            <div class="tutorial-desc">${bundle.desc}</div>
+            <div style="font-size:0.8rem;margin:6px 0;">Items: ${reqHtml}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:0.82rem;color:#b45309;font-weight:700;">${bundle.rewardDesc}</span>
+              ${!isDone ? `
+                <button class="btn-primary bundle-turnin-btn" style="padding:5px 12px;font-size:0.82rem;" data-bundle-id="${bundle.id}" ${!canComplete ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+                  Complete Bundle
+                </button>
+              ` : '<span style="color:#10b981;font-weight:800;font-size:0.84rem;">Donated!</span>'}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll('.bundle-turnin-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-bundle-id');
+          const bundle = TOWN_BUNDLES.find(b => b.id === id);
+          if (!bundle || this.townBundles[id]) return;
+          if (!bundle.reqs.every(r => this.getItemCount(r.id) >= r.count)) return;
+
+          bundle.reqs.forEach(r => this.removeItem(r.id, r.count));
+          this.townBundles[id] = true;
+
+          if (id === 'bundle_crops') {
+            this.addItem('quality_sprinkler', 2);
+            this.player.gold += 250;
+          } else if (id === 'bundle_artisan') {
+            this.addItem('bee_house', 1);
+            this.player.gold += 300;
+          } else if (id === 'bundle_catch') {
+            this.addItem('starfruit_seed', 3);
+            this.player.gold += 400;
+          } else if (id === 'bundle_quarry') {
+            if (!this.greenhouseRepaired) {
+              this.greenhouseRepaired = true;
+              this.ensureGreenhouseInitialized();
+            } else {
+              this.player.gold += 800;
+            }
+          }
+
+          if (Object.keys(this.townBundles).length >= TOWN_BUNDLES.length) {
+            if (!this.friendships) this.friendships = {};
+            this.city.npcs.forEach(n => {
+              this.friendships[n.type] = Math.min(5, (this.friendships[n.type] || 0) + 2);
+            });
+            this.showToast('All City Hall Bundles Complete! +2 Hearts with all villagers & +15% permanent crop prices!');
+          } else {
+            this.showToast(`Completed ${bundle.title}! Claimed bundle reward!`);
+          }
+
+          window.soundSystem?.playCatch();
+          this.updateHUD();
+          this.saveGame();
+          this.openCityHallModal();
+        });
+      });
+
+      modal.classList.add('active');
+    }
+
     openBarnModal() {
       const modal = document.getElementById('cookingModal');
       const container = document.getElementById('cookingContent');
@@ -4623,8 +5702,21 @@
       if (id === 'quartz') {
         return `<svg viewBox="0 0 24 24" fill="none"><path d="M12 4 17 12l-5 8-5-8 5-8Z" fill="#38bdf8" stroke="#0369a1" stroke-width="1.6"/></svg>`;
       }
-      if (id === 'sprinkler') {
-        return `<svg viewBox="0 0 24 24" fill="none"><rect x="9" y="10" width="6" height="9" rx="1.5" fill="#eab308" stroke="#713f12" stroke-width="1.5"/><path d="M5 8h14" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/></svg>`;
+      if (id === 'sprinkler' || id === 'quality_sprinkler') {
+        const body = id === 'quality_sprinkler' ? '#f59e0b' : '#eab308';
+        return `<svg viewBox="0 0 24 24" fill="none"><rect x="8.5" y="10" width="7" height="9" rx="1.5" fill="${body}" stroke="#713f12" stroke-width="1.5"/><path d="M4 8h16" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/></svg>`;
+      }
+      if (['chest', 'scarecrow', 'cheese_press', 'mayo_maker', 'loom', 'preserves_jar', 'bee_house'].includes(id) || type === 'machine') {
+        const col = id === 'bee_house' ? '#f59e0b' : (id === 'loom' ? '#ec4899' : '#b45309');
+        return `<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="7" width="14" height="12" rx="2" fill="${col}" stroke="#451a03" stroke-width="1.6"/><path d="M5 11h14" stroke="#fef3c7" stroke-width="1.4"/><circle cx="12" cy="14" r="1.5" fill="#fef08a"/></svg>`;
+      }
+      if (['apple', 'peach', 'cherry'].includes(id)) {
+        const fc = id === 'peach' ? '#fb923c' : (id === 'cherry' ? '#e11d48' : '#ef4444');
+        return `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="6" fill="${fc}" stroke="#7f1d1d" stroke-width="1.5"/><path d="M12 7c1.5-2.5 4-2 4-2s-1 2.5-4 2.5" stroke="#15803d" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      }
+      if (['artisan_cheese', 'gold_mayo', 'country_jam', 'loom_cloth'].includes(id)) {
+        const fc = id === 'artisan_cheese' ? '#facc15' : (id === 'gold_mayo' ? '#fef08a' : (id === 'country_jam' ? '#e11d48' : '#f472b6'));
+        return `<svg viewBox="0 0 24 24" fill="none"><rect x="6" y="7" width="12" height="12" rx="2.5" fill="${fc}" stroke="#78350f" stroke-width="1.5"/><path d="M7 9.5h10" stroke="#ffffff" stroke-width="1.4"/></svg>`;
       }
       if (type === 'food') {
         return `<svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="14" rx="8" ry="5" fill="#fbbf24" stroke="#92400e" stroke-width="1.6"/><path d="M6 12c2-3 10-3 12 0" fill="#fb7185"/></svg>`;
@@ -4720,7 +5812,9 @@
 
         let typeLabel = item.type ? (item.type.charAt(0).toUpperCase() + item.type.slice(1)) : 'Item';
         if (item.type === 'tool') {
-          if (item.id === 'hoe' && this.player.hasCopperHoe) typeLabel = 'Copper Hoe';
+          if (item.id === 'hoe') typeLabel = this.player.hasGoldHoe ? 'Gold Hoe' : (this.player.hasCopperHoe ? 'Copper Hoe' : 'Hoe');
+          if (item.id === 'watering_can') typeLabel = this.player.hasGoldCan ? 'Gold Can' : (this.player.waterCapacity >= 40 ? 'Brass Can' : 'Water Can');
+          if (item.id === 'scythe') typeLabel = this.player.hasCopperScythe ? 'Copper Scythe' : 'Scythe';
           if (item.id === 'axe' && this.player.hasSteelAxe) typeLabel = 'Steel Axe';
           if (item.id === 'pickaxe' && this.player.hasSteelPickaxe) typeLabel = 'Steel Pickaxe';
           if (item.id === 'fishing_rod' && this.player.hasProRod) typeLabel = 'Pro Rod';
@@ -5063,6 +6157,29 @@
             const [nc, nr] = key.split(',').map(Number);
             Sprites.drawCaveNode(ctx, nc * TILE_SIZE, nr * TILE_SIZE, this.caveNodes[key], currentTime);
           }
+        } else if (this.currentLocation === 'interior_barn' && this.farmAnimals) {
+          this.farmAnimals.forEach((a, idx) => {
+            const stallAnimal = Object.assign({}, a, {
+              x: (3 + (idx % 5) * 2.5) * TILE_SIZE,
+              y: (4.8 + Math.floor(idx / 5) * 2.8) * TILE_SIZE,
+              isWalking: false
+            });
+            Sprites.drawFarmAnimal(ctx, stallAnimal, currentTime);
+          });
+        } else if (this.currentLocation === 'interior_greenhouse') {
+          for (let r = 4; r <= 9; r++) {
+            for (let c = 6; c <= 11; c++) {
+              const gTile = this.tiles[r] && this.tiles[r][c];
+              if (gTile) {
+                Sprites.drawSoil(ctx, c * TILE_SIZE, r * TILE_SIZE, gTile.isWatered, gTile.isFertilized);
+              }
+            }
+          }
+          for (const key in this.crops) {
+            const crop = this.crops[key];
+            const [cx, cy] = key.split(',').map(Number);
+            Sprites.drawCrop(ctx, cx * TILE_SIZE, cy * TILE_SIZE, crop.type, crop.stage, crop.stage >= 3);
+          }
         }
       } else if (this.currentLocation === 'city') {
         // --- City Rendering ---
@@ -5128,8 +6245,15 @@
               this.drawRoadSign(ctx, x, y, 'TO FARM', 'north');
             } else if (obj === 'flower_bed') {
               Sprites.drawFlowerBed(ctx, x, y, c + r);
+            } else if (FORAGE_DEFS[obj]) {
+              Sprites.drawForageItem(ctx, x, y, obj, currentTime);
             }
           }
+        }
+
+        // Seasonal Town Festival Bunting across Oakhaven Plaza on Day 7 & Day 14
+        if (this.getFestivalNameForDay(this.day) && Sprites.drawFestivalBunting) {
+          Sprites.drawFestivalBunting(ctx, 18 * TILE_SIZE, 13.5 * TILE_SIZE, 12 * TILE_SIZE, currentTime);
         }
 
         // 3. Central Stone Fountain
@@ -5210,6 +6334,8 @@
 
             if (this.objects[`${c},${r}`] === 'sprinkler') {
               Sprites.drawSprinkler(ctx, x, y, currentTime);
+            } else if (this.objects[`${c},${r}`] === 'quality_sprinkler') {
+              Sprites.drawSprinkler(ctx, x, y, currentTime);
             }
           }
         }
@@ -5221,7 +6347,7 @@
           Sprites.drawCrop(ctx, cx * TILE_SIZE, cy * TILE_SIZE, crop.type, crop.stage, crop.stage >= 3);
         }
 
-        // 3. Draw Natural Debris (Weeds, Rocks, Trees, City Road Sign)
+        // 3. Draw Natural Debris (Weeds, Rocks, Trees, Machines, City Road Sign)
         for (let r = 0; r < this.mapRows; r++) {
           for (let c = 0; c < this.mapCols; c++) {
             const key = `${c},${r}`;
@@ -5239,12 +6365,26 @@
               this.drawRoadSign(ctx, x, y, 'TO CITY', 'south');
             } else if (FORAGE_DEFS[obj]) {
               Sprites.drawForageItem(ctx, x, y, obj, currentTime);
+            } else if (['chest', 'scarecrow', 'cheese_press', 'mayo_maker', 'loom', 'preserves_jar', 'bee_house'].includes(obj)) {
+              const mState = (this.farm && this.farm.machineStates) ? this.farm.machineStates[key] : null;
+              Sprites.drawMachine(ctx, x, y, obj, mState, currentTime);
             }
           }
         }
 
-        // 4. Draw Grandma's Cottage & Porch
+        // 4. Draw Grandma's Cottage, Crystal Greenhouse, Orchard & Shrine
         Sprites.drawCottage(ctx, this.cottagePos.x, this.cottagePos.y, currentTime);
+        if (this.greenhousePos) {
+          Sprites.drawGreenhouse(ctx, this.greenhousePos.x, this.greenhousePos.y, this.greenhouseRepaired, currentTime);
+        }
+        if (this.shrinePos) {
+          Sprites.drawWishingShrine(ctx, this.shrinePos.x, this.shrinePos.y, currentTime, this.shrineUsedToday);
+        }
+        if (this.orchardTrees) {
+          this.orchardTrees.forEach(t => {
+            Sprites.drawOrchardTree(ctx, t.tx * TILE_SIZE, t.ty * TILE_SIZE, t.fruit, t.daysUntilRipe <= 0, currentTime);
+          });
+        }
 
         // 5. Draw Grandma Hazel rocking in chair
         Sprites.drawGrandma(ctx, this.grandmaPos.x, this.grandmaPos.y, currentTime);
