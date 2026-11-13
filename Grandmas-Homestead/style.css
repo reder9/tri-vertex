@@ -14,7 +14,8 @@
   --blue-water: #0284c7;
   --blue-water-light: #38bdf8;
   --red-energy: #e11d48;
-  --font-pixel: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-pixel: 'VT323', 'Courier New', monospace;
+  --font-retro-head: 'Press Start 2P', 'Courier New', monospace;
 }
 
 * {
@@ -25,8 +26,8 @@
 }
 
 body {
-  font-family: var(--font-pixel);
-  background-color: #1a1a1a;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #140c06;
   color: #2b1d0c;
   overflow: hidden;
   height: 100vh;
@@ -35,19 +36,26 @@ body {
   flex-direction: column;
 }
 
-/* --- Top Navigation & HUD --- */
+/* --- Top Navigation & 16-Bit SNES Wooden HUD --- */
 #gameHeader {
   height: 58px;
   min-height: 58px;
-  background: linear-gradient(180deg, #4e342e 0%, #3e2723 100%);
-  border-bottom: 3px solid #271406;
+  background: repeating-linear-gradient(
+    90deg,
+    #4e342e 0px, #4e342e 24px,
+    #462e28 24px, #462e28 26px
+  );
+  border-bottom: 4px solid #1b0f07;
+  box-shadow:
+    inset 0 2px 0 #795548,
+    inset 0 -2px 0 #2d1a0f,
+    0 4px 0 rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   color: #fdf6e2;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   gap: 12px;
 }
 
@@ -63,17 +71,18 @@ body {
   flex-direction: column;
   justify-content: center;
   line-height: 1.1;
-  gap: 2px;
+  gap: 3px;
 }
 
 .farm-title {
-  font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
+  font-family: var(--font-retro-head);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.4px;
   color: #fef08a;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  text-shadow: 2px 2px 0 #1b0f07;
   white-space: nowrap;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .location-badge {
@@ -99,17 +108,20 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 0.88rem;
-  font-weight: 600;
+  background: #23140b;
+  border: 2px solid #8d6e63;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.12), 0 2px 0 #120904;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-family: var(--font-pixel);
+  font-size: 1.08rem;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 .gold-badge {
-  background: rgba(245, 158, 11, 0.18);
-  border-color: rgba(245, 158, 11, 0.4);
+  background: #332008;
+  border-color: #eab308;
   color: #fef08a;
 }
 
@@ -118,19 +130,20 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.4);
+  background: #23140b;
   padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  border: 2px solid #8d6e63;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.1), 0 2px 0 #120904;
 }
 
 .stat-bar {
   width: 90px;
   height: 12px;
-  background: #26170d;
-  border-radius: 6px;
+  background: #140b05;
+  border-radius: 0px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid #6d4c41;
   position: relative;
 }
 
@@ -167,14 +180,15 @@ body {
   gap: 6px;
   background: linear-gradient(180deg, #6d4c41 0%, #4e342e 100%);
   color: #fdf6e2;
-  border: 2px solid #8d6e63;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border: 2px solid #a1887f;
+  border-radius: 2px;
+  padding: 5px 10px;
+  font-family: var(--font-pixel);
+  font-size: 1.05rem;
+  font-weight: 400;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.08s steps(2);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 3px 0 #1b0f07;
 }
 
 .btn-header:hover {
@@ -225,26 +239,30 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: crisp-edges;
   image-rendering: pixelated;
   cursor: crosshair;
 }
 
-/* Floating Active Quest Banner */
+/* Floating Active Quest Banner (16-bit SNES RPG Wooden Plaque) */
 #floatingQuestBox {
   position: absolute;
   top: 14px;
   left: 14px;
-  background: rgba(39, 20, 6, 0.90);
-  border: 2px solid #8d6e63;
-  backdrop-filter: blur(6px);
+  background: #2b180c;
+  border: 3px solid #d7a86e;
   color: #fef08a;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 2px;
   max-width: 320px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 0 0 2px #5d4037,
+    0 4px 0 #140a04;
   pointer-events: auto;
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
+  transition: transform 0.12s steps(2), border-color 0.15s;
   z-index: 15;
 }
 
@@ -271,10 +289,15 @@ body {
   line-height: 1.35;
 }
 
-/* --- Bottom Toolbar / Hotbar --- */
+/* --- Bottom Toolbar / Hotbar (16-bit SNES Wood Frame) --- */
 #gameFooter {
-  background: linear-gradient(180deg, #3e2723 0%, #2c1b18 100%);
-  border-top: 3px solid #271406;
+  background: repeating-linear-gradient(
+    90deg,
+    #3e2723 0px, #3e2723 28px,
+    #36211d 28px, #36211d 30px
+  );
+  border-top: 4px solid #1b0f07;
+  box-shadow: inset 0 2px 0 #6d4c41;
   padding: 8px 16px 12px;
   display: flex;
   flex-direction: column;
@@ -291,9 +314,9 @@ body {
 .hotbar-slot {
   width: 72px;
   height: 60px;
-  background: #5d4037;
-  border: 3px solid #3e2723;
-  border-radius: 8px;
+  background: #4e342e;
+  border: 3px solid #23140b;
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -301,20 +324,25 @@ body {
   padding: 4px;
   position: relative;
   cursor: pointer;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-  transition: all 0.15s ease;
+  box-shadow:
+    inset 0 2px 0 #795548,
+    inset 0 -2px 0 #2d1a0f,
+    0 3px 0 #140a04;
+  transition: transform 0.08s steps(2);
 }
 
 .hotbar-slot:hover {
   background: #6d4c41;
-  border-color: #8d6e63;
+  border-color: #a1887f;
 }
 
 .hotbar-slot.active {
   border-color: #facc15;
-  background: #795548;
+  background: #6d4c41;
   transform: translateY(-4px);
-  box-shadow: 0 4px 10px rgba(250, 204, 21, 0.4);
+  box-shadow:
+    inset 0 2px 0 #fde047,
+    0 4px 0 #854d0e;
 }
 
 .slot-number {
@@ -1165,7 +1193,7 @@ body.input-touch .mobile-controls-layer {
     gap: 6px;
   }
   .farm-title {
-    font-size: 0.85rem;
+    font-size: 0.58rem;
   }
   .hud-meters {
     gap: 6px;

@@ -5042,6 +5042,7 @@
     // --- Render Pipeline ---
     render(currentTime) {
       const ctx = this.ctx;
+      ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       if (Sprites && typeof Sprites.setSeason === 'function') {
         Sprites.setSeason(this.season);
@@ -5076,8 +5077,22 @@
               Sprites.drawPlaza(ctx, x, y, tile.seed);
             } else if (tile.type === 'path') {
               Sprites.drawPath(ctx, x, y, tile.seed);
+              if (Sprites.drawPathEdge) {
+                const gL = c > 0 && this.tiles[r][c-1].type === 'grass';
+                const gR = c < this.mapCols - 1 && this.tiles[r][c+1].type === 'grass';
+                const gU = r > 0 && this.tiles[r-1][c].type === 'grass';
+                const gD = r < this.mapRows - 1 && this.tiles[r+1][c].type === 'grass';
+                if (gL || gR || gU || gD) Sprites.drawPathEdge(ctx, x, y, gL, gR, gU, gD);
+              }
             } else if (tile.type === 'water') {
               Sprites.drawWater(ctx, x, y, currentTime);
+              if (Sprites.drawShoreEdge) {
+                const lL = c > 0 && this.tiles[r][c-1].type !== 'water' && this.tiles[r][c-1].type !== 'dock';
+                const lR = c < this.mapCols - 1 && this.tiles[r][c+1].type !== 'water' && this.tiles[r][c+1].type !== 'dock';
+                const lU = r > 0 && this.tiles[r-1][c].type !== 'water' && this.tiles[r-1][c].type !== 'dock';
+                const lD = r < this.mapRows - 1 && this.tiles[r+1][c].type !== 'water' && this.tiles[r+1][c].type !== 'dock';
+                if (lL || lR || lU || lD) Sprites.drawShoreEdge(ctx, x, y, lL, lR, lU, lD, currentTime);
+              }
             } else if (tile.type === 'dock') {
               Sprites.drawDock(ctx, x, y);
             } else if (tile.type === 'grass') {
@@ -5162,8 +5177,22 @@
               Sprites.drawGrass(ctx, x, y, tile.seed);
             } else if (tile.type === 'path') {
               Sprites.drawPath(ctx, x, y, tile.seed);
+              if (Sprites.drawPathEdge) {
+                const gL = c > 0 && this.tiles[r][c-1].type === 'grass';
+                const gR = c < this.mapCols - 1 && this.tiles[r][c+1].type === 'grass';
+                const gU = r > 0 && this.tiles[r-1][c].type === 'grass';
+                const gD = r < this.mapRows - 1 && this.tiles[r+1][c].type === 'grass';
+                if (gL || gR || gU || gD) Sprites.drawPathEdge(ctx, x, y, gL, gR, gU, gD);
+              }
             } else if (tile.type === 'water') {
               Sprites.drawWater(ctx, x, y, currentTime);
+              if (Sprites.drawShoreEdge) {
+                const lL = c > 0 && this.tiles[r][c-1].type !== 'water' && this.tiles[r][c-1].type !== 'dock';
+                const lR = c < this.mapCols - 1 && this.tiles[r][c+1].type !== 'water' && this.tiles[r][c+1].type !== 'dock';
+                const lU = r > 0 && this.tiles[r-1][c].type !== 'water' && this.tiles[r-1][c].type !== 'dock';
+                const lD = r < this.mapRows - 1 && this.tiles[r+1][c].type !== 'water' && this.tiles[r+1][c].type !== 'dock';
+                if (lL || lR || lU || lD) Sprites.drawShoreEdge(ctx, x, y, lL, lR, lU, lD, currentTime);
+              }
             } else if (tile.type === 'dock') {
               Sprites.drawDock(ctx, x, y);
             } else if (tile.type === 'soil' || tile.isTilled) {
@@ -5301,20 +5330,24 @@
     }
 
     drawRoadSign(ctx, x, y, text, direction) {
-      // Wooden Double Post
-      ctx.fillStyle = '#5d4037';
+      // 16-bit Outlined Wooden Signpost
+      ctx.fillStyle = '#1d120c';
+      ctx.fillRect(x + 4, y + 8, 8, 24);
+      ctx.fillRect(x + 20, y + 8, 8, 24);
+      ctx.fillStyle = '#633914';
       ctx.fillRect(x + 6, y + 10, 4, 22);
       ctx.fillRect(x + 22, y + 10, 4, 22);
 
-      // Wooden Signboard Plaque
+      // Stepped Board Plaque
+      ctx.fillStyle = '#1d120c';
+      ctx.fillRect(x - 2, y - 2, 36, 20);
       ctx.fillStyle = '#795548';
       ctx.fillRect(x, y, 32, 16);
-      ctx.fillStyle = '#bcaaa4';
+      ctx.fillStyle = '#e7c694';
       ctx.fillRect(x + 2, y + 2, 28, 12);
 
-      // Sign text with clean directional indicator
       ctx.fillStyle = '#271406';
-      ctx.font = 'bold 6.5px sans-serif';
+      ctx.font = 'bold 6.5px monospace';
       ctx.textAlign = 'center';
       if (direction === 'south') {
         ctx.fillText(text, x + 16, y + 8);
@@ -5326,13 +5359,17 @@
     }
 
     drawShopCart(ctx, x, y) {
-      // Wood Cart Stall
+      // Outlined Wood Cart Stall
+      ctx.fillStyle = '#1d120c';
+      ctx.fillRect(x - 2, y + 8, 52, 26);
       ctx.fillStyle = '#78350f';
       ctx.fillRect(x, y + 10, 48, 22);
       ctx.fillStyle = '#b45309';
       ctx.fillRect(x + 2, y + 12, 44, 18);
 
-      // Striped Awning (Forest green & cream)
+      // 16-bit Striped Awning with pixel scallop trim
+      ctx.fillStyle = '#1d120c';
+      ctx.fillRect(x - 6, y - 12, 60, 20);
       ctx.fillStyle = '#15803d';
       ctx.fillRect(x - 4, y - 10, 56, 16);
       ctx.fillStyle = '#fef3c7';
@@ -5340,18 +5377,17 @@
       ctx.fillRect(x + 22, y - 10, 8, 16);
       ctx.fillRect(x + 38, y - 10, 8, 16);
 
-      // Cart Wheel
-      ctx.fillStyle = '#451a03';
-      ctx.beginPath();
-      ctx.arc(x + 12, y + 32, 7, 0, Math.PI * 2);
-      ctx.arc(x + 36, y + 32, 7, 0, Math.PI * 2);
-      ctx.fill();
+      // Stepped Pixel Cart Wheels
+      Sprites.drawPixelDisc(ctx, x + 12, y + 32, 7, '#1d120c');
+      Sprites.drawPixelDisc(ctx, x + 12, y + 32, 5, '#633914');
+      Sprites.drawPixelDisc(ctx, x + 36, y + 32, 7, '#1d120c');
+      Sprites.drawPixelDisc(ctx, x + 36, y + 32, 5, '#633914');
 
-      // Signboard
+      // Pixel Signboard
       ctx.fillStyle = '#fef3c7';
       ctx.fillRect(x + 14, y + 2, 20, 8);
       ctx.fillStyle = '#78350f';
-      ctx.font = '7px sans-serif';
+      ctx.font = 'bold 7px monospace';
       ctx.fillText('SHOP', x + 16, y + 8);
     }
 
@@ -5455,15 +5491,15 @@
 
     renderFloatingTexts(ctx) {
       ctx.save();
-      ctx.font = 'bold 13px sans-serif';
+      ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'center';
 
       this.floatingTexts.forEach(t => {
-        const screenX = t.x - this.camera.x;
-        const screenY = t.y - this.camera.y;
-        // Text shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-        ctx.fillText(t.text, screenX + 1, screenY + 1);
+        const screenX = Math.round(t.x - this.camera.x);
+        const screenY = Math.round(t.y - this.camera.y);
+        // 16-bit crisp drop outline
+        ctx.fillStyle = '#1b0f07';
+        ctx.fillText(t.text, screenX + 2, screenY + 2);
         ctx.fillStyle = t.color;
         ctx.fillText(t.text, screenX, screenY);
       });
@@ -5507,27 +5543,22 @@
       if (this.weather === 'rainy') {
         const time = performance.now() * 0.4;
         if (this.season === 'Winter') {
-          ctx.fillStyle = 'rgba(241, 245, 249, 0.85)';
+          ctx.fillStyle = 'rgba(241, 245, 249, 0.9)';
           const flakeCount = 55;
           for (let i = 0; i < flakeCount; i++) {
-            const sx = ((i * 41 + Math.sin(time * 0.02 + i) * 18 + time * 0.45) % this.canvas.width);
-            const sy = ((i * 59 + time * 1.4) % this.canvas.height);
-            const radius = (i % 2 === 0) ? 2.2 : 1.5;
-            ctx.beginPath();
-            ctx.arc(sx, sy, radius, 0, Math.PI * 2);
-            ctx.fill();
+            const sx = Math.round(((i * 41 + Math.sin(time * 0.02 + i) * 18 + time * 0.45) % this.canvas.width) * 0.5) * 2;
+            const sy = Math.round(((i * 59 + time * 1.4) % this.canvas.height) * 0.5) * 2;
+            const size = (i % 2 === 0) ? 4 : 2;
+            ctx.fillRect(sx, sy, size, size);
           }
         } else {
-          ctx.strokeStyle = 'rgba(173, 216, 230, 0.45)';
-          ctx.lineWidth = 1.5;
+          ctx.fillStyle = 'rgba(173, 216, 230, 0.55)';
           const rainCount = 45;
           for (let i = 0; i < rainCount; i++) {
-            const rx = ((i * 37 + time * 2) % this.canvas.width);
-            const ry = ((i * 53 + time * 4) % this.canvas.height);
-            ctx.beginPath();
-            ctx.moveTo(rx, ry);
-            ctx.lineTo(rx - 4, ry + 16);
-            ctx.stroke();
+            const rx = Math.round(((i * 37 + time * 2) % this.canvas.width) * 0.5) * 2;
+            const ry = Math.round(((i * 53 + time * 4) % this.canvas.height) * 0.5) * 2;
+            ctx.fillRect(rx, ry, 2, 6);
+            ctx.fillRect(rx - 2, ry + 6, 2, 6);
           }
         }
       }

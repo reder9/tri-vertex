@@ -1,200 +1,457 @@
-// Procedural Pixel Art Generator & Renderer for Grandma's Farm
-// Provides high-performance 2D canvas drawing routines for tiles, crops, player, grandma, and decorations.
+// Procedural 16-Bit SNES Pixel Art Renderer & Tile Cache for Grandma's Homestead
+// Renders crisp 2x2-grid pixel sprites, dithered terrain, shingled roofs, and auto-tiled shores/paths.
 
 const Sprites = {
   TILE_SIZE: 32,
+  _season: 'Spring',
+  _tileCache: {},
 
-  // Color Palette (Stardew-inspired rich earthy & vibrant tones)
+  // Color Palette (16-Bit SNES / GBA Harvest Moon & Stardew-inspired saturated ramps)
   colors: {
+    outline: '#1d120c',
+    grassHi: '#8ed145',
     grassLight: '#6ca832',
-    grassMid: '#579124',
-    grassDark: '#447519',
+    grassMid: '#558e22',
+    grassDark: '#3c6e18',
     flowerYellow: '#f9d71c',
     flowerPink: '#f78ca0',
     flowerBlue: '#70a6ff',
-    
-    pathLight: '#dfba87',
-    pathMid: '#c69b61',
-    pathDark: '#997340',
 
-    soilDry: '#8b5a2b',
-    soilDryRidge: '#9d6935',
-    soilDryShade: '#6f441c',
-    
-    soilWet: '#4a2e15',
-    soilWetRidge: '#5e3a1d',
-    soilWetShade: '#341f0c',
-    soilWetGlisten: '#79502c',
+    pathLight: '#e7c694',
+    pathMid: '#c6995d',
+    pathDark: '#996e3b',
+    pathOutline: '#6b4924',
 
-    waterLight: '#4ca3e0',
-    waterMid: '#2980b9',
-    waterDark: '#1b5f8c',
-    waterFoam: '#d4efff',
+    soilDry: '#855326',
+    soilDryRidge: '#a16a34',
+    soilDryShade: '#5e3816',
 
-    woodLight: '#d29b63',
-    woodMid: '#ad723b',
-    woodDark: '#704318',
+    soilWet: '#422811',
+    soilWetRidge: '#5b391a',
+    soilWetShade: '#291708',
+    soilWetGlisten: '#6bb4e8',
 
-    stoneLight: '#a6afb8',
-    stoneMid: '#7e8890',
-    stoneDark: '#565e65',
+    waterLight: '#56b4eb',
+    waterMid: '#2678b5',
+    waterDark: '#174d7a',
+    waterFoam: '#e0f4ff',
 
+    woodHi: '#e6b47a',
+    woodLight: '#cf9255',
+    woodMid: '#a36731',
+    woodDark: '#633914',
+
+    stoneHi: '#cbd5e1',
+    stoneLight: '#9aa4b0',
+    stoneMid: '#6f7882',
+    stoneDark: '#474f57',
+
+    roofRedLight: '#d14c3d',
     roofRed: '#b03a2e',
-    roofRedDark: '#78281f',
-    wallCream: '#fdedc7',
-    windowGlass: '#85c1e9',
-    windowGlow: '#fcf3cf'
+    roofRedDark: '#732119',
+    wallCream: '#fdecc4',
+    wallShade: '#e3c794',
+    windowGlass: '#7cc5f2',
+    windowGlow: '#fef08a'
   },
 
   setSeason(season = 'Spring') {
+    if (this._season !== season) {
+      this._season = season;
+      this._tileCache = {};
+    }
     if (season === 'Summer') {
+      this.colors.grassHi = '#7fd43d';
       this.colors.grassLight = '#5ca632';
-      this.colors.grassMid = '#488820';
-      this.colors.grassDark = '#346914';
+      this.colors.grassMid = '#46871e';
+      this.colors.grassDark = '#2f6110';
       this.colors.flowerYellow = '#facc15';
       this.colors.flowerPink = '#fb7185';
     } else if (season === 'Fall') {
+      this.colors.grassHi = '#ebb95b';
       this.colors.grassLight = '#d49a42';
       this.colors.grassMid = '#b87e2d';
-      this.colors.grassDark = '#8f5e1c';
+      this.colors.grassDark = '#8a5717';
       this.colors.flowerYellow = '#f97316';
       this.colors.flowerPink = '#dc2626';
     } else if (season === 'Winter') {
+      this.colors.grassHi = '#ffffff';
       this.colors.grassLight = '#f1f5f9';
       this.colors.grassMid = '#dbeafe';
       this.colors.grassDark = '#94a3b8';
       this.colors.flowerYellow = '#e0f2fe';
       this.colors.flowerPink = '#bfdbfe';
     } else {
-      // Spring default
+      this.colors.grassHi = '#8ed145';
       this.colors.grassLight = '#6ca832';
-      this.colors.grassMid = '#579124';
-      this.colors.grassDark = '#447519';
+      this.colors.grassMid = '#558e22';
+      this.colors.grassDark = '#3c6e18';
       this.colors.flowerYellow = '#f9d71c';
       this.colors.flowerPink = '#f78ca0';
     }
   },
 
-  // Draw Ground Tiles
+  // --- 16-Bit Pixel Grid Helpers & Offscreen Tile Cache ---
+  px(v) {
+    return Math.round(v * 0.5) * 2;
+  },
+
+  getCachedTile(key, drawFn) {
+    if (this._tileCache[key]) return this._tileCache[key];
+    if (typeof document === 'undefined' || !document.createElement) return null;
+    try {
+      const tile = document.createElement('canvas');
+      tile.width = this.TILE_SIZE;
+      tile.height = this.TILE_SIZE;
+      const tctx = tile.getContext && tile.getContext('2d');
+      if (!tctx) return null;
+      tctx.imageSmoothingEnabled = false;
+      drawFn(tctx, 0, 0);
+      this._tileCache[key] = tile;
+      return tile;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  // Draw stepped 2px pixel circle (16-bit authentic silhouette, zero smooth anti-aliasing)
+  drawPixelDisc(ctx, cx, cy, r, fill) {
+    ctx.fillStyle = fill;
+    const step = 2;
+    const r2 = r * r;
+    const sx = Math.round(cx);
+    const sy = Math.round(cy);
+    for (let dy = -r; dy <= r; dy += step) {
+      const spanSq = r2 - dy * dy;
+      if (spanSq < 0) continue;
+      const hw = Math.floor(Math.sqrt(spanSq) / step) * step;
+      if (hw > 0) {
+        ctx.fillRect(sx - hw, sy + dy, hw * 2, step);
+      }
+    }
+  },
+
+  // Classic 16-bit beveled & outlined sprite block
+  drawOutlinedBox(ctx, x, y, w, h, fill, hi, shade, outline = '#1d120c') {
+    const px = Math.round(x);
+    const py = Math.round(y);
+    ctx.fillStyle = outline;
+    ctx.fillRect(px - 2, py - 2, w + 4, h + 4);
+    ctx.fillStyle = fill;
+    ctx.fillRect(px, py, w, h);
+    if (hi && w >= 4 && h >= 4) {
+      ctx.fillStyle = hi;
+      ctx.fillRect(px, py, w, 2);
+      ctx.fillRect(px, py, 2, h - 2);
+    }
+    if (shade && w >= 4 && h >= 4) {
+      ctx.fillStyle = shade;
+      ctx.fillRect(px + 2, py + h - 2, w - 2, 2);
+      ctx.fillRect(px + w - 2, py + 2, 2, h - 2);
+    }
+  },
+
+  // 16-Bit Stepped Shingle Gable Roof (Zero smooth triangle polygons!)
+  drawShingledRoof(ctx, x, y, w, roofH, base, hi, dark, snowCap = false) {
+    const rows = Math.max(4, Math.floor(roofH / 4));
+    for (let r = 0; r < rows; r++) {
+      const t = (r + 1) / rows;
+      const inset = Math.round((w * 0.42) * (1 - t) * 0.5) * 2;
+      const rw = Math.max(8, w - inset * 2);
+      const rx = Math.round(x + inset);
+      const ry = Math.round(y + r * 4);
+
+      // Dark pixel outline step
+      ctx.fillStyle = this.colors.outline;
+      ctx.fillRect(rx - 2, ry - 2, rw + 4, 6);
+
+      // Main roof band
+      ctx.fillStyle = snowCap && r < rows - 2 ? '#e2e8f0' : (r === 0 ? hi : base);
+      ctx.fillRect(rx, ry, rw, 4);
+
+      // Stepped shingle tile seams every 10px staggered by row
+      ctx.fillStyle = snowCap && r < rows - 2 ? '#cbd5e1' : dark;
+      ctx.fillRect(rx, ry + 3, rw, 1);
+      const offset = (r % 2) * 5;
+      for (let sx = rx + 4 + offset; sx < rx + rw - 4; sx += 10) {
+        ctx.fillRect(sx, ry, 2, 3);
+      }
+
+      // Highlight top ridge
+      if (!snowCap && r < rows - 1) {
+        ctx.fillStyle = hi;
+        ctx.fillRect(rx + 2, ry, rw - 4, 1);
+      }
+    }
+  },
+
+  // Draw Ground Tiles (Pre-baked 16-bit SNES Dithered Atlas)
   drawGrass(ctx, x, y, seed = 0) {
-    const s = this.TILE_SIZE;
-    ctx.fillStyle = this.colors.grassMid;
-    ctx.fillRect(x, y, s, s);
+    const variant = Math.abs(seed) % 6;
+    const key = `grass_${this._season}_${variant}`;
+    const cached = this.getCachedTile(key, (g, ox, oy) => {
+      const s = this.TILE_SIZE;
+      g.fillStyle = this.colors.grassMid;
+      g.fillRect(ox, oy, s, s);
 
-    // Subtle grass texture dots
-    ctx.fillStyle = this.colors.grassLight;
-    const offset = (seed * 17) % 7;
-    ctx.fillRect(x + 4 + offset, y + 6, 2, 4);
-    ctx.fillRect(x + 18 - offset, y + 20, 2, 4);
-    ctx.fillRect(x + 24, y + 10 + offset, 2, 3);
+      // Subtle 16-bit checkerboard dither texture on alternating 2x2 pixels
+      g.fillStyle = this.colors.grassDark;
+      for (let py = 0; py < s; py += 4) {
+        for (let px = (py % 8 === 0 ? 0 : 4); px < s; px += 8) {
+          if (((px * 7 + py * 13 + variant * 5) % 11) < 3) {
+            g.fillRect(ox + px, oy + py, 2, 2);
+          }
+        }
+      }
 
-    ctx.fillStyle = this.colors.grassDark;
-    ctx.fillRect(x + 10, y + 24, 2, 2);
-    ctx.fillRect(x + 22, y + 4, 2, 2);
+      // Layered grass blades (V-shaped 2px pixel tufts)
+      const oxOff = (variant * 4) % 10;
+      g.fillStyle = this.colors.grassLight;
+      g.fillRect(ox + 4 + oxOff, oy + 6, 2, 4);
+      g.fillRect(ox + 8 + oxOff, oy + 4, 2, 6);
+      g.fillRect(ox + 18 - oxOff, oy + 20, 2, 4);
+      g.fillRect(ox + 22 - oxOff, oy + 18, 2, 6);
 
-    // Wildflowers occasionally
-    if (seed % 11 === 0) {
-      ctx.fillStyle = this.colors.flowerPink;
-      ctx.fillRect(x + 14, y + 14, 4, 4);
-      ctx.fillStyle = this.colors.flowerYellow;
-      ctx.fillRect(x + 15, y + 15, 2, 2);
-    } else if (seed % 17 === 0) {
-      ctx.fillStyle = this.colors.flowerYellow;
-      ctx.fillRect(x + 8, y + 20, 3, 3);
+      g.fillStyle = this.colors.grassHi;
+      g.fillRect(ox + 8 + oxOff, oy + 4, 2, 2);
+      g.fillRect(ox + 22 - oxOff, oy + 18, 2, 2);
+
+      // Tiny clovers or 5-pixel seasonal flowers
+      if (variant === 0) {
+        g.fillStyle = this.colors.grassDark;
+        g.fillRect(ox + 14, oy + 14, 6, 4);
+        g.fillStyle = this.colors.flowerPink;
+        g.fillRect(ox + 14, oy + 12, 2, 2);
+        g.fillRect(ox + 18, oy + 12, 2, 2);
+        g.fillRect(ox + 14, oy + 16, 2, 2);
+        g.fillRect(ox + 18, oy + 16, 2, 2);
+        g.fillStyle = this.colors.flowerYellow;
+        g.fillRect(ox + 16, oy + 14, 2, 2);
+      } else if (variant === 3) {
+        g.fillStyle = this.colors.flowerYellow;
+        g.fillRect(ox + 8, oy + 20, 2, 2);
+        g.fillRect(ox + 6, oy + 22, 6, 2);
+        g.fillStyle = '#ffffff';
+        g.fillRect(ox + 8, oy + 22, 2, 2);
+      } else if (variant === 5 && this._season === 'Winter') {
+        g.fillStyle = '#ffffff';
+        g.fillRect(ox + 10, oy + 10, 6, 2);
+        g.fillRect(ox + 20, oy + 24, 4, 2);
+      }
+    });
+
+    if (cached) {
+      ctx.drawImage(cached, x, y);
+    } else {
+      ctx.fillStyle = this.colors.grassMid;
+      ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
     }
   },
 
   drawPath(ctx, x, y, seed = 0) {
+    const variant = Math.abs(seed) % 4;
+    const key = `path_${variant}`;
+    const cached = this.getCachedTile(key, (g, ox, oy) => {
+      const s = this.TILE_SIZE;
+      g.fillStyle = this.colors.pathMid;
+      g.fillRect(ox, oy, s, s);
+
+      // Warm 16-bit dappled earth & pebble clusters
+      g.fillStyle = this.colors.pathDark;
+      g.fillRect(ox + 2 + variant * 2, oy + 18, 6, 4);
+      g.fillRect(ox + 20, oy + 6 + variant * 2, 6, 4);
+      g.fillRect(ox + 12, oy + 26, 4, 2);
+
+      g.fillStyle = this.colors.pathLight;
+      g.fillRect(ox + 4 + variant * 2, oy + 6, 6, 4);
+      g.fillRect(ox + 16, oy + 16 + variant * 2, 8, 4);
+      g.fillRect(ox + 24, oy + 24, 4, 2);
+      g.fillRect(ox + 8, oy + 12, 2, 2);
+    });
+
+    if (cached) {
+      ctx.drawImage(cached, x, y);
+    } else {
+      ctx.fillStyle = this.colors.pathMid;
+      ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
+    }
+  },
+
+  // 16-Bit Auto-Tiled Grass Fringes along Dirt Path Borders
+  drawPathEdge(ctx, x, y, grassL, grassR, grassU, grassD) {
     const s = this.TILE_SIZE;
-    ctx.fillStyle = this.colors.pathMid;
-    ctx.fillRect(x, y, s, s);
-
-    ctx.fillStyle = this.colors.pathLight;
-    ctx.fillRect(x + 4, y + 6, 6, 4);
-    ctx.fillRect(x + 16, y + 18, 8, 5);
-
-    ctx.fillStyle = this.colors.pathDark;
-    ctx.fillRect(x + 2, y + 20, 3, 3);
-    ctx.fillRect(x + 22, y + 8, 4, 3);
+    if (grassU) {
+      ctx.fillStyle = this.colors.grassDark;
+      ctx.fillRect(x, y, s, 4);
+      ctx.fillStyle = this.colors.grassMid;
+      for (let px = 0; px < s; px += 8) {
+        ctx.fillRect(x + px, y, 4, 4);
+      }
+      ctx.fillStyle = this.colors.grassLight;
+      ctx.fillRect(x + 6, y, 2, 2);
+      ctx.fillRect(x + 22, y, 2, 2);
+    }
+    if (grassD) {
+      ctx.fillStyle = this.colors.pathOutline;
+      ctx.fillRect(x, y + s - 4, s, 2);
+      ctx.fillStyle = this.colors.grassDark;
+      ctx.fillRect(x, y + s - 2, s, 2);
+    }
+    if (grassL) {
+      ctx.fillStyle = this.colors.grassDark;
+      ctx.fillRect(x, y, 4, s);
+      ctx.fillStyle = this.colors.grassMid;
+      for (let py = 2; py < s; py += 8) {
+        ctx.fillRect(x, y + py, 4, 4);
+      }
+    }
+    if (grassR) {
+      ctx.fillStyle = this.colors.grassDark;
+      ctx.fillRect(x + s - 4, y, 4, s);
+      ctx.fillStyle = this.colors.grassMid;
+      for (let py = 4; py < s; py += 8) {
+        ctx.fillRect(x + s - 4, y + py, 4, 4);
+      }
+    }
   },
 
   drawSoil(ctx, x, y, isWatered = false, isFertilized = false) {
-    const s = this.TILE_SIZE;
-    const base = isWatered ? this.colors.soilWet : this.colors.soilDry;
-    const ridge = isWatered ? this.colors.soilWetRidge : this.colors.soilDryRidge;
-    const shade = isWatered ? this.colors.soilWetShade : this.colors.soilDryShade;
+    const key = `soil_${isWatered ? 1 : 0}_${isFertilized ? 1 : 0}`;
+    const cached = this.getCachedTile(key, (g, ox, oy) => {
+      const s = this.TILE_SIZE;
+      const base = isWatered ? this.colors.soilWet : this.colors.soilDry;
+      const ridge = isWatered ? this.colors.soilWetRidge : this.colors.soilDryRidge;
+      const shade = isWatered ? this.colors.soilWetShade : this.colors.soilDryShade;
 
-    ctx.fillStyle = base;
-    ctx.fillRect(x, y, s, s);
+      // Stepped soil mound outline
+      g.fillStyle = shade;
+      g.fillRect(ox, oy, s, s);
+      g.fillStyle = base;
+      g.fillRect(ox + 2, oy + 2, s - 4, s - 4);
 
-    // Furrow / Tilled ridges
-    ctx.fillStyle = ridge;
-    ctx.fillRect(x + 2, y + 4, s - 4, 4);
-    ctx.fillRect(x + 2, y + 12, s - 4, 4);
-    ctx.fillRect(x + 2, y + 20, s - 4, 4);
-    ctx.fillRect(x + 2, y + 28, s - 4, 2);
+      // Crisp 2px-stepped plowed ridges
+      for (let ry = 4; ry < s - 4; ry += 8) {
+        g.fillStyle = ridge;
+        g.fillRect(ox + 2, oy + ry, s - 4, 4);
+        g.fillStyle = shade;
+        g.fillRect(ox + 2, oy + ry + 4, s - 4, 2);
+      }
 
-    ctx.fillStyle = shade;
-    ctx.fillRect(x + 2, y + 8, s - 4, 2);
-    ctx.fillRect(x + 2, y + 16, s - 4, 2);
-    ctx.fillRect(x + 2, y + 24, s - 4, 2);
+      if (isWatered) {
+        g.fillStyle = this.colors.soilWetGlisten;
+        g.fillRect(ox + 6, oy + 6, 4, 2);
+        g.fillRect(ox + 20, oy + 14, 4, 2);
+        g.fillRect(ox + 10, oy + 22, 4, 2);
+      }
+      if (isFertilized) {
+        g.fillStyle = '#fef08a';
+        g.fillRect(ox + 4, oy + 12, 2, 2);
+        g.fillRect(ox + 22, oy + 6, 2, 2);
+        g.fillRect(ox + 16, oy + 22, 2, 2);
+      }
+    });
 
-    if (isWatered) {
-      // Glistening wet water highlight spots
-      ctx.fillStyle = this.colors.soilWetGlisten;
-      ctx.fillRect(x + 6, y + 5, 4, 2);
-      ctx.fillRect(x + 20, y + 13, 5, 2);
-      ctx.fillRect(x + 10, y + 21, 3, 2);
-    }
-
-    if (isFertilized) {
-      // Sparkling fertilizer specs
-      ctx.fillStyle = '#73c0f4';
-      ctx.fillRect(x + 4, y + 10, 2, 2);
-      ctx.fillRect(x + 22, y + 6, 2, 2);
-      ctx.fillRect(x + 15, y + 22, 2, 2);
+    if (cached) {
+      ctx.drawImage(cached, x, y);
+    } else {
+      ctx.fillStyle = isWatered ? this.colors.soilWet : this.colors.soilDry;
+      ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
     }
   },
 
   drawWater(ctx, x, y, time = 0) {
     const s = this.TILE_SIZE;
+    const frame = Math.floor(time / 320) % 4;
+    const waveShift = frame * 4;
+
     ctx.fillStyle = this.colors.waterMid;
     ctx.fillRect(x, y, s, s);
 
-    // Subtle wave ripples
-    const rippleOffset = Math.sin(time * 0.003 + x + y) * 3;
-    ctx.fillStyle = this.colors.waterLight;
-    ctx.fillRect(x + 4 + rippleOffset, y + 8, 12, 2);
-    ctx.fillRect(x + 14 - rippleOffset, y + 20, 10, 2);
-
+    // 16-Bit Stepped Depth Bands
     ctx.fillStyle = this.colors.waterDark;
-    ctx.fillRect(x, y, s, 3);
+    ctx.fillRect(x + ((4 + waveShift) % 16), y + 2, 8, 2);
+    ctx.fillRect(x + ((18 - waveShift + 16) % 20), y + 16, 10, 2);
+
+    // Crisp Pixel Shimmer Crests
+    ctx.fillStyle = this.colors.waterLight;
+    ctx.fillRect(x + ((2 + waveShift) % 18), y + 8, 10, 2);
+    ctx.fillRect(x + ((14 + waveShift) % 18), y + 22, 10, 2);
+
+    ctx.fillStyle = this.colors.waterFoam;
+    ctx.fillRect(x + ((6 + waveShift) % 22), y + 8, 4, 2);
+    if (frame % 2 === 0) {
+      ctx.fillRect(x + 20, y + 22, 2, 2);
+    }
+  },
+
+  // 16-Bit Auto-Tiled Sandy Bank + Animated Foam Rim around Ponds & Rivers
+  drawShoreEdge(ctx, x, y, landL, landR, landU, landD, time = 0) {
+    const s = this.TILE_SIZE;
+    const foamOn = Math.floor(time / 380) % 2 === 0;
+    if (landU) {
+      ctx.fillStyle = this.colors.grassDark;
+      ctx.fillRect(x, y, s, 4);
+      ctx.fillStyle = this.colors.pathLight;
+      ctx.fillRect(x, y + 4, s, 4);
+      ctx.fillStyle = this.colors.waterDark;
+      ctx.fillRect(x, y + 8, s, 2);
+      if (foamOn) {
+        ctx.fillStyle = this.colors.waterFoam;
+        ctx.fillRect(x + 4, y + 10, 8, 2);
+        ctx.fillRect(x + 20, y + 10, 6, 2);
+      }
+    }
+    if (landD) {
+      ctx.fillStyle = this.colors.pathMid;
+      ctx.fillRect(x, y + s - 4, s, 2);
+      ctx.fillStyle = this.colors.grassDark;
+      ctx.fillRect(x, y + s - 2, s, 2);
+    }
+    if (landL) {
+      ctx.fillStyle = this.colors.pathMid;
+      ctx.fillRect(x, y, 4, s);
+      ctx.fillStyle = this.colors.waterDark;
+      ctx.fillRect(x + 4, y, 2, s);
+    }
+    if (landR) {
+      ctx.fillStyle = this.colors.pathMid;
+      ctx.fillRect(x + s - 4, y, 4, s);
+      ctx.fillStyle = this.colors.waterDark;
+      ctx.fillRect(x + s - 6, y, 2, s);
+    }
   },
 
   drawDock(ctx, x, y) {
-    const s = this.TILE_SIZE;
-    // Water underneath showing at borders
-    ctx.fillStyle = this.colors.waterDark;
-    ctx.fillRect(x, y, s, s);
+    const key = 'dock_16bit';
+    const cached = this.getCachedTile(key, (g, ox, oy) => {
+      const s = this.TILE_SIZE;
+      g.fillStyle = this.colors.waterDark;
+      g.fillRect(ox, oy, s, s);
 
-    // Wooden deck planks
-    ctx.fillStyle = this.colors.woodMid;
-    ctx.fillRect(x, y + 2, s, s - 4);
+      // Dark wood outline
+      g.fillStyle = this.colors.outline;
+      g.fillRect(ox, oy + 2, s, s - 4);
+      g.fillStyle = this.colors.woodDark;
+      g.fillRect(ox, oy + 4, s, s - 8);
 
-    ctx.fillStyle = this.colors.woodLight;
-    ctx.fillRect(x + 2, y + 4, s - 4, 3);
-    ctx.fillRect(x + 2, y + 11, s - 4, 3);
-    ctx.fillRect(x + 2, y + 18, s - 4, 3);
-    ctx.fillRect(x + 2, y + 25, s - 4, 2);
+      // Individual horizontal stepped planks
+      for (let py = 4; py < s - 6; py += 6) {
+        g.fillStyle = this.colors.woodMid;
+        g.fillRect(ox, oy + py, s, 4);
+        g.fillStyle = this.colors.woodHi;
+        g.fillRect(ox + 2, oy + py, s - 4, 2);
+        g.fillStyle = '#334155';
+        g.fillRect(ox + 4, oy + py + 1, 2, 2);
+        g.fillRect(ox + s - 6, oy + py + 1, 2, 2);
+      }
+    });
 
-    ctx.fillStyle = this.colors.woodDark;
-    ctx.fillRect(x, y + 1, s, 2);
-    ctx.fillRect(x, y + s - 3, s, 2);
-
-    // Pier support post bolts
-    ctx.fillStyle = '#374151';
-    ctx.fillRect(x + 3, y + 5, 2, 2);
-    ctx.fillRect(x + s - 5, y + 5, 2, 2);
+    if (cached) {
+      ctx.drawImage(cached, x, y);
+    } else {
+      ctx.fillStyle = this.colors.woodMid;
+      ctx.fillRect(x, y + 2, this.TILE_SIZE, this.TILE_SIZE - 4);
+    }
   },
 
   drawFence(ctx, x, y, hasLeft = false, hasRight = false, hasUp = false, hasDown = false) {
@@ -253,134 +510,153 @@ const Sprites = {
     ctx.fillRect(x + 16 + mistX, y + 7 + mistY, 3, 3);
   },
 
-  // Grandma's Cozy Well
+  // Grandma's Cozy Well (16-bit Masonry & Shingle Roof)
   drawWell(ctx, x, y) {
     const s = this.TILE_SIZE;
-    // Well stone base
+    // Pixel ground shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x + 4, y + 30, s * 2 - 8, 4);
+
+    // Masonry stone base with bevel & outline
+    this.drawOutlinedBox(ctx, x + 4, y + 14, s * 2 - 8, 16, this.colors.stoneMid, this.colors.stoneLight, this.colors.stoneDark);
     ctx.fillStyle = this.colors.stoneDark;
-    ctx.fillRect(x + 2, y + 14, s * 2 - 4, 18);
-    ctx.fillStyle = this.colors.stoneMid;
-    ctx.fillRect(x + 4, y + 16, s * 2 - 8, 14);
+    ctx.fillRect(x + 18, y + 16, 2, 12);
+    ctx.fillRect(x + 36, y + 16, 2, 12);
+    ctx.fillRect(x + 6, y + 22, s * 2 - 12, 2);
 
-    // Inner water
+    // Inner deep water with highlight shimmer
     ctx.fillStyle = this.colors.waterDark;
-    ctx.fillRect(x + 10, y + 18, s * 2 - 20, 10);
+    ctx.fillRect(x + 10, y + 16, s * 2 - 20, 10);
     ctx.fillStyle = this.colors.waterLight;
-    ctx.fillRect(x + 14, y + 20, 8, 3);
+    ctx.fillRect(x + 14, y + 18, 10, 2);
 
-    // Wooden roof posts
-    ctx.fillStyle = this.colors.woodDark;
-    ctx.fillRect(x + 6, y - 6, 4, 22);
-    ctx.fillRect(x + s * 2 - 10, y - 6, 4, 22);
+    // Wooden roof posts with outline
+    this.drawOutlinedBox(ctx, x + 6, y - 4, 4, 20, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
+    this.drawOutlinedBox(ctx, x + s * 2 - 10, y - 4, 4, 20, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
 
-    // Roof
-    ctx.fillStyle = this.colors.roofRed;
-    ctx.beginPath();
-    ctx.moveTo(x + s, y - 22);
-    ctx.lineTo(x, y - 4);
-    ctx.lineTo(x + s * 2, y - 4);
-    ctx.closePath();
-    ctx.fill();
+    // 16-bit Stepped Shingled Well Roof
+    this.drawShingledRoof(ctx, x, y - 22, s * 2, 18, this.colors.roofRed, this.colors.roofRedLight, this.colors.roofRedDark, this._season === 'Winter');
 
     // Wooden bucket on rim
-    ctx.fillStyle = this.colors.woodMid;
-    ctx.fillRect(x + s * 2 - 16, y + 10, 8, 8);
-    ctx.fillStyle = '#4a5568';
-    ctx.fillRect(x + s * 2 - 15, y + 7, 6, 3);
+    this.drawOutlinedBox(ctx, x + s * 2 - 16, y + 10, 8, 8, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x + s * 2 - 14, y + 6, 4, 4);
   },
 
-  // Shipping Bin (Wooden chest with brass latch)
+  // Shipping Bin (16-Bit Iron-Bound Oak Chest)
   drawShippingBin(ctx, x, y) {
     const s = this.TILE_SIZE;
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.fillRect(x + 2, y + 26, s + 10, 6);
 
-    // Wood chest box
+    this.drawOutlinedBox(ctx, x + 4, y + 8, s + 6, 20, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
+    // Plank seam
     ctx.fillStyle = this.colors.woodDark;
-    ctx.fillRect(x + 2, y + 8, s + 8, 20);
-    ctx.fillStyle = this.colors.woodMid;
-    ctx.fillRect(x + 4, y + 10, s + 4, 16);
-
-    // Lid & Iron bands
-    ctx.fillStyle = '#374151';
-    ctx.fillRect(x + 8, y + 8, 4, 18);
-    ctx.fillRect(x + 24, y + 8, 4, 18);
-
-    // Golden handle/latch
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(x + 16, y + 15, 6, 5);
+    ctx.fillRect(x + 4, y + 15, s + 6, 2);
+    // Iron straps with highlight
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x + 10, y + 8, 4, 20);
+    ctx.fillRect(x + 28, y + 8, 4, 20);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(x + 10, y + 10, 2, 14);
+    ctx.fillRect(x + 28, y + 10, 2, 14);
+    // Brass clasp
+    this.drawOutlinedBox(ctx, x + 18, y + 14, 6, 6, '#facc15', '#fef08a', '#b45309');
   },
 
-  // Trees (Can be chopped for Wood)
+  // 16-Bit Stepped Pixel Oak / Apple Trees (Seasonal Colors & Pixel Outlines)
   drawTree(ctx, x, y, health = 3) {
-    const s = this.TILE_SIZE;
-    // Trunk
+    // Ground dither shadow
+    this.drawPixelDisc(ctx, x + 16, y + 28, 13, 'rgba(0,0,0,0.22)');
+
+    // Ridged Trunk with dark pixel outline
+    this.drawOutlinedBox(ctx, x + 11, y + 15, 10, 16, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
     ctx.fillStyle = this.colors.woodDark;
-    ctx.fillRect(x + 11, y + 16, 10, 16);
-    ctx.fillStyle = this.colors.woodMid;
-    ctx.fillRect(x + 13, y + 16, 5, 14);
+    ctx.fillRect(x + 15, y + 17, 2, 12);
 
-    // Tree Foliage canopy (fluffy 3 layers)
-    ctx.fillStyle = '#2d5a1e';
-    ctx.beginPath();
-    ctx.arc(x + 16, y + 6, 20, 0, Math.PI * 2);
-    ctx.fill();
+    // Seasonal 4-Tone Foliage Palette
+    let leafOutline = '#132a0c';
+    let leafDark = '#214d12';
+    let leafMid = '#367521';
+    let leafLight = '#5da834';
+    let leafHi = '#8fd44e';
+    if (this._season === 'Fall') {
+      leafOutline = '#451a03'; leafDark = '#9a3412'; leafMid = '#d97706'; leafLight = '#f59e0b'; leafHi = '#fde047';
+    } else if (this._season === 'Winter') {
+      leafOutline = '#1e293b'; leafDark = '#475569'; leafMid = '#94a3b8'; leafLight = '#e2e8f0'; leafHi = '#ffffff';
+    }
 
-    ctx.fillStyle = '#3d7a28';
-    ctx.beginPath();
-    ctx.arc(x + 14, y + 4, 16, 0, Math.PI * 2);
-    ctx.fill();
+    // Stepped Pixel Canopy Silhouette (zero smooth arcs!)
+    this.drawPixelDisc(ctx, x + 16, y + 6, 20, leafOutline);
+    this.drawPixelDisc(ctx, x + 16, y + 6, 18, leafDark);
+    this.drawPixelDisc(ctx, x + 10, y + 2, 12, leafOutline);
+    this.drawPixelDisc(ctx, x + 22, y + 2, 12, leafOutline);
+    this.drawPixelDisc(ctx, x + 16, y + 4, 15, leafMid);
+    this.drawPixelDisc(ctx, x + 14, y + 1, 11, leafLight);
+    this.drawPixelDisc(ctx, x + 12, y - 2, 6, leafHi);
 
-    ctx.fillStyle = '#559c36';
-    ctx.beginPath();
-    ctx.arc(x + 12, y + 0, 11, 0, Math.PI * 2);
-    ctx.fill();
+    // Crisp pixel leaf clusters & seasonal fruit
+    ctx.fillStyle = leafHi;
+    ctx.fillRect(x + 6, y - 2, 4, 2);
+    ctx.fillRect(x + 20, y + 2, 4, 2);
+    if (this._season !== 'Winter') {
+      ctx.fillStyle = '#991b1b';
+      ctx.fillRect(x + 8, y + 4, 4, 4);
+      ctx.fillRect(x + 20, y + 6, 4, 4);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(x + 8, y + 4, 2, 2);
+      ctx.fillRect(x + 20, y + 6, 2, 2);
+    }
 
-    // Red apples occasionally
-    ctx.fillStyle = '#e53e3e';
-    ctx.fillRect(x + 8, y + 2, 4, 4);
-    ctx.fillRect(x + 20, y + 6, 4, 4);
-    ctx.fillRect(x + 14, y - 8, 4, 4);
-
-    // If damaged, show cut mark
     if (health < 3) {
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(x + 13, y + 22, 6, 2);
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(x + 12, y + 22, 8, 2);
     }
   },
 
-  // Boulder / Stone (Can be mined for Stone)
+  // 16-Bit Stepped Boulder / Stone (Faceted Pixel Outline)
   drawRock(ctx, x, y, health = 3) {
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.fillRect(x + 4, y + 22, 24, 6);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x + 4, y + 24, 24, 4);
+
+    ctx.fillStyle = this.colors.outline;
+    ctx.fillRect(x + 6, y + 6, 20, 20);
+    ctx.fillRect(x + 4, y + 10, 24, 14);
 
     ctx.fillStyle = this.colors.stoneDark;
-    ctx.fillRect(x + 4, y + 10, 24, 16);
+    ctx.fillRect(x + 6, y + 10, 20, 14);
     ctx.fillStyle = this.colors.stoneMid;
-    ctx.fillRect(x + 6, y + 8, 20, 16);
+    ctx.fillRect(x + 8, y + 8, 16, 12);
     ctx.fillStyle = this.colors.stoneLight;
-    ctx.fillRect(x + 8, y + 10, 8, 6);
+    ctx.fillRect(x + 8, y + 8, 10, 6);
+    ctx.fillStyle = this.colors.stoneHi;
+    ctx.fillRect(x + 10, y + 10, 4, 2);
 
     if (health < 3) {
-      ctx.fillStyle = '#1a202c';
-      ctx.fillRect(x + 14, y + 12, 2, 8);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + 14, y + 10, 2, 8);
       ctx.fillRect(x + 16, y + 16, 4, 2);
     }
   },
 
-  // Weeds / Wild brush (Cleared with Scythe)
+  // 16-Bit Outlined Wild Grass / Weed Tuft
   drawWeeds(ctx, x, y) {
-    ctx.fillStyle = '#3a661c';
-    ctx.fillRect(x + 4, y + 16, 4, 12);
-    ctx.fillRect(x + 10, y + 10, 4, 18);
-    ctx.fillRect(x + 18, y + 12, 4, 16);
-    ctx.fillRect(x + 24, y + 18, 4, 10);
+    const o = this.colors.outline;
+    ctx.fillStyle = o;
+    ctx.fillRect(x + 4, y + 14, 24, 14);
+    ctx.fillStyle = '#254a10';
+    ctx.fillRect(x + 6, y + 14, 4, 12);
+    ctx.fillRect(x + 12, y + 8, 4, 18);
+    ctx.fillRect(x + 18, y + 10, 4, 16);
+    ctx.fillRect(x + 22, y + 16, 4, 10);
 
-    ctx.fillStyle = '#619c28';
-    ctx.fillRect(x + 6, y + 12, 3, 10);
-    ctx.fillRect(x + 12, y + 8, 3, 12);
-    ctx.fillRect(x + 20, y + 10, 3, 11);
+    ctx.fillStyle = '#5da834';
+    ctx.fillRect(x + 6, y + 14, 2, 8);
+    ctx.fillRect(x + 12, y + 10, 2, 10);
+    ctx.fillRect(x + 18, y + 12, 2, 10);
+    ctx.fillStyle = '#8fd44e';
+    ctx.fillRect(x + 12, y + 10, 2, 2);
+    ctx.fillRect(x + 18, y + 12, 2, 2);
   },
 
   // Crops System (Draws crop based on type and growth stage 0-4)
@@ -577,101 +853,76 @@ const Sprites = {
     }
   },
 
-  // Grandma Hazel's Cottage & Porch (Large 5x4 tile structure)
+  // Grandma Hazel's Cottage & Porch (16-bit Half-Timbered Manor & Shingled Roof)
   drawCottage(ctx, startX, startY, time = 0) {
     const s = this.TILE_SIZE;
     const w = s * 6; // 192px
     const h = s * 5; // 160px
 
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    // Pixel Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.24)';
     ctx.fillRect(startX + 8, startY + h - 8, w - 16, 16);
 
-    // Stone Foundation
+    // Stone Foundation Masonry
+    this.drawOutlinedBox(ctx, startX + 16, startY + h - 32, w - 32, 28, this.colors.stoneMid, this.colors.stoneLight, this.colors.stoneDark);
     ctx.fillStyle = this.colors.stoneDark;
-    ctx.fillRect(startX + 16, startY + h - 32, w - 32, 28);
-    ctx.fillStyle = this.colors.stoneMid;
-    ctx.fillRect(startX + 20, startY + h - 28, w - 40, 20);
+    for (let bx = startX + 26; bx < startX + w - 26; bx += 16) {
+      ctx.fillRect(bx, startY + h - 30, 2, 24);
+    }
 
-    // Wood / Clay Walls
-    ctx.fillStyle = '#e2cba4';
-    ctx.fillRect(startX + 20, startY + 54, w - 40, h - 84);
-    // Wood timber beams
+    // Half-Timbered Cream Plaster Walls
+    this.drawOutlinedBox(ctx, startX + 20, startY + 54, w - 40, h - 84, this.colors.wallCream, '#fffbeb', this.colors.wallShade);
     ctx.fillStyle = this.colors.woodDark;
     ctx.fillRect(startX + 20, startY + 54, 8, h - 84);
     ctx.fillRect(startX + w - 28, startY + 54, 8, h - 84);
     ctx.fillRect(startX + 78, startY + 54, 6, h - 84);
     ctx.fillRect(startX + 130, startY + 54, 6, h - 84);
+    // Eaves shadow cast by roof
+    ctx.fillStyle = 'rgba(29, 18, 12, 0.22)';
+    ctx.fillRect(startX + 22, startY + 56, w - 44, 6);
 
-    // Stone Chimney on left roof
+    // Stone Brick Chimney on left roof
+    this.drawOutlinedBox(ctx, startX + 30, startY - 14, 20, 50, this.colors.stoneMid, this.colors.stoneLight, this.colors.stoneDark);
     ctx.fillStyle = this.colors.stoneDark;
-    ctx.fillRect(startX + 30, startY - 14, 20, 50);
-    ctx.fillStyle = this.colors.stoneMid;
-    ctx.fillRect(startX + 32, startY - 12, 16, 46);
-    ctx.fillStyle = this.colors.stoneLight;
-    ctx.fillRect(startX + 28, startY - 18, 24, 6); // rim
+    ctx.fillRect(startX + 32, startY - 4, 16, 2);
+    ctx.fillRect(startX + 32, startY + 8, 16, 2);
+    this.drawOutlinedBox(ctx, startX + 28, startY - 18, 24, 6, this.colors.stoneLight, this.colors.stoneHi, this.colors.stoneDark);
 
-    // Chimney Smoke puffs (animated)
-    const smokeOffset = (time * 0.04) % 40;
-    ctx.fillStyle = 'rgba(230, 235, 240, 0.6)';
-    ctx.beginPath();
-    ctx.arc(startX + 40 + Math.sin(time * 0.003) * 6, startY - 24 - smokeOffset * 0.8, 6 + smokeOffset * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(startX + 42 + Math.cos(time * 0.003) * 8, startY - 48 - smokeOffset * 0.6, 9 + smokeOffset * 0.15, 0, Math.PI * 2);
-    ctx.fill();
+    // Stepped Pixel Chimney Smoke Puffs
+    const smokeOffset = Math.round((time * 0.04) % 40);
+    this.drawPixelDisc(ctx, startX + 40 + Math.sin(time * 0.003) * 6, startY - 24 - smokeOffset * 0.8, 6, 'rgba(241, 245, 249, 0.72)');
+    this.drawPixelDisc(ctx, startX + 42 + Math.cos(time * 0.003) * 8, startY - 46 - smokeOffset * 0.6, 8, 'rgba(226, 232, 240, 0.55)');
 
-    // Cozy Shingle Roof
-    ctx.fillStyle = this.colors.roofRedDark;
-    ctx.beginPath();
-    ctx.moveTo(startX + w / 2, startY);
-    ctx.lineTo(startX + 8, startY + 58);
-    ctx.lineTo(startX + w - 8, startY + 58);
-    ctx.closePath();
-    ctx.fill();
+    // 16-bit Stepped Shingled Gable Roof
+    this.drawShingledRoof(ctx, startX + 8, startY, w - 16, 56, this.colors.roofRed, this.colors.roofRedLight, this.colors.roofRedDark, this._season === 'Winter');
 
-    ctx.fillStyle = this.colors.roofRed;
-    ctx.beginPath();
-    ctx.moveTo(startX + w / 2, startY + 4);
-    ctx.lineTo(startX + 16, startY + 54);
-    ctx.lineTo(startX + w - 16, startY + 54);
-    ctx.closePath();
-    ctx.fill();
-
-    // Attic circular window
+    // Attic round pixel window
+    this.drawPixelDisc(ctx, startX + w / 2, startY + 32, 11, this.colors.outline);
+    this.drawPixelDisc(ctx, startX + w / 2, startY + 32, 9, this.colors.woodMid);
+    this.drawPixelDisc(ctx, startX + w / 2, startY + 32, 6, this.colors.windowGlow);
     ctx.fillStyle = this.colors.woodDark;
-    ctx.beginPath();
-    ctx.arc(startX + w / 2, startY + 32, 11, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = this.colors.windowGlow;
-    ctx.beginPath();
-    ctx.arc(startX + w / 2, startY + 32, 8, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(startX + w / 2 - 1, startY + 26, 2, 12);
+    ctx.fillRect(startX + w / 2 - 6, startY + 31, 12, 2);
 
     // Wooden Cottage Door
+    this.drawOutlinedBox(ctx, startX + 90, startY + 84, 26, 44, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
     ctx.fillStyle = this.colors.woodDark;
-    ctx.fillRect(startX + 90, startY + 84, 26, 44);
-    ctx.fillStyle = this.colors.woodLight;
-    ctx.fillRect(startX + 93, startY + 87, 20, 38);
-    // Brass doorknob
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(startX + 95, startY + 106, 4, 4);
+    ctx.fillRect(startX + 98, startY + 86, 2, 40);
+    ctx.fillRect(startX + 106, startY + 86, 2, 40);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(startX + 94, startY + 106, 4, 4);
 
     // Glowing Windows with flower boxes
     this.drawWindowWithCurtain(ctx, startX + 38, startY + 76);
     this.drawWindowWithCurtain(ctx, startX + 142, startY + 76);
 
     // Porch Deck & Railing
-    ctx.fillStyle = this.colors.woodMid;
-    ctx.fillRect(startX + 16, startY + 128, w - 32, 10);
-    ctx.fillStyle = this.colors.woodDark;
-    ctx.fillRect(startX + 16, startY + 138, w - 32, 4);
+    this.drawOutlinedBox(ctx, startX + 16, startY + 128, w - 32, 12, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
 
-    // Cozy Welcome Mat in front of the door
-    ctx.fillStyle = '#991b1b';
-    ctx.fillRect(startX + 86, startY + 128, 34, 10);
+    // Cozy Welcome Mat
+    this.drawOutlinedBox(ctx, startX + 86, startY + 128, 34, 10, '#991b1b', '#ef4444', '#450a0a');
     ctx.fillStyle = '#fef08a';
-    ctx.fillRect(startX + 88, startY + 130, 30, 6);
+    ctx.fillRect(startX + 90, startY + 132, 26, 2);
   },
 
   drawWindowWithCurtain(ctx, x, y) {
@@ -741,85 +992,91 @@ const Sprites = {
     ctx.fillRect(x + 4, y + 2 + rock + Math.sin(time * 0.005) * 2, 2, 3);
   },
 
-  // Player Character Rendering (Direction: 0=Down, 1=Up, 2=Left, 3=Right)
+  // Player Character Rendering (16-Bit SNES RPG Outlined & Shaded Farmer)
   drawPlayer(ctx, x, y, dir = 0, isMoving = false, toolAction = null, walkFrame = 0) {
-    const legOffset = isMoving ? Math.sin(walkFrame * 0.3) * 3 : 0;
+    const legOffset = isMoving ? Math.round(Math.sin(walkFrame * 0.35) * 2) * 2 : 0;
+    const stepBob = isMoving && Math.sin(walkFrame * 0.7) > 0 ? -2 : 0;
+    const o = this.colors.outline;
+    const py = y + stepBob;
 
-    // Player Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillRect(x + 6, y + 24, 20, 7);
+    // Ground pixel shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.26)';
+    ctx.fillRect(x + 6, y + 25, 20, 5);
 
-    // Boots
+    // Boots with dark pixel outline
+    ctx.fillStyle = o;
+    ctx.fillRect(x + 8, py + 21, 7, 7);
+    ctx.fillRect(x + 17, py + 21, 7, 7);
     ctx.fillStyle = '#78350f';
     if (dir === 2 || dir === 3) {
-      ctx.fillRect(x + 10 + legOffset, y + 23, 6, 5);
-      ctx.fillRect(x + 16 - legOffset, y + 23, 6, 5);
+      ctx.fillRect(x + 10 + legOffset, py + 22, 5, 5);
+      ctx.fillRect(x + 17 - legOffset, py + 22, 5, 5);
     } else {
-      ctx.fillRect(x + 9, y + 23 + (legOffset > 0 ? legOffset : 0), 5, 5);
-      ctx.fillRect(x + 18, y + 23 + (legOffset < 0 ? -legOffset : 0), 5, 5);
+      ctx.fillRect(x + 9, py + 22 + (legOffset > 0 ? 2 : 0), 5, 5);
+      ctx.fillRect(x + 18, py + 22 + (legOffset < 0 ? 2 : 0), 5, 5);
     }
 
-    // Overalls (Blue denim pants & bib)
-    ctx.fillStyle = '#1d4ed8';
-    ctx.fillRect(x + 9, y + 16, 14, 8); // pants
-
-    // Plaid Red Shirt
+    // Outlined Overalls & Red Plaid Shirt
+    ctx.fillStyle = o;
+    ctx.fillRect(x + 6, py + 9, 20, 15);
     ctx.fillStyle = '#dc2626';
-    ctx.fillRect(x + 8, y + 10, 16, 7);
+    ctx.fillRect(x + 8, py + 10, 16, 6);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + 10, py + 10, 12, 2);
 
-    // Overalls straps
     ctx.fillStyle = '#1d4ed8';
-    ctx.fillRect(x + 10, y + 10, 3, 7);
-    ctx.fillRect(x + 19, y + 10, 3, 7);
-
+    ctx.fillRect(x + 8, py + 15, 16, 8);
+    ctx.fillRect(x + 10, py + 10, 3, 6);
+    ctx.fillRect(x + 19, py + 10, 3, 6);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(x + 10, py + 16, 12, 2);
     // Brass buckles
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(x + 10, y + 14, 3, 2);
-    ctx.fillRect(x + 19, y + 14, 3, 2);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(x + 10, py + 14, 3, 2);
+    ctx.fillRect(x + 19, py + 14, 3, 2);
 
-    // Head / Face
-    ctx.fillStyle = '#fed7aa'; // skin
-    ctx.fillRect(x + 10, y + 2, 12, 10);
+    // Head with dark pixel outline
+    this.drawOutlinedBox(ctx, x + 10, py + 1, 12, 10, '#fed7aa', '#ffedd5', '#fdba74', o);
 
-    // Brown Hair
-    ctx.fillStyle = '#854d0e';
-    ctx.fillRect(x + 9, y + 1, 14, 4);
+    // Shaded Hair
+    ctx.fillStyle = '#713f12';
+    ctx.fillRect(x + 9, py, 14, 4);
 
-    // Eyes (Direction sensitive)
-    if (dir === 0) { // Down
+    // Crisp SNES Eyes & Glints
+    if (dir === 0) {
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(x + 12, y + 5, 2, 3);
-      ctx.fillRect(x + 18, y + 5, 2, 3);
-      // Cheerful blush
+      ctx.fillRect(x + 12, py + 4, 2, 4);
+      ctx.fillRect(x + 18, py + 4, 2, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 12, py + 4, 1, 2);
+      ctx.fillRect(x + 18, py + 4, 1, 2);
       ctx.fillStyle = '#fca5a5';
-      ctx.fillRect(x + 11, y + 8, 2, 1);
-      ctx.fillRect(x + 19, y + 8, 2, 1);
-    } else if (dir === 1) { // Up (Back of head)
-      ctx.fillStyle = '#854d0e';
-      ctx.fillRect(x + 10, y + 2, 12, 9);
-    } else if (dir === 2) { // Left
+      ctx.fillRect(x + 11, py + 8, 2, 1);
+      ctx.fillRect(x + 19, py + 8, 2, 1);
+    } else if (dir === 1) {
+      ctx.fillStyle = '#713f12';
+      ctx.fillRect(x + 10, py + 2, 12, 8);
+    } else if (dir === 2) {
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(x + 11, y + 5, 2, 3);
-      ctx.fillStyle = '#fca5a5';
-      ctx.fillRect(x + 10, y + 8, 2, 1);
-    } else if (dir === 3) { // Right
+      ctx.fillRect(x + 11, py + 4, 2, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 11, py + 4, 1, 2);
+    } else if (dir === 3) {
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(x + 19, y + 5, 2, 3);
-      ctx.fillStyle = '#fca5a5';
-      ctx.fillRect(x + 20, y + 8, 2, 1);
+      ctx.fillRect(x + 19, py + 4, 2, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 19, py + 4, 1, 2);
     }
 
-    // Straw Hat (Stardew signature!)
-    ctx.fillStyle = '#ca8a04';
-    ctx.fillRect(x + 5, y - 2, 22, 4); // brim
-    ctx.fillRect(x + 9, y - 7, 14, 6); // crown
-    // Green hat ribbon
+    // 16-Bit Shaded & Outlined Straw Hat
+    this.drawOutlinedBox(ctx, x + 5, py - 3, 22, 4, '#eab308', '#fef08a', '#a16207', o);
+    this.drawOutlinedBox(ctx, x + 9, py - 8, 14, 6, '#ca8a04', '#facc15', '#854d0e', o);
     ctx.fillStyle = '#15803d';
-    ctx.fillRect(x + 9, y - 3, 14, 2);
+    ctx.fillRect(x + 9, py - 4, 14, 2);
 
     // Active Tool In Hands
     if (toolAction) {
-      this.drawToolInHand(ctx, x, y, dir, toolAction);
+      this.drawToolInHand(ctx, x, py, dir, toolAction);
     }
   },
 
@@ -885,76 +1142,77 @@ const Sprites = {
 
   // --- City & Town Features ---
   drawPlaza(ctx, x, y, seed = 0) {
-    const s = this.TILE_SIZE;
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(x, y, s, s);
+    const variant = Math.abs(seed) % 3;
+    const key = `plaza_${variant}`;
+    const cached = this.getCachedTile(key, (g, ox, oy) => {
+      const s = this.TILE_SIZE;
+      g.fillStyle = '#64748b';
+      g.fillRect(ox, oy, s, s);
 
-    ctx.fillStyle = '#64748b';
-    ctx.fillRect(x, y, s, 1);
-    ctx.fillRect(x, y, 1, s);
-    ctx.fillRect(x + 16, y, 1, s);
-    ctx.fillRect(x, y + 16, s, 1);
+      // 4 Chamfered 16-Bit Flagstones per 32x32 tile
+      const drawStone = (sx, sy, sw, sh, base, hi, shade) => {
+        g.fillStyle = shade;
+        g.fillRect(ox + sx, oy + sy, sw, sh);
+        g.fillStyle = base;
+        g.fillRect(ox + sx, oy + sy, sw - 2, sh - 2);
+        g.fillStyle = hi;
+        g.fillRect(ox + sx, oy + sy, sw - 2, 2);
+        g.fillRect(ox + sx, oy + sy, 2, sh - 2);
+      };
+      drawStone(2, 2, 12, 12, '#cbd5e1', '#e2e8f0', '#475569');
+      drawStone(18, 2, 12, 12, '#b8c4d1', '#cbd5e1', '#475569');
+      drawStone(2, 18, 12, 12, '#b8c4d1', '#cbd5e1', '#475569');
+      drawStone(18, 18, 12, 12, '#cbd5e1', '#e2e8f0', '#475569');
 
-    ctx.fillStyle = '#cbd5e1';
-    ctx.fillRect(x + 2, y + 2, 12, 12);
-    ctx.fillRect(x + 18, y + 18, 12, 12);
+      if (variant === 0) {
+        g.fillStyle = '#558e22';
+        g.fillRect(ox + 14, oy + 14, 4, 2);
+      } else if (variant === 2) {
+        g.fillStyle = '#94a3b8';
+        g.fillRect(ox + 6, oy + 6, 4, 2);
+        g.fillRect(ox + 22, oy + 22, 4, 2);
+      }
+    });
 
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillRect(x + 4, y + 4, 4, 3);
-    ctx.fillRect(x + 20, y + 20, 4, 3);
+    if (cached) {
+      ctx.drawImage(cached, x, y);
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
+    }
   },
 
   drawFountain(ctx, x, y, time = 0) {
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(x + 48, y + 60, 44, 28, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // 16-bit Stepped Pixel Stone Fountain
+    this.drawPixelDisc(ctx, x + 48, y + 60, 40, 'rgba(0,0,0,0.22)');
+    this.drawPixelDisc(ctx, x + 48, y + 52, 40, this.colors.outline);
+    this.drawPixelDisc(ctx, x + 48, y + 52, 38, this.colors.stoneDark);
+    this.drawPixelDisc(ctx, x + 48, y + 48, 36, this.colors.stoneLight);
+    this.drawPixelDisc(ctx, x + 48, y + 48, 30, this.colors.waterMid);
 
-    ctx.fillStyle = this.colors.stoneDark;
-    ctx.beginPath();
-    ctx.ellipse(x + 48, y + 54, 42, 26, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Animated water shimmer rings
+    const ring = (Math.floor(time / 280) % 2) * 2;
+    this.drawPixelDisc(ctx, x + 48, y + 48, 18 + ring, this.colors.waterLight);
+    this.drawPixelDisc(ctx, x + 48, y + 48, 12, this.colors.waterMid);
 
-    ctx.fillStyle = this.colors.stoneMid;
-    ctx.beginPath();
-    ctx.ellipse(x + 48, y + 50, 40, 24, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Pillar & Top Bowl
+    this.drawOutlinedBox(ctx, x + 42, y + 26, 12, 26, this.colors.stoneMid, this.colors.stoneLight, this.colors.stoneDark);
+    this.drawPixelDisc(ctx, x + 48, y + 26, 18, this.colors.outline);
+    this.drawPixelDisc(ctx, x + 48, y + 26, 16, this.colors.stoneLight);
+    this.drawPixelDisc(ctx, x + 48, y + 24, 12, this.colors.waterLight);
 
-    ctx.fillStyle = this.colors.waterMid;
-    ctx.beginPath();
-    ctx.ellipse(x + 48, y + 50, 34, 19, 0, 0, Math.PI * 2);
-    ctx.fill();
+    this.drawOutlinedBox(ctx, x + 46, y + 14, 4, 8, '#facc15', '#fef08a', '#b45309');
 
-    ctx.fillStyle = this.colors.stoneDark;
-    ctx.fillRect(x + 42, y + 26, 12, 26);
-    ctx.fillStyle = this.colors.stoneLight;
-    ctx.fillRect(x + 44, y + 26, 6, 26);
+    const jetOffset = Math.round(Math.sin(time * 0.008) * 3);
+    this.drawPixelDisc(ctx, x + 48, y + 10 + jetOffset, 4, '#e0f2fe');
 
-    ctx.fillStyle = this.colors.stoneMid;
-    ctx.beginPath();
-    ctx.ellipse(x + 48, y + 26, 18, 9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = this.colors.waterLight;
-    ctx.beginPath();
-    ctx.ellipse(x + 48, y + 25, 14, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(x + 46, y + 14, 4, 8);
-
-    const jetOffset = Math.sin(time * 0.008) * 4;
-    ctx.fillStyle = 'rgba(219, 234, 254, 0.85)';
-    ctx.beginPath();
-    ctx.arc(x + 48, y + 10 + jetOffset * 0.5, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    const drop1 = (time * 0.04) % 18;
-    const drop2 = (time * 0.04 + 9) % 18;
-    ctx.fillStyle = 'rgba(147, 197, 253, 0.75)';
-    ctx.fillRect(x + 38 - drop1 * 0.6, y + 20 + drop1, 3, 3);
-    ctx.fillRect(x + 58 + drop1 * 0.6, y + 20 + drop1, 3, 3);
-    ctx.fillRect(x + 44 - drop2 * 0.4, y + 20 + drop2, 2, 2);
-    ctx.fillRect(x + 52 + drop2 * 0.4, y + 20 + drop2, 2, 2);
+    const drop1 = Math.round((time * 0.04) % 18);
+    const drop2 = Math.round((time * 0.04 + 9) % 18);
+    ctx.fillStyle = '#bfdbfe';
+    ctx.fillRect(x + 38 - Math.round(drop1 * 0.5), y + 20 + drop1, 2, 2);
+    ctx.fillRect(x + 58 + Math.round(drop1 * 0.5), y + 20 + drop1, 2, 2);
+    ctx.fillRect(x + 44 - Math.round(drop2 * 0.3), y + 20 + drop2, 2, 2);
+    ctx.fillRect(x + 52 + Math.round(drop2 * 0.3), y + 20 + drop2, 2, 2);
   },
 
   drawStreetLamp(ctx, x, y, isNight = false) {
@@ -1067,55 +1325,45 @@ const Sprites = {
       awningColor2 = '#ccfbf1';
     }
 
-    ctx.fillStyle = wallColor;
-    ctx.fillRect(x + 8, y + 40, w - 16, h - 40);
+    // 16-Bit Masonry Wall, Foundation & Stepped Shingle Roof
+    this.drawOutlinedBox(ctx, x + 8, y + 38, w - 16, h - 38, wallColor, '#ffffff', trimColor);
 
+    // Subtle stone/brick masonry base course
     ctx.fillStyle = trimColor;
-    ctx.fillRect(x + 8, y + h - 12, w - 16, 12);
+    ctx.fillRect(x + 8, y + h - 14, w - 16, 14);
+    ctx.fillStyle = this.colors.outline;
+    for (let bx = x + 16; bx < x + w - 16; bx += 14) {
+      ctx.fillRect(bx, y + h - 12, 2, 12);
+    }
 
-    ctx.fillStyle = roofDark;
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y);
-    ctx.lineTo(x + 2, y + 42);
-    ctx.lineTo(x + w - 2, y + 42);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y + 4);
-    ctx.lineTo(x + 8, y + 38);
-    ctx.lineTo(x + w - 8, y + 38);
-    ctx.closePath();
-    ctx.fill();
+    // Stepped 16-bit Shingled Roof
+    this.drawShingledRoof(ctx, x + 2, y, w - 4, 40, roofColor, wallColor, roofDark, this._season === 'Winter');
 
     const awningY = y + 54;
     const awningW = w - 32;
     const stripeW = 12;
     const numStripes = Math.floor(awningW / stripeW);
     if (type !== 'church') {
+      ctx.fillStyle = this.colors.outline;
+      ctx.fillRect(x + 14, awningY - 2, numStripes * stripeW + 4, 18);
       for (let i = 0; i < numStripes; i++) {
         ctx.fillStyle = (i % 2 === 0) ? awningColor1 : awningColor2;
         ctx.fillRect(x + 16 + i * stripeW, awningY, stripeW, 14);
       }
+      // Scalloped pixel awning bottom edge
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(x + 16, awningY + 12, numStripes * stripeW, 2);
     } else {
-      // Stone Chapel Bell Steeple & Stained Glass Trim
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(x + w / 2 - 16, y - 22, 32, 26);
-      ctx.fillStyle = '#334155';
-      ctx.beginPath();
-      ctx.moveTo(x + w / 2, y - 42);
-      ctx.lineTo(x + w / 2 - 19, y - 20);
-      ctx.lineTo(x + w / 2 + 19, y - 20);
-      ctx.closePath();
-      ctx.fill();
+      // 16-Bit Stone Chapel Bell Steeple & Stepped Spire
+      this.drawOutlinedBox(ctx, x + w / 2 - 16, y - 22, 32, 26, '#e2e8f0', '#ffffff', '#94a3b8');
+      this.drawShingledRoof(ctx, x + w / 2 - 20, y - 44, 40, 22, '#475569', '#64748b', '#1e293b', this._season === 'Winter');
       // Brass Bell opening & Golden Cross
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(x + w / 2 - 6, y - 15, 12, 12);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + w / 2 - 6, y - 16, 12, 14);
       ctx.fillStyle = '#facc15';
-      ctx.fillRect(x + w / 2 - 4, y - 12, 8, 7);
-      ctx.fillRect(x + w / 2 - 1.5, y - 52, 3, 12);
-      ctx.fillRect(x + w / 2 - 5, y - 49, 10, 2.5);
+      ctx.fillRect(x + w / 2 - 4, y - 12, 8, 8);
+      ctx.fillRect(x + w / 2 - 2, y - 54, 4, 12);
+      ctx.fillRect(x + w / 2 - 6, y - 50, 12, 2);
     }
 
     ctx.fillStyle = '#1e293b';
@@ -1175,10 +1423,18 @@ const Sprites = {
   },
 
   drawNPC(ctx, x, y, type, time = 0) {
-    const bob = Math.sin(time * 0.003) * 1.5;
+    const bob = Math.round(Math.sin(time * 0.003) * 1) * 2;
+    const o = this.colors.outline;
 
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(x + 6, y + 24, 20, 6);
+
+    // Common 16-bit dark pixel silhouette backdrop for humanoid villagers
+    if (type !== 'dog') {
+      ctx.fillStyle = o;
+      ctx.fillRect(x + 6, y + 8 + bob, 20, 19);
+      ctx.fillRect(x + 8, y + bob, 16, 12);
+    }
 
     if (type === 'mayor') {
       ctx.fillStyle = '#15803d';
@@ -1313,14 +1569,21 @@ const Sprites = {
       ctx.fillRect(x + 8, y + 1 + bob, 16, 4);
       ctx.fillRect(x + 18, y + 3 + bob, 7, 2);
     }
+
+    // Crisp 16-bit SNES pixel eyes for human villagers
+    if (type !== 'dog') {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 12, y + 5 + bob, 2, 3);
+      ctx.fillRect(x + 18, y + 5 + bob, 2, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 12, y + 5 + bob, 1, 1);
+      ctx.fillRect(x + 18, y + 5 + bob, 1, 1);
+    }
   },
 
   drawFlowerBed(ctx, x, y, seed = 0) {
-    ctx.fillStyle = '#5d4037';
-    ctx.fillRect(x + 2, y + 4, 28, 24);
-    ctx.fillStyle = '#3f2e21';
-    ctx.fillRect(x + 4, y + 6, 24, 20);
-    ctx.fillStyle = '#22c55e';
+    this.drawOutlinedBox(ctx, x + 2, y + 4, 28, 24, '#3f2e21', '#8d6e63', '#2d1a0f');
+    ctx.fillStyle = '#3c6e18';
     ctx.fillRect(x + 6, y + 8, 20, 16);
     const colors = ['#f43f5e', '#facc15', '#c084fc', '#fb923c', '#38bdf8'];
     for (let i = 0; i < 4; i++) {
@@ -1903,133 +2166,102 @@ const Sprites = {
   drawFarmBarn(ctx, x, y, time = 0) {
     const w = 160;
     const h = 112;
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillStyle = 'rgba(0,0,0,0.24)';
     ctx.fillRect(x + 6, y + h - 8, w - 12, 12);
 
-    // Classic Red Timber Siding
-    ctx.fillStyle = '#b91c1c';
-    ctx.fillRect(x + 8, y + 36, w - 16, h - 36);
-    ctx.fillStyle = '#991b1b';
+    // Classic Red Timber Siding with dark pixel outline
+    this.drawOutlinedBox(ctx, x + 8, y + 36, w - 16, h - 36, '#b91c1c', '#ef4444', '#7f1d1d');
+    ctx.fillStyle = '#7f1d1d';
     for (let px = x + 16; px < x + w - 14; px += 12) {
       ctx.fillRect(px, y + 38, 2, h - 40);
     }
 
-    // Gambrel Roof
-    ctx.fillStyle = '#451a03';
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y);
-    ctx.lineTo(x, y + 40);
-    ctx.lineTo(x + w, y + 40);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#78350f';
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y + 5);
-    ctx.lineTo(x + 8, y + 37);
-    ctx.lineTo(x + w - 8, y + 37);
-    ctx.closePath();
-    ctx.fill();
+    // 16-Bit Stepped Shingle Roof
+    this.drawShingledRoof(ctx, x, y, w, 38, '#78350f', '#a16207', '#451a03', this._season === 'Winter');
 
-    // Loft Window & White Cross-Braced Doors
-    ctx.fillStyle = '#fef3c7';
-    ctx.fillRect(x + w / 2 - 12, y + 18, 24, 16);
-    ctx.fillStyle = '#451a03';
-    ctx.fillRect(x + w / 2 - 9, y + 21, 18, 10);
+    // Loft Window & White Cross-Braced Barn Doors
+    this.drawOutlinedBox(ctx, x + w / 2 - 12, y + 18, 24, 16, '#451a03', '#fef3c7', '#271406', '#fef3c7');
 
     const doorX = x + w / 2 - 22;
     const doorY = y + h - 42;
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(doorX, doorY, 44, 42);
+    this.drawOutlinedBox(ctx, doorX, doorY, 44, 42, '#f8fafc', '#ffffff', '#cbd5e1');
     ctx.fillStyle = '#dc2626';
-    ctx.fillRect(doorX + 3, doorY + 3, 17, 36);
-    ctx.fillRect(doorX + 24, doorY + 3, 17, 36);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(doorX + 3, doorY + 3, 17, 36);
-    ctx.strokeRect(doorX + 24, doorY + 3, 17, 36);
+    ctx.fillRect(doorX + 4, doorY + 4, 16, 36);
+    ctx.fillRect(doorX + 24, doorY + 4, 16, 36);
+    ctx.fillStyle = '#ffffff';
+    for (let d = 0; d < 14; d += 2) {
+      ctx.fillRect(doorX + 4 + d, doorY + 6 + d * 2, 2, 2);
+      ctx.fillRect(doorX + 24 + d, doorY + 6 + d * 2, 2, 2);
+    }
 
     // Hay Bale & Banner
-    ctx.fillStyle = '#eab308';
-    ctx.fillRect(x + 14, y + h - 22, 24, 16);
-    ctx.fillStyle = '#ca8a04';
-    ctx.fillRect(x + 14, y + h - 16, 24, 3);
+    this.drawOutlinedBox(ctx, x + 14, y + h - 22, 24, 16, '#eab308', '#fef08a', '#a16207');
+    ctx.fillStyle = '#92400e';
+    ctx.fillRect(x + 14, y + h - 16, 24, 2);
 
-    const bob = Math.sin(time * 0.004) * 2;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(x + 26, y - 18 + bob, 108, 16);
+    const bob = Math.round(Math.sin(time * 0.004) * 2);
+    this.drawOutlinedBox(ctx, x + 26, y - 18 + bob, 108, 16, '#1e293b', '#475569', '#0f172a');
     ctx.fillStyle = '#fef08a';
-    ctx.font = 'bold 8.5px sans-serif';
+    ctx.font = 'bold 8.5px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('ANIMAL BARN (E)', x + w / 2, y - 7 + bob);
   },
 
   drawFarmAnimal(ctx, animal, time = 0) {
-    const x = animal.x;
-    const y = animal.y;
-    const hop = animal.isWalking ? Math.abs(Math.sin(time * 0.015 + animal.phase)) * 3 : Math.sin(time * 0.004 + animal.phase) * 1;
+    const x = Math.round(animal.x);
+    const y = Math.round(animal.y);
+    const hop = animal.isWalking
+      ? Math.round(Math.abs(Math.sin(time * 0.015 + animal.phase)) * 2) * 2
+      : (Math.sin(time * 0.004 + animal.phase) > 0.5 ? 2 : 0);
+    const o = this.colors.outline;
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.beginPath();
-    ctx.ellipse(x + 16, y + 26, 9, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(x + 6, y + 24, 20, 4);
 
     if (animal.species === 'chicken') {
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.ellipse(x + 16, y + 18 - hop, 8, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x + 20, y + 11 - hop, 5, 0, Math.PI * 2);
-      ctx.fill();
+      this.drawPixelDisc(ctx, x + 16, y + 18 - hop, 8, o);
+      this.drawPixelDisc(ctx, x + 16, y + 18 - hop, 6, '#ffffff');
+      this.drawOutlinedBox(ctx, x + 15, y + 6 - hop, 10, 10, '#ffffff', '#ffffff', '#e2e8f0', o);
       ctx.fillStyle = '#ef4444';
-      ctx.fillRect(x + 18, y + 5 - hop, 4, 3);
+      ctx.fillRect(x + 17, y + 3 - hop, 4, 3);
       ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(x + 24, y + 11 - hop, 4, 3);
+      ctx.fillRect(x + 25, y + 10 - hop, 4, 4);
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(x + 21, y + 9 - hop, 2, 2);
+      ctx.fillRect(x + 21, y + 8 - hop, 2, 2);
     } else if (animal.species === 'cow') {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 6, y + 11 - hop, 20, 13);
+      this.drawOutlinedBox(ctx, x + 6, y + 11 - hop, 20, 13, '#ffffff', '#ffffff', '#cbd5e1', o);
       ctx.fillStyle = '#1e293b';
       ctx.fillRect(x + 9, y + 12 - hop, 6, 5);
       ctx.fillRect(x + 18, y + 16 - hop, 5, 5);
-      ctx.fillRect(x + 8, y + 24 - hop, 3, 4);
-      ctx.fillRect(x + 21, y + 24 - hop, 3, 4);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 21, y + 7 - hop, 9, 9);
+      ctx.fillRect(x + 8, y + 24 - hop, 4, 4);
+      ctx.fillRect(x + 20, y + 24 - hop, 4, 4);
+      this.drawOutlinedBox(ctx, x + 21, y + 7 - hop, 10, 9, '#ffffff', '#ffffff', '#e2e8f0', o);
       ctx.fillStyle = '#fda4af';
       ctx.fillRect(x + 24, y + 12 - hop, 6, 4);
       ctx.fillStyle = '#d97706';
-      ctx.fillRect(x + 22, y + 5 - hop, 2, 3);
-      ctx.fillRect(x + 27, y + 5 - hop, 2, 3);
+      ctx.fillRect(x + 22, y + 5 - hop, 2, 2);
+      ctx.fillRect(x + 27, y + 5 - hop, 2, 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + 24, y + 9 - hop, 2, 2);
     } else {
-      // Fluffy Sheep
-      ctx.fillStyle = '#f8fafc';
-      ctx.beginPath();
-      ctx.arc(x + 15, y + 17 - hop, 9, 0, Math.PI * 2);
-      ctx.arc(x + 10, y + 16 - hop, 6, 0, Math.PI * 2);
-      ctx.arc(x + 20, y + 16 - hop, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(x + 20, y + 11 - hop, 8, 8);
-      ctx.fillRect(x + 10, y + 24 - hop, 3, 4);
-      ctx.fillRect(x + 19, y + 24 - hop, 3, 4);
+      // 16-Bit Stepped Pixel Fluffy Sheep
+      this.drawPixelDisc(ctx, x + 15, y + 17 - hop, 10, o);
+      this.drawPixelDisc(ctx, x + 15, y + 17 - hop, 8, '#f8fafc');
+      this.drawPixelDisc(ctx, x + 10, y + 16 - hop, 5, '#e2e8f0');
+      this.drawPixelDisc(ctx, x + 19, y + 15 - hop, 5, '#ffffff');
+      this.drawOutlinedBox(ctx, x + 20, y + 11 - hop, 8, 8, '#334155', '#475569', '#0f172a', o);
+      ctx.fillStyle = o;
+      ctx.fillRect(x + 10, y + 24 - hop, 4, 4);
+      ctx.fillRect(x + 18, y + 24 - hop, 4, 4);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x + 24, y + 13 - hop, 2, 2);
     }
 
-    // Floating Ready Badge if carrying Egg / Milk / Wool
     if (animal.hasProduct) {
-      const pBob = Math.sin(time * 0.007 + animal.phase) * 2;
-      ctx.fillStyle = '#facc15';
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(x + 16, y - 4 + pBob, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      const pBob = Math.round(Math.sin(time * 0.007 + animal.phase) * 2);
+      this.drawOutlinedBox(ctx, x + 11, y - 9 + pBob, 10, 10, '#facc15', '#fef08a', '#b45309', o);
       ctx.fillStyle = '#78350f';
-      ctx.font = 'bold 8px sans-serif';
+      ctx.font = 'bold 8px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('+', x + 16, y - 1.5 + pBob);
     }
@@ -2040,42 +2272,30 @@ const Sprites = {
     const w = 96;
     const h = 64;
     ctx.save();
-    // Rocky Hillside Mound
-    ctx.fillStyle = '#475569';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h - 18, w / 2, 28, 0, Math.PI, 0);
-    ctx.fill();
-    ctx.fillRect(x + 4, y + h - 22, w - 8, 22);
+    // 16-Bit Stepped Rocky Hillside Mound
+    this.drawPixelDisc(ctx, x + w / 2, y + h - 18, 46, this.colors.outline);
+    this.drawPixelDisc(ctx, x + w / 2, y + h - 18, 44, '#475569');
+    this.drawPixelDisc(ctx, x + w / 2, y + h - 22, 38, '#64748b');
+    this.drawPixelDisc(ctx, x + w / 2 - 6, y + h - 28, 24, '#94a3b8');
 
-    ctx.fillStyle = '#64748b';
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, y + h - 22, w / 2 - 8, 20, 0, Math.PI, 0);
-    ctx.fill();
-
-    // Dark Cavern Opening & Timber Supports
+    // Outlined Cavern Opening & Timber Supports
     ctx.fillStyle = '#090d16';
-    ctx.beginPath();
-    ctx.roundRect(x + 26, y + 20, 44, 44, [18, 18, 0, 0]);
-    ctx.fill();
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(x + 24, y + 22, 6, 42);
-    ctx.fillRect(x + 66, y + 22, 6, 42);
-    ctx.fillRect(x + 22, y + 18, 52, 6);
+    ctx.fillRect(x + 26, y + 20, 44, 44);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x + 28, y + 16, 40, 6);
+    this.drawOutlinedBox(ctx, x + 22, y + 20, 6, 44, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
+    this.drawOutlinedBox(ctx, x + 68, y + 20, 6, 44, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
+    this.drawOutlinedBox(ctx, x + 20, y + 16, 56, 6, this.colors.woodMid, this.colors.woodHi, this.colors.woodDark);
 
     // Warm Miner's Lantern
-    const flick = 0.35 + Math.sin(time * 0.01) * 0.1;
-    ctx.fillStyle = `rgba(250, 204, 21, ${flick})`;
-    ctx.beginPath();
-    ctx.arc(x + 20, y + 32, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(x + 17, y + 28, 6, 8);
+    const flick = Math.floor(time / 240) % 2 === 0 ? 0.38 : 0.28;
+    this.drawPixelDisc(ctx, x + 18, y + 32, 12, `rgba(250, 204, 21, ${flick})`);
+    this.drawOutlinedBox(ctx, x + 15, y + 28, 6, 8, '#fde047', '#ffffff', '#ca8a04');
 
-    const bob = Math.sin(time * 0.004) * 2;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(x + 4, y - 6 + bob, 88, 15);
+    const bob = Math.round(Math.sin(time * 0.004) * 2);
+    this.drawOutlinedBox(ctx, x + 4, y - 6 + bob, 88, 15, '#1e293b', '#334155', '#0f172a');
     ctx.fillStyle = '#7dd3fc';
-    ctx.font = 'bold 8px sans-serif';
+    ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('QUARRY CAVE (E)', x + w / 2, y + 4 + bob);
     ctx.restore();
