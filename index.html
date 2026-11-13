@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Leyten's Games - Retro Pixel Arcade Hub</title>
+  <link rel="icon" type="image/png" href="arcade_icon.png">
+  <link rel="shortcut icon" href="arcade_icon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
@@ -39,11 +41,12 @@
       color: var(--text-white);
       font-family: 'Silkscreen', 'Courier New', monospace;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 16px;
+      padding: calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
       overflow-x: hidden;
       position: relative;
     }
@@ -601,6 +604,38 @@
         align-items: flex-start;
       }
     }
+
+    @media (max-height: 580px) {
+      body {
+        justify-content: flex-start;
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      }
+      .hub-container {
+        gap: 12px;
+      }
+      .arcade-title {
+        font-size: 1.45rem;
+      }
+      .arcade-subtitle {
+        font-size: 0.72rem;
+      }
+      .games-grid {
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+      }
+      .pixel-card {
+        padding: 14px;
+        gap: 10px;
+      }
+      .pixel-btn-action {
+        padding: 10px 12px;
+        font-size: 0.65rem;
+      }
+      .hub-footer {
+        padding: 8px 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1068,7 +1103,8 @@
       cards.forEach((c, i) => {
         if (i === selectedIndex) {
           c.classList.add('active-focus');
-          c.focus();
+          c.focus({ preventScroll: true });
+          c.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
         } else {
           c.classList.remove('active-focus');
         }
@@ -1113,16 +1149,20 @@
         setFocusIndex(3, true);
         sound.playLaunch();
         setTimeout(() => cards[3].click(), 120);
-      }
       } else if (e.key === '5') {
         setFocusIndex(4, true);
         sound.playLaunch();
         setTimeout(() => cards[4].click(), 120);
+      }
     });
 
-    // --- 4. Xbox Controller / HTML5 Gamepad Support ---
+    // --- 4. Platform & Xbox Controller / HTML5 Gamepad Support ---
     const gpIndicator = document.getElementById('gamepadIndicator');
     const gpText = document.getElementById('gamepadText');
+    const isCoarseTouch = window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0);
+    if (gpText) {
+      gpText.textContent = isCoarseTouch ? 'TOUCH & GAMEPAD READY' : 'KEYBOARD & GAMEPAD READY';
+    }
     let prevButtonA = false;
     let navCooldown = 0;
 

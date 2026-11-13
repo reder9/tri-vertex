@@ -46,6 +46,35 @@ const Sprites = {
     windowGlow: '#fcf3cf'
   },
 
+  setSeason(season = 'Spring') {
+    if (season === 'Summer') {
+      this.colors.grassLight = '#5ca632';
+      this.colors.grassMid = '#488820';
+      this.colors.grassDark = '#346914';
+      this.colors.flowerYellow = '#facc15';
+      this.colors.flowerPink = '#fb7185';
+    } else if (season === 'Fall') {
+      this.colors.grassLight = '#d49a42';
+      this.colors.grassMid = '#b87e2d';
+      this.colors.grassDark = '#8f5e1c';
+      this.colors.flowerYellow = '#f97316';
+      this.colors.flowerPink = '#dc2626';
+    } else if (season === 'Winter') {
+      this.colors.grassLight = '#f1f5f9';
+      this.colors.grassMid = '#dbeafe';
+      this.colors.grassDark = '#94a3b8';
+      this.colors.flowerYellow = '#e0f2fe';
+      this.colors.flowerPink = '#bfdbfe';
+    } else {
+      // Spring default
+      this.colors.grassLight = '#6ca832';
+      this.colors.grassMid = '#579124';
+      this.colors.grassDark = '#447519';
+      this.colors.flowerYellow = '#f9d71c';
+      this.colors.flowerPink = '#f78ca0';
+    }
+  },
+
   // Draw Ground Tiles
   drawGrass(ctx, x, y, seed = 0) {
     const s = this.TILE_SIZE;
@@ -833,6 +862,24 @@ const Sprites = {
       ctx.fillRect(tx, ty, 3, 16);
       ctx.fillStyle = '#475569';
       ctx.fillRect(tx - 4, ty + 1, 11, 4);
+    } else if (tool === 'fishing_rod') {
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      if (dir === 2) {
+        ctx.moveTo(tx + 4, ty + 8);
+        ctx.lineTo(tx - 16, ty - 8);
+      } else if (dir === 3) {
+        ctx.moveTo(tx - 4, ty + 8);
+        ctx.lineTo(tx + 16, ty - 8);
+      } else if (dir === 1) {
+        ctx.moveTo(tx, ty + 8);
+        ctx.lineTo(tx + 6, ty - 14);
+      } else {
+        ctx.moveTo(tx, ty - 4);
+        ctx.lineTo(tx + 8, ty + 16);
+      }
+      ctx.stroke();
     }
   },
 
@@ -1004,6 +1051,20 @@ const Sprites = {
       roofDark = '#0f172a';
       awningColor1 = '#2563eb';
       awningColor2 = '#f8fafc';
+    } else if (type === 'church') {
+      wallColor = '#f8fafc';
+      trimColor = '#94a3b8';
+      roofColor = '#475569';
+      roofDark = '#1e293b';
+      awningColor1 = '#b45309';
+      awningColor2 = '#fef3c7';
+    } else if (type === 'library') {
+      wallColor = '#fde68a';
+      trimColor = '#78350f';
+      roofColor = '#991b1b';
+      roofDark = '#450a0a';
+      awningColor1 = '#0f766e';
+      awningColor2 = '#ccfbf1';
     }
 
     ctx.fillStyle = wallColor;
@@ -1032,23 +1093,55 @@ const Sprites = {
     const awningW = w - 32;
     const stripeW = 12;
     const numStripes = Math.floor(awningW / stripeW);
-    for (let i = 0; i < numStripes; i++) {
-      ctx.fillStyle = (i % 2 === 0) ? awningColor1 : awningColor2;
-      ctx.fillRect(x + 16 + i * stripeW, awningY, stripeW, 14);
+    if (type !== 'church') {
+      for (let i = 0; i < numStripes; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? awningColor1 : awningColor2;
+        ctx.fillRect(x + 16 + i * stripeW, awningY, stripeW, 14);
+      }
+    } else {
+      // Stone Chapel Bell Steeple & Stained Glass Trim
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(x + w / 2 - 16, y - 22, 32, 26);
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      ctx.moveTo(x + w / 2, y - 42);
+      ctx.lineTo(x + w / 2 - 19, y - 20);
+      ctx.lineTo(x + w / 2 + 19, y - 20);
+      ctx.closePath();
+      ctx.fill();
+      // Brass Bell opening & Golden Cross
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + w / 2 - 6, y - 15, 12, 12);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(x + w / 2 - 4, y - 12, 8, 7);
+      ctx.fillRect(x + w / 2 - 1.5, y - 52, 3, 12);
+      ctx.fillRect(x + w / 2 - 5, y - 49, 10, 2.5);
     }
 
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x + 18, y + 74, 28, 24);
-    ctx.fillStyle = '#fef08a';
+    ctx.fillStyle = type === 'church' ? '#38bdf8' : '#fef08a';
     ctx.fillRect(x + 20, y + 76, 24, 20);
+    if (type === 'church') {
+      ctx.fillStyle = '#f472b6';
+      ctx.fillRect(x + 20, y + 76, 12, 10);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(x + 32, y + 86, 12, 10);
+    }
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x + 31, y + 76, 2, 20);
     ctx.fillRect(x + 20, y + 85, 24, 2);
 
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x + w - 46, y + 74, 28, 24);
-    ctx.fillStyle = '#fef08a';
+    ctx.fillStyle = type === 'church' ? '#38bdf8' : '#fef08a';
     ctx.fillRect(x + w - 44, y + 76, 24, 20);
+    if (type === 'church') {
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(x + w - 44, y + 76, 12, 10);
+      ctx.fillStyle = '#f472b6';
+      ctx.fillRect(x + w - 32, y + 86, 12, 10);
+    }
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x + w - 33, y + 76, 2, 20);
     ctx.fillRect(x + w - 44, y + 85, 24, 2);
@@ -1182,6 +1275,63 @@ const Sprites = {
       // Red Collar
       ctx.fillStyle = '#ef4444';
       ctx.fillRect(x + 18, y + 15, 3, 4);
+    } else if (type === 'pastor') {
+      // Pastor Thomas in Black Robe & White Collar
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 8, y + 10 + bob, 16, 16);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(x + 13, y + 11 + bob, 6, 3); // clerical collar
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(x + 15, y + 15 + bob, 2, 8); // gold stole trim
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(x + 10, y + 2 + bob, 12, 9);
+      ctx.fillStyle = '#cbd5e1'; // silver hair
+      ctx.fillRect(x + 9, y + bob, 14, 4);
+    } else if (type === 'librarian') {
+      // Maeve the Librarian in Emerald Cardigan & Glasses
+      ctx.fillStyle = '#0f766e';
+      ctx.fillRect(x + 8, y + 10 + bob, 16, 15);
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(x + 12, y + 11 + bob, 8, 12);
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(x + 10, y + 3 + bob, 12, 8);
+      ctx.fillStyle = '#1e293b'; // glasses rim
+      ctx.fillRect(x + 11, y + 6 + bob, 4, 2);
+      ctx.fillRect(x + 17, y + 6 + bob, 4, 2);
+      ctx.fillStyle = '#7c2d12'; // chestnut bun
+      ctx.fillRect(x + 9, y + bob, 14, 4);
+      ctx.fillRect(x + 12, y - 4 + bob, 8, 4);
+    } else if (type === 'pip') {
+      // Pip the Energetic Farmhand Kid in Overall & Cap
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(x + 9, y + 12 + bob, 14, 13);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(x + 9, y + 11 + bob, 14, 4);
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(x + 10, y + 4 + bob, 12, 8);
+      ctx.fillStyle = '#15803d'; // green cap
+      ctx.fillRect(x + 8, y + 1 + bob, 16, 4);
+      ctx.fillRect(x + 18, y + 3 + bob, 7, 2);
+    }
+  },
+
+  drawFlowerBed(ctx, x, y, seed = 0) {
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(x + 2, y + 4, 28, 24);
+    ctx.fillStyle = '#3f2e21';
+    ctx.fillRect(x + 4, y + 6, 24, 20);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(x + 6, y + 8, 20, 16);
+    const colors = ['#f43f5e', '#facc15', '#c084fc', '#fb923c', '#38bdf8'];
+    for (let i = 0; i < 4; i++) {
+      const fx = x + 8 + (i % 2) * 11;
+      const fy = y + 10 + Math.floor(i / 2) * 9;
+      ctx.fillStyle = colors[(seed + i) % colors.length];
+      ctx.beginPath();
+      ctx.arc(fx, fy, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(fx - 1, fy - 1, 2, 2);
     }
   },
 
@@ -1251,6 +1401,34 @@ const Sprites = {
       rugInner = '#3b82f6';
       rugTrim = '#facc15';
       roomTitle = "OAKHAVEN CITY HALL";
+    } else if (locType === 'interior_church') {
+      floorBase = '#d6d3d1';
+      floorPlank = '#a8a29e';
+      floorLine = '#78716c';
+      wallFace = '#fef9c3';
+      wainscoting = '#57534e';
+      rugMain = '#991b1b';
+      rugInner = '#dc2626';
+      rugTrim = '#facc15';
+      roomTitle = "OAKHAVEN CHAPEL";
+    } else if (locType === 'interior_library') {
+      floorBase = '#b45309';
+      floorPlank = '#92400e';
+      floorLine = '#451a03';
+      wallFace = '#ecfdf5';
+      wainscoting = '#065f46';
+      rugMain = '#0f766e';
+      rugInner = '#14b8a6';
+      rugTrim = '#fde68a';
+      roomTitle = "OAKHAVEN LIBRARY & ALMANAC";
+    } else if (locType === 'interior_cave') {
+      floorBase = '#334155';
+      floorPlank = '#1e293b';
+      floorLine = '#0f172a';
+      wallTop = '#020617';
+      wallFace = '#475569';
+      wainscoting = '#334155';
+      roomTitle = "QUARRY GEMSTONE CAVERN";
     }
 
     // 1. Draw Floor Planks (cols 1..16, rows 3..12)
@@ -1520,6 +1698,66 @@ const Sprites = {
         ctx.fillText('COZY BED (SLEEP)', bedX + bedW / 2, bedY - 10 + bob);
       }
 
+      // Floating "KITCHEN COOKING (E)" Sign above Country Kitchen Table
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.fillRect(2.1 * s, 5.15 * s + bob, 3.6 * s, 18);
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(2.1 * s, 5.15 * s + bob, 3.6 * s, 18);
+      ctx.fillStyle = '#fed7aa';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('KITCHEN COOKING (E)', 3.9 * s, 5.15 * s + 12 + bob);
+
+    } else if (locType === 'interior_cave') {
+      // --- HILLSIDE QUARRY CAVERN INTERIOR ---
+      // Minecart iron rails running across the cavern floor
+      ctx.fillStyle = '#334155';
+      for (let rx = 2.6 * s; rx <= 14.5 * s; rx += 14) {
+        ctx.fillRect(rx, 8.2 * s, 4, 24);
+      }
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(2.4 * s, 8.3 * s, 12.6 * s, 3);
+      ctx.fillRect(2.4 * s, 8.65 * s, 12.6 * s, 3);
+
+      // Glowing Crystal Lanterns mounted on north cavern wall
+      const glow = 0.55 + Math.sin(time * 0.005) * 0.25;
+      [4.2, 9.0, 12.2].forEach(lx => {
+        ctx.fillStyle = `rgba(56, 189, 248, ${glow * 0.35})`;
+        ctx.beginPath();
+        ctx.arc(lx * s, 2.35 * s, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.moveTo(lx * s, 2.0 * s);
+        ctx.lineTo(lx * s + 7, 2.35 * s);
+        ctx.lineTo(lx * s, 2.7 * s);
+        ctx.lineTo(lx * s - 7, 2.35 * s);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Deeper Floor Ladder at cols 14..15, rows 3..4
+      const ladX = 14.2 * s;
+      const ladY = 3.2 * s;
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(ladX, ladY, 5, 42);
+      ctx.fillRect(ladX + 26, ladY, 5, 42);
+      ctx.fillStyle = '#b45309';
+      for (let rung = 6; rung <= 36; rung += 10) {
+        ctx.fillRect(ladX + 4, ladY + rung, 23, 4);
+      }
+      const bob = Math.sin(time * 0.004) * 3;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(13.2 * s, 2.4 * s + bob, 3.2 * s, 18);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(13.2 * s, 2.4 * s + bob, 3.2 * s, 18);
+      ctx.fillStyle = '#bae6fd';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('NEW FLOOR (E)', 14.8 * s, 2.4 * s + 12 + bob);
+
     } else {
       // --- CITY BUILDING INTERIORS (General Store, Bakery, Blacksmith, Town Hall) ---
       // Center Carpet Runner leading from Door to Counter
@@ -1592,6 +1830,57 @@ const Sprites = {
         ctx.fillStyle = '#facc15';
         ctx.fillRect(2.5 * s + 6, 1.3 * s + 8, 16, 16);
         ctx.fillRect(14.5 * s + 6, 1.3 * s + 8, 16, 16);
+      } else if (locType === 'interior_church') {
+        npcType = 'pastor';
+        actionLabel = 'SERENITY BLESSING & PASTOR (E)';
+        // Twin Stained Glass Windows on Back Wall
+        for (const wx of [3.2 * s, 12.8 * s]) {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(wx, 1.1 * s, 44, 52);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(wx + 4, 1.1 * s + 4, 18, 22);
+          ctx.fillStyle = '#f472b6';
+          ctx.fillRect(wx + 22, 1.1 * s + 4, 18, 22);
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(wx + 4, 1.1 * s + 26, 36, 22);
+        }
+        // Golden Candlelight & Wooden Chapel Pews (left & right of aisle)
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(5.2 * s, 4.0 * s, 8, 14);
+        ctx.fillRect(12.5 * s, 4.0 * s, 8, 14);
+        for (let pr = 0; pr < 3; pr++) {
+          const py = (6.8 + pr * 1.6) * s;
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(2.0 * s, py, 3.6 * s, 20);
+          ctx.fillRect(12.4 * s, py, 3.6 * s, 20);
+          ctx.fillStyle = '#92400e';
+          ctx.fillRect(2.0 * s + 3, py + 3, 3.6 * s - 6, 10);
+          ctx.fillRect(12.4 * s + 3, py + 3, 3.6 * s - 6, 10);
+        }
+      } else if (locType === 'interior_library') {
+        npcType = 'librarian';
+        actionLabel = 'OPEN HOMESTEAD ALMANAC (E)';
+        // Tall Bookshelves along Back & Side Walls
+        const colors = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea'];
+        for (const bx of [2.0 * s, 13.0 * s]) {
+          ctx.fillStyle = '#451a03';
+          ctx.fillRect(bx, 1.2 * s, 96, 54);
+          for (let row = 0; row < 2; row++) {
+            for (let b = 0; b < 9; b++) {
+              ctx.fillStyle = colors[(row * 3 + b) % colors.length];
+              ctx.fillRect(bx + 6 + b * 9.5, 1.2 * s + 6 + row * 24, 7, 18);
+            }
+          }
+        }
+        // Reading Globe Table
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(2.2 * s, 7.5 * s, 48, 36);
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(2.2 * s + 24, 7.5 * s + 14, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(2.2 * s + 18, 7.5 * s + 10, 9, 6);
       }
 
       // Draw NPC behind counter
@@ -1609,6 +1898,463 @@ const Sprites = {
       ctx.textAlign = 'center';
       ctx.fillText(actionLabel, 9 * s, 2.1 * s + 12 + bob);
     }
+  },
+
+  drawFarmBarn(ctx, x, y, time = 0) {
+    const w = 160;
+    const h = 112;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x + 6, y + h - 8, w - 12, 12);
+
+    // Classic Red Timber Siding
+    ctx.fillStyle = '#b91c1c';
+    ctx.fillRect(x + 8, y + 36, w - 16, h - 36);
+    ctx.fillStyle = '#991b1b';
+    for (let px = x + 16; px < x + w - 14; px += 12) {
+      ctx.fillRect(px, y + 38, 2, h - 40);
+    }
+
+    // Gambrel Roof
+    ctx.fillStyle = '#451a03';
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, y);
+    ctx.lineTo(x, y + 40);
+    ctx.lineTo(x + w, y + 40);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, y + 5);
+    ctx.lineTo(x + 8, y + 37);
+    ctx.lineTo(x + w - 8, y + 37);
+    ctx.closePath();
+    ctx.fill();
+
+    // Loft Window & White Cross-Braced Doors
+    ctx.fillStyle = '#fef3c7';
+    ctx.fillRect(x + w / 2 - 12, y + 18, 24, 16);
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(x + w / 2 - 9, y + 21, 18, 10);
+
+    const doorX = x + w / 2 - 22;
+    const doorY = y + h - 42;
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(doorX, doorY, 44, 42);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(doorX + 3, doorY + 3, 17, 36);
+    ctx.fillRect(doorX + 24, doorY + 3, 17, 36);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(doorX + 3, doorY + 3, 17, 36);
+    ctx.strokeRect(doorX + 24, doorY + 3, 17, 36);
+
+    // Hay Bale & Banner
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(x + 14, y + h - 22, 24, 16);
+    ctx.fillStyle = '#ca8a04';
+    ctx.fillRect(x + 14, y + h - 16, 24, 3);
+
+    const bob = Math.sin(time * 0.004) * 2;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(x + 26, y - 18 + bob, 108, 16);
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 8.5px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ANIMAL BARN (E)', x + w / 2, y - 7 + bob);
+  },
+
+  drawFarmAnimal(ctx, animal, time = 0) {
+    const x = animal.x;
+    const y = animal.y;
+    const hop = animal.isWalking ? Math.abs(Math.sin(time * 0.015 + animal.phase)) * 3 : Math.sin(time * 0.004 + animal.phase) * 1;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(x + 16, y + 26, 9, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (animal.species === 'chicken') {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(x + 16, y + 18 - hop, 8, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x + 20, y + 11 - hop, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(x + 18, y + 5 - hop, 4, 3);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(x + 24, y + 11 - hop, 4, 3);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + 21, y + 9 - hop, 2, 2);
+    } else if (animal.species === 'cow') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 6, y + 11 - hop, 20, 13);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 9, y + 12 - hop, 6, 5);
+      ctx.fillRect(x + 18, y + 16 - hop, 5, 5);
+      ctx.fillRect(x + 8, y + 24 - hop, 3, 4);
+      ctx.fillRect(x + 21, y + 24 - hop, 3, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 21, y + 7 - hop, 9, 9);
+      ctx.fillStyle = '#fda4af';
+      ctx.fillRect(x + 24, y + 12 - hop, 6, 4);
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(x + 22, y + 5 - hop, 2, 3);
+      ctx.fillRect(x + 27, y + 5 - hop, 2, 3);
+    } else {
+      // Fluffy Sheep
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(x + 15, y + 17 - hop, 9, 0, Math.PI * 2);
+      ctx.arc(x + 10, y + 16 - hop, 6, 0, Math.PI * 2);
+      ctx.arc(x + 20, y + 16 - hop, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(x + 20, y + 11 - hop, 8, 8);
+      ctx.fillRect(x + 10, y + 24 - hop, 3, 4);
+      ctx.fillRect(x + 19, y + 24 - hop, 3, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 24, y + 13 - hop, 2, 2);
+    }
+
+    // Floating Ready Badge if carrying Egg / Milk / Wool
+    if (animal.hasProduct) {
+      const pBob = Math.sin(time * 0.007 + animal.phase) * 2;
+      ctx.fillStyle = '#facc15';
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(x + 16, y - 4 + pBob, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#78350f';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('+', x + 16, y - 1.5 + pBob);
+    }
+    ctx.restore();
+  },
+
+  drawCaveEntrance(ctx, x, y, time = 0) {
+    const w = 96;
+    const h = 64;
+    ctx.save();
+    // Rocky Hillside Mound
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h - 18, w / 2, 28, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(x + 4, y + h - 22, w - 8, 22);
+
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h - 22, w / 2 - 8, 20, 0, Math.PI, 0);
+    ctx.fill();
+
+    // Dark Cavern Opening & Timber Supports
+    ctx.fillStyle = '#090d16';
+    ctx.beginPath();
+    ctx.roundRect(x + 26, y + 20, 44, 44, [18, 18, 0, 0]);
+    ctx.fill();
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x + 24, y + 22, 6, 42);
+    ctx.fillRect(x + 66, y + 22, 6, 42);
+    ctx.fillRect(x + 22, y + 18, 52, 6);
+
+    // Warm Miner's Lantern
+    const flick = 0.35 + Math.sin(time * 0.01) * 0.1;
+    ctx.fillStyle = `rgba(250, 204, 21, ${flick})`;
+    ctx.beginPath();
+    ctx.arc(x + 20, y + 32, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(x + 17, y + 28, 6, 8);
+
+    const bob = Math.sin(time * 0.004) * 2;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillRect(x + 4, y - 6 + bob, 88, 15);
+    ctx.fillStyle = '#7dd3fc';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QUARRY CAVE (E)', x + w / 2, y + 4 + bob);
+    ctx.restore();
+  },
+
+  drawCaveNode(ctx, x, y, type, time = 0) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(x + 16, y + 26, 12, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (type === 'quartz') {
+      const shimmer = 0.6 + Math.sin(time * 0.008 + x) * 0.3;
+      ctx.fillStyle = `rgba(192, 132, 252, ${shimmer * 0.35})`;
+      ctx.beginPath();
+      ctx.arc(x + 16, y + 16, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.moveTo(x + 16, y + 4);
+      ctx.lineTo(x + 25, y + 22);
+      ctx.lineTo(x + 7, y + 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#e9d5ff';
+      ctx.fillRect(x + 14, y + 10, 3, 9);
+    } else {
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.roundRect(x + 5, y + 9, 22, 17, 6);
+      ctx.fill();
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(x + 7, y + 19, 18, 6);
+      if (type === 'copper_ore') {
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(x + 10, y + 12, 5, 4);
+        ctx.fillRect(x + 18, y + 16, 4, 4);
+      } else if (type === 'gold_ore') {
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(x + 10, y + 12, 5, 4);
+        ctx.fillRect(x + 18, y + 15, 5, 4);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(x + 11, y + 13, 2, 2);
+      }
+    }
+    ctx.restore();
+  },
+
+  drawForageItem(ctx, x, y, type, time = 0) {
+    const bob = Math.sin(time * 0.004 + x * 0.1) * 1.8;
+    const cx = x + 16;
+    const cy = y + 18 + bob;
+
+    // Ground glow shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(cx, y + 26, 8, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (type === 'wildflower') {
+      ctx.strokeStyle = '#15803d';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 7);
+      ctx.lineTo(cx, cy - 3);
+      ctx.stroke();
+      const petals = ['#f472b6', '#fb7185', '#f9a8d4', '#f472b6', '#fbcfe8'];
+      petals.forEach((col, i) => {
+        const ang = (i / 5) * Math.PI * 2;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(ang) * 4.5, cy - 4 + Math.sin(ang) * 4.5, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(cx, cy - 4, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'morel') {
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(cx - 3, cy, 6, 8);
+      ctx.fillStyle = '#92400e';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - 2, 7.5, 6, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(cx - 4, cy - 5, 2, 2);
+      ctx.fillRect(cx + 2, cy - 6, 2, 2);
+    } else if (type === 'wild_berry') {
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.arc(cx - 4, cy - 2, 2.8, 0, Math.PI * 2);
+      ctx.arc(cx + 3, cy - 3, 2.8, 0, Math.PI * 2);
+      ctx.arc(cx, cy + 2, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'honeycomb') {
+      ctx.fillStyle = '#f59e0b';
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(cx - 7, cy - 6, 14, 12, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(cx - 4, cy - 3, 3, 3);
+      ctx.fillRect(cx + 1, cy - 2, 3, 3);
+      ctx.fillRect(cx - 2, cy + 1, 3, 3);
+    }
+  },
+
+  drawAmbientCritter(ctx, critter, isNight, time) {
+    if (isNight) {
+      // Glowing Firefly
+      const glow = 0.45 + 0.55 * Math.abs(Math.sin(time * 0.004 + critter.phase));
+      ctx.save();
+      ctx.globalAlpha = glow;
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(critter.x, critter.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
+      ctx.beginPath();
+      ctx.arc(critter.x, critter.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else {
+      // Daytime Fluttering Butterfly
+      const flap = Math.abs(Math.sin(time * 0.015 + critter.phase));
+      const wingW = Math.max(2, flap * 6);
+      ctx.save();
+      ctx.translate(critter.x, critter.y);
+      ctx.fillStyle = critter.color;
+      ctx.beginPath();
+      ctx.ellipse(-wingW * 0.7, 0, wingW, 3.8, -0.3, 0, Math.PI * 2);
+      ctx.ellipse(wingW * 0.7, 0, wingW, 3.8, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-1, -3, 2, 6);
+      ctx.restore();
+    }
+  },
+
+  drawFishingBobberAndLine(ctx, playerX, playerY, dir, fishing, time) {
+    if (!fishing) return;
+    const tipOffsets = {
+      0: { ox: 16, oy: 24 },
+      1: { ox: 20, oy: 4 },
+      2: { ox: -4, oy: 12 },
+      3: { ox: 36, oy: 12 }
+    };
+    const off = tipOffsets[dir] || tipOffsets[0];
+    const rodX = playerX + off.ox;
+    const rodY = playerY + off.oy;
+    const bobX = fishing.waterX;
+    const bobY = fishing.waterY + (fishing.phase === 'BITE' ? Math.sin(time * 0.03) * 4.5 : Math.sin(time * 0.006) * 2);
+
+    // Fishing line
+    ctx.save();
+    ctx.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(rodX, rodY);
+    ctx.quadraticCurveTo((rodX + bobX) / 2, Math.min(rodY, bobY) - 18, bobX, bobY);
+    ctx.stroke();
+
+    // Expanding water ripples
+    const ring = ((time * 0.04) % 14) + 5;
+    ctx.strokeStyle = fishing.phase === 'BITE' ? 'rgba(250, 204, 21, 0.95)' : 'rgba(224, 242, 254, 0.72)';
+    ctx.lineWidth = fishing.phase === 'BITE' ? 2.2 : 1.3;
+    ctx.beginPath();
+    ctx.ellipse(bobX, bobY + 3, ring, ring * 0.55, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Red & white bobber
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 5, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 5, 0, Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Status pill right above bobber so player never wonders what state the line is in
+    if (fishing.phase === 'WAITING') {
+      const dots = '.'.repeat((Math.floor(time / 420) % 3) + 1);
+      const label = (fishing.nudgeHintTimer > 0) ? 'Wait for splash!' : `Waiting${dots}`;
+      const pillW = (fishing.nudgeHintTimer > 0) ? 94 : 68;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+      ctx.strokeStyle = (fishing.nudgeHintTimer > 0) ? '#facc15' : '#94a3b8';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(bobX - pillW / 2, bobY - 26, pillW, 16, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = (fishing.nudgeHintTimer > 0) ? '#fde047' : '#e2e8f0';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, bobX, bobY - 15);
+    } else if (fishing.phase === 'BITE') {
+      const pulse = Math.sin(time * 0.025) * 3;
+      ctx.fillStyle = '#facc15';
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(bobX - 52, bobY - 34 + pulse, 104, 21, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#78350f';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('! BITE ! CLICK / E', bobX, bobY - 20 + pulse);
+    }
+    ctx.restore();
+  },
+
+  drawFishingMinigameBar(ctx, playerX, playerY, fishing) {
+    if (!fishing || fishing.phase !== 'REELING') return;
+    const barW = 144;
+    const barH = 20;
+    const canvasW = ctx.canvas ? ctx.canvas.width : 800;
+    const bx = Math.max(12, Math.min(canvasW - barW - 12, playerX + 16 - barW / 2));
+    const by = Math.max(28, playerY - 40);
+
+    ctx.save();
+    // Outer frame
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(bx - 6, by - 19, barW + 12, barH + 26, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`STOP IN GREEN! (${fishing.attemptsLeft} ${fishing.attemptsLeft === 1 ? 'try' : 'tries'})`, bx + barW / 2, by - 5);
+
+    // Track
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, barW, barH, 5);
+    ctx.fill();
+
+    // Green Sweet Spot Zone
+    const gzX = bx + fishing.targetStart * barW;
+    const gzW = fishing.targetWidth * barW;
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.roundRect(gzX, by + 2, gzW, barH - 4, 4);
+    ctx.fill();
+
+    // Subtle center highlight inside green zone
+    ctx.fillStyle = '#86efac';
+    ctx.beginPath();
+    ctx.roundRect(gzX + gzW * 0.35, by + 4, gzW * 0.3, barH - 8, 2);
+    ctx.fill();
+
+    // Moving White Needle Cursor
+    const curX = bx + fishing.cursorPos * barW;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.roundRect(curX - 3.5, by - 3, 7, barH + 6, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 };
 

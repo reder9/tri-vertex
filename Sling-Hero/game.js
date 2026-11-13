@@ -484,10 +484,69 @@ class SlingHeroGame {
       return down && !was;
     };
 
-    // Slingshot Aiming with Left Analog Stick
     const lx = gp.axes[0] || 0;
     const ly = gp.axes[1] || 0;
-    const mag = Math.hypot(lx, ly);
+
+    // Check if an overlay modal (Levels, Win, Game Over, Pause) is open
+    const openModal = [this.ui.winModal, this.ui.overModal, this.ui.levelModal, this.ui.pauseModal]
+      .find(m => m && !m.classList.contains('hidden'));
+
+    if (openModal) {
+      let navX = lx;
+      let navY = ly;
+      if (gp.buttons[12]?.pressed) navY = -1;
+      if (gp.buttons[13]?.pressed) navY = 1;
+      if (gp.buttons[14]?.pressed) navX = -1;
+      if (gp.buttons[15]?.pressed) navX = 1;
+
+      const items = Array.from(openModal.querySelectorAll('button:not([disabled]):not(.modal-close), .level-cell:not(.locked)'))
+        .filter(el => el.offsetParent !== null);
+      this.modalNavCooldown = Math.max(0, (this.modalNavCooldown || 0) - dt);
+      if (this.modalFocusIdx === undefined) this.modalFocusIdx = 0;
+
+      if (items.length > 0 && this.modalNavCooldown <= 0) {
+        let dir = 0;
+        if (navX > 0.45 || navY > 0.45 || isJustPressed(15) || isJustPressed(13)) dir = 1;
+        else if (navX < -0.45 || navY < -0.45 || isJustPressed(14) || isJustPressed(12)) dir = -1;
+        if (dir !== 0) {
+          this.modalFocusIdx = (this.modalFocusIdx + dir + items.length) % items.length;
+          this.modalNavCooldown = 0.18;
+          this.rumble(20, 0.15, 0.08);
+        }
+      }
+      items.forEach((el, i) => {
+        if (i === (this.modalFocusIdx % Math.max(1, items.length))) {
+          el.classList.add('gp-focus');
+          if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } else {
+          el.classList.remove('gp-focus');
+        }
+      });
+
+      if (isJustPressed(0) && items.length > 0) {
+        const target = items[this.modalFocusIdx % items.length];
+        if (target) {
+          target.click();
+          this.rumble(35, 0.25, 0.2);
+        }
+      }
+      if (isJustPressed(1)) {
+        this.closeModals();
+      }
+      for (let i = 0; i < 17; i++) {
+        this.prevGamepadButtons[i] = gp.buttons[i] ? (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) : false;
+      }
+      return;
+    }
+
+    // Slingshot Aiming with Left Analog Stick or D-Pad
+    let aimX = lx;
+    let aimY = ly;
+    if (gp.buttons[12]?.pressed) aimY = -0.85;
+    if (gp.buttons[13]?.pressed) aimY = 0.85;
+    if (gp.buttons[14]?.pressed) aimX = -0.85;
+    if (gp.buttons[15]?.pressed) aimX = 0.85;
+    const mag = Math.hypot(aimX, aimY);
     const DEADZONE = 0.2;
 
     if (this.state === 'aiming' || this.state === 'anchored') {
@@ -495,10 +554,10 @@ class SlingHeroGame {
         const norm = (mag - DEADZONE) / (1.0 - DEADZONE);
         const clampedNorm = Math.min(1.0, norm);
         this.player.isDragging = true;
-        this.player.dragX = (lx / mag) * clampedNorm * this.maxDragDistance;
-        this.player.dragY = (ly / mag) * clampedNorm * this.maxDragDistance;
+        this.player.dragX = (aimX / mag) * clampedNorm * this.maxDragDistance;
+        this.player.dragY = (aimY / mag) * clampedNorm * this.maxDragDistance;
         this.player.power = clampedNorm;
-        this.player.angle = Math.atan2(ly, lx);
+        this.player.angle = Math.atan2(aimY, aimX);
         this.player.facingAngle = this.player.angle + Math.PI;
       } else if (this.player.isDragging && !this.input.isPointerDown) {
         // Stick released -> Sling shot!

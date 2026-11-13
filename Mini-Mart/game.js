@@ -248,11 +248,28 @@ class MiniMartGame {
     this.plots = [];
     this.shelves = [];
     this.checkout = null;
+    this.pickupStation = null;
     this.trashBin = new TrashBin(490, 800);
     this.unlockZones = [];
-    this.staffHelper = null;
-    this.staffHired = false;
+    this.staffHelpers = [];
+    this.deliveryCourier = null;
     this.cashierHired = false;
+
+    // Active mart upgrade levels & away stats
+    this.workerLevel = 1;
+    this.cashierLevel = 1;
+    this.courierHired = false;
+    this.courierLevel = 1;
+    this.prodLevel = 1;
+    this.marketingLevel = 1;
+    this.awayProfit = 0;
+    this.awaySalesCount = 0;
+    this.awayDeliveriesCount = 0;
+    this.awayMissedOrders = 0;
+    this.toastTimer = 0;
+    this.lastToastTime = 0;
+    this.martListRefreshTimer = 0;
+    this.busTriggerLock = false;
 
     // Visual FX
     this.flyingItems = [];
@@ -273,6 +290,9 @@ class MiniMartGame {
       turboBtn: document.getElementById('btn-turbo'),
       pauseModal: document.getElementById('pause-modal'),
       upgradeModal: document.getElementById('upgrade-modal'),
+      upgradesList: document.getElementById('upgrades-list'),
+      upgradeMartSubtitle: document.getElementById('upgrade-mart-subtitle'),
+      remoteToastContainer: document.getElementById('remote-toast-container'),
       btnUpgrades: document.getElementById('btn-upgrades'),
       btnPause: document.getElementById('btn-pause'),
       btnResume: document.getElementById('btn-resume'),
@@ -306,6 +326,58 @@ class MiniMartGame {
     requestAnimationFrame((t) => this.gameLoop(t));
   }
 
+  get staffHired() {
+    return this.staffHelpers.length > 0;
+  }
+
+  createDefaultMartState(martId) {
+    const config = MARTS_CONFIG[martId] || MARTS_CONFIG.mart_farm;
+    const plots = config.createPlots();
+    const shelves = config.createShelves();
+    const zones = config.createUnlockZones();
+
+    const plotStocks = {};
+    const plotGrowTimers = {};
+    plots.forEach(p => {
+      plotStocks[p.id] = p.storage;
+      plotGrowTimers[p.id] = 0;
+    });
+
+    const shelfStocks = {};
+    shelves.forEach(s => {
+      shelfStocks[s.id] = s.items;
+    });
+
+    return {
+      unlockedPlots: plots.filter(p => p.unlocked).map(p => p.id),
+      unlockedShelves: shelves.filter(s => s.unlocked).map(s => s.id),
+      plotStocks,
+      plotGrowTimers,
+      shelfStocks,
+      cashStash: 0,
+      stockersCount: 0,
+      workerLevel: 1,
+      cashierHired: false,
+      cashierLevel: 1,
+      courierHired: false,
+      courierLevel: 1,
+      prodLevel: 1,
+      marketingLevel: 1,
+      pickupOrders: [],
+      pickupSpawnTimer: 3.5,
+      bgCustomerTimer: 0,
+      bgStockerAcc: 0,
+      bgCourierAcc: 0,
+      remoteWaitingCustomers: 0,
+      awayProfit: 0,
+      unseenAwayProfit: 0,
+      awaySalesCount: 0,
+      awayDeliveriesCount: 0,
+      awayMissedOrders: 0,
+      unlockZones: zones.map(z => ({ id: z.id, paid: z.paid, cost: z.cost, targetId: z.targetId }))
+    };
+  }
+
   initStore(martId) {
     const config = MARTS_CONFIG[martId] || MARTS_CONFIG.mart_farm;
     this.currentMartId = config.id;
@@ -315,19 +387,90 @@ class MiniMartGame {
     this.plots = config.createPlots();
     this.shelves = config.createShelves();
     this.checkout = new CheckoutCounter(780, 670);
+    this.pickupStation = new PickupStation(1210, 515);
     this.trashBin = new TrashBin(490, 800);
     this.unlockZones = config.createUnlockZones();
-    this.staffHelper = null;
-    this.staffHired = false;
+    this.staffHelpers = [];
+    this.deliveryCourier = null;
     this.cashierHired = false;
+    this.workerLevel = 1;
+    this.cashierLevel = 1;
+    this.courierHired = false;
+    this.courierLevel = 1;
+    this.prodLevel = 1;
+    this.marketingLevel = 1;
+    this.awayProfit = 0;
+    this.awaySalesCount = 0;
+    this.awayDeliveriesCount = 0;
+    this.awayMissedOrders = 0;
+  }
+
+  hireStocker(spawnX = 290, spawnY = 410) {
+    if (this.staffHelpers.length >= 4) return false;
+    const idx = this.staffHelpers.length;
+    const offsetX = (idx % 2 === 0 ? 0 : 28);
+    const offsetY = (idx < 2 ? 0 : 28);
+    this.staffHelpers.push(new StaffHelper(spawnX + offsetX, spawnY + offsetY, idx));
+
+    // Remove floor stocker pad if still present
+    this.unlockZones = this.unlockZones.filter(z => z.targetId !== 'hire_stocker');
+    return true;
+  }
+
+  hireCashier() {
+    if (this.cashierHired) return false;
+    this.cashierHired = true;
+    this.unlockZones = this.unlockZones.filter(z => z.targetId !== 'hire_cashier');
+    return true;
+  }
+
+  hireCourier() {
+    if (this.courierHired) return false;
+    this.courierHired = true;
+    this.deliveryCourier = new DeliveryCourier(1065, 535);
+    return true;
   }
 
   snapshotActiveMart() {
+    const plotStocks = {};
+    const plotGrowTimers = {};
+    this.plots.forEach(p => {
+      plotStocks[p.id] = p.storage;
+      plotGrowTimers[p.id] = p.growTimer;
+    });
+
+    const shelfStocks = {};
+    this.shelves.forEach(s => {
+      shelfStocks[s.id] = s.items;
+    });
+
+    const prev = this.martsData[this.currentMartId] || {};
     this.martsData[this.currentMartId] = {
       unlockedPlots: this.plots.filter(p => p.unlocked).map(p => p.id),
       unlockedShelves: this.shelves.filter(s => s.unlocked).map(s => s.id),
-      staffHired: this.staffHired,
+      plotStocks,
+      plotGrowTimers,
+      shelfStocks,
+      cashStash: this.checkout ? this.checkout.cashStash : 0,
+      stockersCount: this.staffHelpers.length,
+      workerLevel: this.workerLevel,
       cashierHired: this.cashierHired,
+      cashierLevel: this.cashierLevel,
+      courierHired: this.courierHired,
+      courierLevel: this.courierLevel,
+      prodLevel: this.prodLevel,
+      marketingLevel: this.marketingLevel,
+      pickupOrders: this.pickupStation ? this.pickupStation.orders.map(o => ({ ...o, itemsRemaining: [...o.itemsRemaining] })) : [],
+      pickupSpawnTimer: this.pickupStation ? this.pickupStation.spawnTimer : 3.5,
+      bgCustomerTimer: prev.bgCustomerTimer || 0,
+      bgStockerAcc: prev.bgStockerAcc || 0,
+      bgCourierAcc: prev.bgCourierAcc || 0,
+      remoteWaitingCustomers: this.customerQueue.length,
+      awayProfit: this.awayProfit || 0,
+      unseenAwayProfit: 0,
+      awaySalesCount: this.awaySalesCount || 0,
+      awayDeliveriesCount: this.awayDeliveriesCount || 0,
+      awayMissedOrders: this.awayMissedOrders || 0,
       unlockZones: this.unlockZones.map(z => ({ id: z.id, paid: z.paid, cost: z.cost, targetId: z.targetId }))
     };
   }
@@ -336,6 +479,21 @@ class MiniMartGame {
     this.initStore(martId);
     const saved = this.martsData[martId];
     if (!saved) return;
+
+    // Normalize legacy staffHired flag to stockersCount
+    const stockersCount = saved.stockersCount !== undefined
+      ? saved.stockersCount
+      : (saved.staffHired ? 1 : 0);
+
+    this.workerLevel = saved.workerLevel || 1;
+    this.cashierLevel = saved.cashierLevel || 1;
+    this.courierLevel = saved.courierLevel || 1;
+    this.prodLevel = saved.prodLevel || 1;
+    this.marketingLevel = saved.marketingLevel || 1;
+    this.awayProfit = saved.awayProfit || 0;
+    this.awaySalesCount = saved.awaySalesCount || 0;
+    this.awayDeliveriesCount = saved.awayDeliveriesCount || 0;
+    this.awayMissedOrders = saved.awayMissedOrders || 0;
 
     if (saved.unlockedPlots) {
       this.plots.forEach(p => {
@@ -349,18 +507,48 @@ class MiniMartGame {
       });
     }
 
-    if (saved.staffHired) {
-      this.staffHired = true;
-      this.staffHelper = new StaffHelper(290, 410);
+    // Apply upgraded storage/capacity & restore live stock counts
+    this.plots.forEach(p => {
+      p.maxStorage = p.baseMaxStorage + (this.prodLevel - 1) * 2;
+      if (saved.plotStocks && saved.plotStocks[p.id] !== undefined) {
+        p.storage = Math.min(p.maxStorage, saved.plotStocks[p.id]);
+      }
+      if (saved.plotGrowTimers && saved.plotGrowTimers[p.id] !== undefined) {
+        p.growTimer = saved.plotGrowTimers[p.id];
+      }
+    });
+
+    this.shelves.forEach(s => {
+      s.maxCapacity = s.baseMaxCapacity + (this.prodLevel - 1) * 3;
+      if (saved.shelfStocks && saved.shelfStocks[s.id] !== undefined) {
+        s.items = Math.min(s.maxCapacity, saved.shelfStocks[s.id]);
+      }
+    });
+
+    if (this.checkout && saved.cashStash) {
+      this.checkout.cashStash = saved.cashStash;
+    }
+
+    for (let i = 0; i < Math.min(4, stockersCount); i++) {
+      this.hireStocker(290, 410);
     }
 
     if (saved.cashierHired) {
-      this.cashierHired = true;
+      this.hireCashier();
+    }
+
+    if (saved.courierHired) {
+      this.hireCourier();
+    }
+
+    if (this.pickupStation && Array.isArray(saved.pickupOrders)) {
+      this.pickupStation.orders = saved.pickupOrders.map(o => ({ ...o, itemsRemaining: [...o.itemsRemaining] }));
+      this.pickupStation.spawnTimer = saved.pickupSpawnTimer !== undefined ? saved.pickupSpawnTimer : 3.5;
     }
 
     if (saved.unlockZones) {
       this.unlockZones = this.unlockZones.filter(z => {
-        if (z.targetId === 'hire_stocker' && this.staffHired) return false;
+        if (z.targetId === 'hire_stocker' && this.staffHelpers.length > 0) return false;
         if (z.targetId === 'hire_cashier' && this.cashierHired) return false;
         const p = this.plots.find(plot => plot.id === z.targetId);
         if (p && p.unlocked) return false;
@@ -375,6 +563,26 @@ class MiniMartGame {
           matchingZone.paid = sz.paid;
         }
       });
+    }
+
+    // Spawn any customers who were waiting at an unattended register while away
+    const waitingCount = Math.min(4, saved.remoteWaitingCustomers || 0);
+    const unlockedTypes = this.plots.filter(p => p.unlocked).map(p => p.type);
+    if (waitingCount > 0 && !this.cashierHired && unlockedTypes.length > 0) {
+      for (let i = 0; i < waitingCount; i++) {
+        const type = unlockedTypes[i % unlockedTypes.length];
+        const c = new MartCustomer(this.checkout.x + 52, this.checkout.y - 10 + i * 36, []);
+        c.basket = [type];
+        c.state = 'IN_QUEUE';
+        this.customers.push(c);
+        this.customerQueue.push(c);
+      }
+    }
+
+    // Report unseen away earnings upon returning
+    if (saved.unseenAwayProfit && saved.unseenAwayProfit > 0) {
+      this.spawnFloatingText(720, 620, `EARNED +$${saved.unseenAwayProfit} WHILE AWAY!`, '#16a34a', 20);
+      saved.unseenAwayProfit = 0;
     }
   }
 
@@ -421,6 +629,9 @@ class MiniMartGame {
     if (this.money >= config.unlockCost) {
       this.money -= config.unlockCost;
       this.unlockedMarts.push(targetMartId);
+      if (!this.martsData[targetMartId]) {
+        this.martsData[targetMartId] = this.createDefaultMartState(targetMartId);
+      }
 
       if (window.miniMartAudio) window.miniMartAudio.playUnlock();
       if (this.rumble) this.rumble(250, 0.4, 0.6);
@@ -444,6 +655,7 @@ class MiniMartGame {
       this.viewportHeight = window.innerHeight;
       this.canvas.width = this.viewportWidth;
       this.canvas.height = this.viewportHeight;
+      this.viewScale = Math.max(0.58, Math.min(1.0, Math.min(this.viewportWidth / 1180, this.viewportHeight / 760)));
     };
     window.addEventListener('resize', handleResize);
     handleResize();
@@ -458,7 +670,7 @@ class MiniMartGame {
         e.preventDefault();
         this.player.triggerTurbo();
       } else if (e.code === 'KeyE') {
-        this.openUpgrades();
+        this.toggleUpgrades();
       } else if (e.code === 'KeyM') {
         this.toggleMartsModal();
       } else if (e.code === 'KeyT') {
@@ -502,7 +714,7 @@ class MiniMartGame {
 
     if (joyContainer && joyKnob) {
       const onTouchStart = (e) => {
-        if (e.target.closest('button, a, .modal-card, .hud-card, #floating-goal-box')) return;
+        if (e.target.closest('button, a, .modal-card, .modal-overlay, .hud-card, #floating-goal-box')) return;
         for (let i = 0; i < e.changedTouches.length; i++) {
           const touch = e.changedTouches[i];
           if (this.input.joystickTouchId === null) {
@@ -598,41 +810,27 @@ class MiniMartGame {
     if (this.ui.btnCloseTutorial) this.ui.btnCloseTutorial.addEventListener('click', () => this.closeTutorialModal());
     if (this.ui.btnTutorialOk) this.ui.btnTutorialOk.addEventListener('click', () => this.closeTutorialModal());
 
-    const btnBuySpeed = document.getElementById('btn-buy-speed');
-    const btnBuyStack = document.getElementById('btn-buy-stack');
-
-    if (btnBuySpeed) {
-      btnBuySpeed.addEventListener('click', () => {
-        const cost = this.player.speedLevel * 50;
-        if (this.money >= cost && this.player.speedLevel < 5) {
-          this.money -= cost;
-          this.player.speedLevel++;
-          this.player.speed += 35;
-          if (window.miniMartAudio) window.miniMartAudio.playUnlock();
-          this.progressTutorial('store_upgrade', 1);
-          this.updateUpgradeModal();
-        }
-      });
-    }
-
-    if (btnBuyStack) {
-      btnBuyStack.addEventListener('click', () => {
-        const cost = this.player.stackLevel * 60;
-        if (this.money >= cost && this.player.stackLevel < 5) {
-          this.money -= cost;
-          this.player.stackLevel++;
-          this.player.maxStack += 4;
-          if (window.miniMartAudio) window.miniMartAudio.playUnlock();
-          this.progressTutorial('store_upgrade', 1);
-          this.updateUpgradeModal();
-        }
-      });
-    }
-
     const btnCloseUpgrades = document.getElementById('btn-close-upgrades');
     if (btnCloseUpgrades) {
       btnCloseUpgrades.addEventListener('click', () => {
         this.ui.upgradeModal.classList.add('hidden');
+      });
+    }
+
+    // Allow closing modals cleanly by clicking/tapping the backdrop overlay outside the card
+    if (this.ui.martsModal) {
+      this.ui.martsModal.addEventListener('click', (e) => {
+        if (e.target === this.ui.martsModal) this.closeMartsModal();
+      });
+    }
+    if (this.ui.upgradeModal) {
+      this.ui.upgradeModal.addEventListener('click', (e) => {
+        if (e.target === this.ui.upgradeModal) this.closeUpgrades();
+      });
+    }
+    if (this.ui.tutorialModal) {
+      this.ui.tutorialModal.addEventListener('click', (e) => {
+        if (e.target === this.ui.tutorialModal) this.closeTutorialModal();
       });
     }
   }
@@ -670,22 +868,64 @@ class MiniMartGame {
     if (gp.buttons[14] && gp.buttons[14].pressed) lx = -1;
     if (gp.buttons[15] && gp.buttons[15].pressed) lx = 1;
 
-    const rawMag = Math.hypot(lx, ly);
-    const DEADZONE = 0.16;
-    if (rawMag > DEADZONE) {
-      const normMag = Math.min(1.0, (rawMag - DEADZONE) / (0.94 - DEADZONE));
-      this.input.gamepadMoveX = (lx / rawMag) * normMag;
-      this.input.gamepadMoveY = (ly / rawMag) * normMag;
-      this.input.gamepadMoveMagnitude = normMag;
-    } else {
+    // Check if any overlay modal is open (Upgrades, Franchise Marts, Tutorial, Pause)
+    const openModal = [this.ui.martsModal, this.ui.upgradeModal, this.ui.tutorialModal, this.ui.pauseModal]
+      .find(m => m && !m.classList.contains('hidden'));
+
+    if (openModal) {
       this.input.gamepadMoveX = 0;
       this.input.gamepadMoveY = 0;
       this.input.gamepadMoveMagnitude = 0;
-    }
 
-    if (isJustPressed(0)) {
-      if (window.miniMartAudio) window.miniMartAudio.resume();
-      this.player.triggerTurbo();
+      const btns = Array.from(openModal.querySelectorAll('button:not([disabled]):not(.icon-only)'))
+        .filter(b => b.offsetParent !== null);
+      this.modalNavCooldown = Math.max(0, (this.modalNavCooldown || 0) - dt);
+      if (this.modalFocusIdx === undefined) this.modalFocusIdx = 0;
+
+      if (btns.length > 0 && this.modalNavCooldown <= 0) {
+        let dir = 0;
+        if (ly > 0.45 || lx > 0.45 || isJustPressed(13) || isJustPressed(15)) dir = 1;
+        else if (ly < -0.45 || lx < -0.45 || isJustPressed(12) || isJustPressed(14)) dir = -1;
+        if (dir !== 0) {
+          this.modalFocusIdx = (this.modalFocusIdx + dir + btns.length) % btns.length;
+          this.modalNavCooldown = 0.18;
+          this.rumble(20, 0.15, 0.08);
+        }
+      }
+      btns.forEach((b, i) => {
+        if (i === (this.modalFocusIdx % Math.max(1, btns.length))) {
+          b.classList.add('gp-focus');
+          if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } else {
+          b.classList.remove('gp-focus');
+        }
+      });
+
+      if (isJustPressed(0) && btns.length > 0) {
+        const target = btns[this.modalFocusIdx % btns.length];
+        if (target) {
+          target.click();
+          this.rumble(35, 0.25, 0.2);
+        }
+      }
+    } else {
+      const rawMag = Math.hypot(lx, ly);
+      const DEADZONE = 0.16;
+      if (rawMag > DEADZONE) {
+        const normMag = Math.min(1.0, (rawMag - DEADZONE) / (0.94 - DEADZONE));
+        this.input.gamepadMoveX = (lx / rawMag) * normMag;
+        this.input.gamepadMoveY = (ly / rawMag) * normMag;
+        this.input.gamepadMoveMagnitude = normMag;
+      } else {
+        this.input.gamepadMoveX = 0;
+        this.input.gamepadMoveY = 0;
+        this.input.gamepadMoveMagnitude = 0;
+      }
+
+      if (isJustPressed(0)) {
+        if (window.miniMartAudio) window.miniMartAudio.resume();
+        this.player.triggerTurbo();
+      }
     }
 
     if (isJustPressed(2)) {
@@ -752,21 +992,234 @@ class MiniMartGame {
 
   openUpgrades() {
     if (this.ui.upgradeModal) {
+      if (window.miniMartAudio) window.miniMartAudio.playBlip();
       this.ui.upgradeModal.classList.remove('hidden');
       this.updateUpgradeModal();
     }
   }
 
-  updateUpgradeModal() {
-    const lblSpeedLvl = document.getElementById('lbl-speed-lvl');
-    const lblSpeedCost = document.getElementById('lbl-speed-cost');
-    const lblStackLvl = document.getElementById('lbl-stack-lvl');
-    const lblStackCost = document.getElementById('lbl-stack-cost');
+  closeUpgrades() {
+    if (this.ui.upgradeModal) {
+      if (window.miniMartAudio) window.miniMartAudio.playBlip();
+      this.ui.upgradeModal.classList.add('hidden');
+    }
+  }
 
-    if (lblSpeedLvl) lblSpeedLvl.innerText = `Lv. ${this.player.speedLevel}/5`;
-    if (lblSpeedCost) lblSpeedCost.innerText = this.player.speedLevel >= 5 ? 'MAX' : `$${this.player.speedLevel * 50}`;
-    if (lblStackLvl) lblStackLvl.innerText = `Lv. ${this.player.stackLevel}/5 (${this.player.maxStack} Items)`;
-    if (lblStackCost) lblStackCost.innerText = this.player.stackLevel >= 5 ? 'MAX' : `$${this.player.stackLevel * 60}`;
+  toggleUpgrades() {
+    if (!this.ui.upgradeModal) return;
+    if (this.ui.upgradeModal.classList.contains('hidden')) {
+      this.openUpgrades();
+    } else {
+      this.closeUpgrades();
+    }
+  }
+
+  getUpgradesCatalog() {
+    const martCfg = MARTS_CONFIG[this.currentMartId] || MARTS_CONFIG.mart_farm;
+    const martMult = this.currentMartId === 'mart_farm' ? 1 : (this.currentMartId === 'mart_beach' ? 1.5 : 2.1);
+    const stockersCount = this.staffHelpers.length;
+    const stockerCosts = [130, 220, 340, 480];
+    const nextStockerCost = stockersCount < 4 ? Math.round(stockerCosts[stockersCount] * martMult) : 0;
+
+    return {
+      global: [
+        {
+          id: 'player_speed',
+          name: 'Player Running Speed',
+          sub: `Lv. ${this.player.speedLevel}/6 (${this.player.speed} px/s)`,
+          desc: 'Run faster across aisles & patios in all stores.',
+          cost: this.player.speedLevel * 50,
+          isMax: this.player.speedLevel >= 6,
+          btnLabel: 'UPGRADE',
+          color: '#0ea5e9',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+        },
+        {
+          id: 'player_stack',
+          name: 'Carry Stack Capacity',
+          sub: `Lv. ${this.player.stackLevel}/6 (${this.player.maxStack} Items)`,
+          desc: 'Carry taller stacks of goods & pickup items.',
+          cost: this.player.stackLevel * 60,
+          isMax: this.player.stackLevel >= 6,
+          btnLabel: 'UPGRADE',
+          color: '#f59e0b',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>`
+        }
+      ],
+      mart: [
+        {
+          id: 'hire_stocker',
+          name: 'Hire Stocker Worker',
+          sub: `${stockersCount}/4 Hired at ${martCfg.shortTitle}`,
+          desc: 'Automatically harvests plots & refills shelves, even while you visit other marts!',
+          cost: nextStockerCost,
+          isMax: stockersCount >= 4,
+          btnLabel: stockersCount === 0 ? 'HIRE' : 'ADD WORKER',
+          color: '#f97316',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>`
+        },
+        {
+          id: 'worker_speed',
+          name: 'Worker Speed & Carry',
+          sub: `Lv. ${this.workerLevel}/5 (+${(this.workerLevel - 1) * 32} Spd, ${6 + (this.workerLevel - 1) * 2} Cap)`,
+          desc: 'All hired Stockers move faster and haul bigger stacks.',
+          cost: Math.round(this.workerLevel * 105 * martMult),
+          isMax: this.workerLevel >= 5,
+          btnLabel: 'BOOST',
+          color: '#8b5cf6',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+        },
+        {
+          id: 'hire_cashier',
+          name: this.cashierHired ? 'Cashier Scan Speed' : 'Hire Store Cashier',
+          sub: this.cashierHired ? `Lv. ${this.cashierLevel}/5 (Auto-Sales Away: ON)` : 'Not Hired Yet',
+          desc: this.cashierHired
+            ? 'Faster register checkouts & stronger remote income!'
+            : 'Automatically scans shoppers and earns live passive income while you are away!',
+          cost: this.cashierHired ? Math.round(this.cashierLevel * 95 * martMult) : Math.round(210 * martMult),
+          isMax: this.cashierHired && this.cashierLevel >= 5,
+          btnLabel: this.cashierHired ? 'UPGRADE' : 'HIRE',
+          color: '#16a34a',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="18" y2="12"/><line x1="6" y1="16" x2="18" y2="16"/></svg>`
+        },
+        {
+          id: 'hire_courier',
+          name: this.courierHired ? 'Pickup Delivery Courier' : 'Hire Delivery Courier',
+          sub: this.courierHired ? `Lv. ${this.courierLevel}/4 (+${(this.courierLevel - 1) * 15}% Tips)` : 'Not Hired Yet',
+          desc: this.courierHired
+            ? 'Faster pickup packing, extra order slots & higher delivery tips (active & away)!'
+            : 'Packs Pickup Orders from stocked shelves and dispatches the Delivery Van even while away!',
+          cost: this.courierHired ? Math.round(this.courierLevel * 145 * martMult) : Math.round(180 * martMult),
+          isMax: this.courierHired && this.courierLevel >= 4,
+          btnLabel: this.courierHired ? 'UPGRADE' : 'HIRE',
+          color: '#0d9488',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
+        },
+        {
+          id: 'prod_boost',
+          name: 'Production & Bin Size',
+          sub: `Lv. ${this.prodLevel}/5 (Plot Cap ${8 + (this.prodLevel - 1) * 2}, Shelf ${12 + (this.prodLevel - 1) * 3})`,
+          desc: 'Crops, ovens & machines produce faster and store more stock.',
+          cost: Math.round(this.prodLevel * 100 * martMult),
+          isMax: this.prodLevel >= 5,
+          btnLabel: 'UPGRADE',
+          color: '#ec4899',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>`
+        },
+        {
+          id: 'marketing_ads',
+          name: 'Delivery Ads & Traffic',
+          sub: `Lv. ${this.marketingLevel}/5 (+${(this.marketingLevel - 1) * 8}% Order Bonus)`,
+          desc: 'Brings more customers, faster Pickup Orders & higher delivery payouts.',
+          cost: Math.round(this.marketingLevel * 120 * martMult),
+          isMax: this.marketingLevel >= 5,
+          btnLabel: 'PROMOTE',
+          color: '#0284c7',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`
+        }
+      ]
+    };
+  }
+
+  buyUpgrade(upgradeId) {
+    const cat = this.getUpgradesCatalog();
+    const all = [...cat.global, ...cat.mart];
+    const item = all.find(u => u.id === upgradeId);
+    if (!item || item.isMax || this.money < item.cost) return;
+
+    this.money -= item.cost;
+
+    switch (upgradeId) {
+      case 'player_speed':
+        this.player.speedLevel++;
+        this.player.speed += 35;
+        break;
+      case 'player_stack':
+        this.player.stackLevel++;
+        this.player.maxStack += 4;
+        break;
+      case 'hire_stocker':
+        this.hireStocker(290, 410);
+        break;
+      case 'worker_speed':
+        this.workerLevel++;
+        break;
+      case 'hire_cashier':
+        if (!this.cashierHired) {
+          this.hireCashier();
+        } else {
+          this.cashierLevel++;
+        }
+        break;
+      case 'hire_courier':
+        if (!this.courierHired) {
+          this.hireCourier();
+        } else {
+          this.courierLevel++;
+        }
+        break;
+      case 'prod_boost':
+        this.prodLevel++;
+        break;
+      case 'marketing_ads':
+        this.marketingLevel++;
+        break;
+      default:
+        return;
+    }
+
+    if (window.miniMartAudio) window.miniMartAudio.playUnlock();
+    if (this.rumble) this.rumble(140, 0.3, 0.4);
+    this.progressTutorial('store_upgrade', 1);
+    this.snapshotActiveMart();
+    this.saveGame();
+    this.updateUpgradeModal();
+  }
+
+  updateUpgradeModal() {
+    if (!this.ui.upgradesList) return;
+    const martCfg = MARTS_CONFIG[this.currentMartId] || MARTS_CONFIG.mart_farm;
+    if (this.ui.upgradeMartSubtitle) {
+      this.ui.upgradeMartSubtitle.innerText = `Managing: ${martCfg.name} (Wallet: $${this.money})`;
+    }
+
+    const cat = this.getUpgradesCatalog();
+    const renderRow = (u) => {
+      const canAfford = !u.isMax && this.money >= u.cost;
+      const btnClass = u.isMax ? 'upgrade-btn maxed' : (canAfford ? 'upgrade-btn' : 'upgrade-btn cannot-afford');
+      const costText = u.isMax ? 'MAXED' : `$${u.cost}`;
+      const labelText = u.isMax ? 'LEVEL' : u.btnLabel;
+      return `
+        <div class="upgrade-item">
+          <div class="upgrade-item-left">
+            <div class="upgrade-icon" style="background: ${u.color};">${u.icon}</div>
+            <div class="upgrade-details">
+              <div class="upgrade-name">${u.name}</div>
+              <div class="upgrade-sub">${u.sub}</div>
+              <div class="upgrade-desc">${u.desc}</div>
+            </div>
+          </div>
+          <button class="${btnClass}" data-upgrade-id="${u.id}" ${u.isMax ? 'disabled' : ''}>
+            <span>${labelText}</span>
+            <span>${costText}</span>
+          </button>
+        </div>
+      `;
+    };
+
+    this.ui.upgradesList.innerHTML = `
+      <div class="upgrade-section-title">GLOBAL OWNER UPGRADES (ALL MARTS)</div>
+      ${cat.global.map(renderRow).join('')}
+      <div class="upgrade-section-title">STORE STAFF &amp; LOGISTICS (${martCfg.shortTitle})</div>
+      ${cat.mart.map(renderRow).join('')}
+    `;
+
+    this.ui.upgradesList.querySelectorAll('button[data-upgrade-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-upgrade-id');
+        this.buyUpgrade(id);
+      });
+    });
   }
 
   // --- FRANCHISE MARTS MODAL & NAVIGATION ---
@@ -783,6 +1236,7 @@ class MiniMartGame {
       if (window.miniMartAudio) window.miniMartAudio.playBlip();
       this.ui.martsModal.classList.add('hidden');
     }
+    this.busTriggerLock = true;
   }
 
   toggleMartsModal() {
@@ -807,7 +1261,7 @@ class MiniMartGame {
 
       let cardClass = isCurrent ? 'current' : (isUnlocked ? 'unlocked' : 'locked');
       let badgeClass = isCurrent ? 'current' : (isUnlocked ? 'unlocked' : 'locked');
-      let badgeLabel = isCurrent ? 'ACTIVE STORE' : (isUnlocked ? 'UNLOCKED' : 'LOCKED');
+      let badgeLabel = isCurrent ? 'ACTIVE STORE' : (isUnlocked ? 'RUNNING LIVE' : 'LOCKED');
 
       // Vector Icon per Mart
       let iconSvg = '';
@@ -817,6 +1271,62 @@ class MiniMartGame {
         iconSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
       } else {
         iconSvg = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>`;
+      }
+
+      // Live Telemetry Summary for Unlocked Marts
+      let liveStatsHtml = '';
+      if (isUnlocked) {
+        let stockCount = 0;
+        let maxStockCount = 0;
+        let stockersCount = 0;
+        let cashierOn = false;
+        let courierOn = false;
+        let ordersCount = 0;
+        let queueWaiting = 0;
+        let awayProfit = 0;
+
+        if (isCurrent) {
+          this.shelves.forEach(s => {
+            if (s.unlocked) {
+              stockCount += s.items;
+              maxStockCount += s.maxCapacity;
+            }
+          });
+          stockersCount = this.staffHelpers.length;
+          cashierOn = this.cashierHired;
+          courierOn = this.courierHired;
+          ordersCount = this.pickupStation ? this.pickupStation.orders.length : 0;
+          queueWaiting = this.customerQueue.length;
+        } else {
+          const st = this.martsData[key] || this.createDefaultMartState(key);
+          const unlockedShelves = st.unlockedShelves || [];
+          const shelfCap = 12 + ((st.prodLevel || 1) - 1) * 3;
+          unlockedShelves.forEach(sId => {
+            stockCount += (st.shelfStocks && st.shelfStocks[sId]) ? st.shelfStocks[sId] : 0;
+            maxStockCount += shelfCap;
+          });
+          stockersCount = st.stockersCount !== undefined ? st.stockersCount : (st.staffHired ? 1 : 0);
+          cashierOn = !!st.cashierHired;
+          courierOn = !!st.courierHired;
+          ordersCount = Array.isArray(st.pickupOrders) ? st.pickupOrders.length : 0;
+          queueWaiting = st.remoteWaitingCustomers || 0;
+          awayProfit = st.awayProfit || 0;
+        }
+
+        const stockClass = stockCount === 0 ? 'alert' : (stockCount < maxStockCount * 0.3 ? 'warn' : 'good');
+        const stockersClass = stockersCount > 0 ? 'good' : 'warn';
+        const cashierClass = cashierOn ? 'good' : (queueWaiting > 0 ? 'alert' : 'warn');
+        const courierClass = courierOn ? 'good' : (ordersCount > 0 ? 'warn' : '');
+
+        liveStatsHtml = `
+          <div class="mart-live-stats">
+            <span class="mart-stat-pill ${stockClass}">Shelves: ${stockCount}/${maxStockCount}</span>
+            <span class="mart-stat-pill ${stockersClass}">Stockers: ${stockersCount}/4</span>
+            <span class="mart-stat-pill ${cashierClass}">${cashierOn ? 'Cashier: ON' : (queueWaiting > 0 ? `${queueWaiting} Waiting!` : 'No Cashier')}</span>
+            <span class="mart-stat-pill ${courierClass}">Pickups: ${ordersCount} ${courierOn ? '(Courier)' : ''}</span>
+            ${!isCurrent && awayProfit > 0 ? `<span class="mart-stat-pill good">Earned: +$${awayProfit}</span>` : ''}
+          </div>
+        `;
       }
 
       // Action Button
@@ -854,6 +1364,7 @@ class MiniMartGame {
               </div>
               <div class="mart-card-desc">${cfg.subtitle}</div>
               <div class="mart-product-tags">${tagsHtml}</div>
+              ${liveStatsHtml}
             </div>
           </div>
           <div class="mart-action-col">
@@ -1117,17 +1628,19 @@ class MiniMartGame {
     // 1. Update Player
     this.player.update(dt, this.input, bounds, this);
 
-    // 2. Camera Smooth Follow
-    this.camera.targetX = this.player.x - this.viewportWidth / 2;
-    this.camera.targetY = this.player.y - this.viewportHeight / 2;
+    // 2. Camera Smooth Follow (adapts cleanly for phone/tablet/handheld scaling)
+    const scale = this.viewScale || 1;
+    this.camera.targetX = this.player.x - (this.viewportWidth / scale) / 2;
+    this.camera.targetY = this.player.y - (this.viewportHeight / scale) / 2;
     const camLerp = Math.min(1.0, dt * 7.5);
     this.camera.x += (this.camera.targetX - this.camera.x) * camLerp;
     this.camera.y += (this.camera.targetY - this.camera.y) * camLerp;
 
-    // 3. Update Plots, Shelves, Checkout, Trash Bin, and Unlock Zones
+    // 3. Update Plots, Shelves, Checkout, Pickup Station, Trash Bin, and Unlock Zones
     this.plots.forEach(plot => plot.update(dt, this));
     this.shelves.forEach(shelf => shelf.update(dt, this));
     if (this.checkout) this.checkout.update(dt, this);
+    if (this.pickupStation) this.pickupStation.update(dt, this);
     if (this.trashBin) this.trashBin.update(dt, this);
     this.unlockZones.forEach(zone => zone.update(dt, this));
 
@@ -1141,22 +1654,33 @@ class MiniMartGame {
       }
     });
 
-    // 4. Update Staff Helper if hired
-    if (this.staffHelper) {
-      this.staffHelper.update(dt, this);
+    // 4. Update Staff Helpers & Delivery Courier if hired
+    for (let i = 0; i < this.staffHelpers.length; i++) {
+      this.staffHelpers[i].update(dt, this);
+    }
+    if (this.deliveryCourier) {
+      this.deliveryCourier.update(dt, this);
     }
 
-    // 5. In-World Travel Bus Trigger Check
+    // 4b. Simulate Unlocked Remote Marts in Background
+    this.updateBackgroundMarts(dt);
+
+    // 5. In-World Travel Bus Trigger Check (edge-triggered so closing doesn't immediately reopen)
     const busDist = Math.hypot(this.player.x - this.busX, this.player.y - this.busY);
-    if (busDist < this.busRadius) {
+    if (busDist > this.busRadius + 24) {
+      this.busTriggerLock = false;
+    } else if (busDist < this.busRadius && !this.busTriggerLock) {
+      this.busTriggerLock = true;
       if (this.ui.martsModal && this.ui.martsModal.classList.contains('hidden')) {
         this.openMartsModal();
       }
     }
 
-    // 6. Customer Spawner
+    // 6. Customer Spawner (scaled by Marketing & Ads upgrade)
+    const effectiveSpawnInterval = Math.max(1.4, this.customerSpawnInterval - (this.marketingLevel - 1) * 0.45);
+    const effectiveMaxCustomers = this.maxCustomers + (this.marketingLevel - 1) * 2;
     this.customerSpawnTimer += dt;
-    if (this.customerSpawnTimer >= this.customerSpawnInterval && this.customers.length < this.maxCustomers) {
+    if (this.customerSpawnTimer >= effectiveSpawnInterval && this.customers.length < effectiveMaxCustomers) {
       this.customerSpawnTimer = 0;
       this.spawnCustomer();
     }
@@ -1210,20 +1734,247 @@ class MiniMartGame {
       }
     }
 
-    // 11. Update DOM HUD
+    // 11. Update DOM HUD & Live Modals
     if (this.ui.hudMoney) this.ui.hudMoney.innerText = `$${this.money}`;
     if (this.ui.hudStack) this.ui.hudStack.innerText = `${this.player.carryStack.length}/${this.player.maxStack}`;
-    const level = 1 + this.plots.filter(p => p.unlocked).length + (this.staffHired ? 1 : 0) + (this.cashierHired ? 1 : 0);
+    const level = 1
+      + this.plots.filter(p => p.unlocked).length
+      + this.staffHelpers.length
+      + (this.cashierHired ? 1 : 0)
+      + (this.courierHired ? 1 : 0);
     this.storeLevel = level;
     if (this.ui.hudLevel) this.ui.hudLevel.innerText = `MART TIER ${this.storeLevel}`;
     this.updateTutorialUI();
+
+    if (this.ui.martsModal && !this.ui.martsModal.classList.contains('hidden')) {
+      this.martListRefreshTimer += dt;
+      if (this.martListRefreshTimer >= 0.75) {
+        this.martListRefreshTimer = 0;
+        this.renderMartsList();
+      }
+    }
+  }
+
+  showRemoteToast(title, sub, color = '#16a34a') {
+    if (!this.ui.remoteToastContainer) return;
+    const now = performance.now();
+    if (now - this.lastToastTime < 2800) return;
+    this.lastToastTime = now;
+
+    // Cap visible toasts to 2
+    while (this.ui.remoteToastContainer.children.length >= 2) {
+      this.ui.remoteToastContainer.removeChild(this.ui.remoteToastContainer.firstChild);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'remote-toast';
+    toast.innerHTML = `
+      <span class="remote-toast-dot" style="background: ${color};"></span>
+      <div class="remote-toast-text">
+        <span class="remote-toast-title">${title}</span>
+        <span class="remote-toast-sub">${sub}</span>
+      </div>
+    `;
+    this.ui.remoteToastContainer.appendChild(toast);
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3600);
+  }
+
+  updateBackgroundMarts(dt) {
+    for (let i = 0; i < this.unlockedMarts.length; i++) {
+      const martId = this.unlockedMarts[i];
+      if (martId === this.currentMartId) continue;
+
+      if (!this.martsData[martId]) {
+        this.martsData[martId] = this.createDefaultMartState(martId);
+      }
+      this.simulateMartBackground(martId, this.martsData[martId], dt, true);
+    }
+  }
+
+  simulateMartBackground(martId, st, dt, emitToast = false) {
+    const cfg = MARTS_CONFIG[martId];
+    if (!cfg || !st) return;
+
+    const prodLvl = st.prodLevel || 1;
+    const workerLvl = st.workerLevel || 1;
+    const cashierLvl = st.cashierLevel || 1;
+    const courierLvl = st.courierLevel || 1;
+    const marketingLvl = st.marketingLevel || 1;
+    const stockersCount = st.stockersCount !== undefined ? st.stockersCount : (st.staffHired ? 1 : 0);
+
+    const maxPlotStock = 8 + (prodLvl - 1) * 2;
+    const maxShelfCap = 12 + (prodLvl - 1) * 3;
+    const growInterval = 2.2 * Math.pow(0.86, prodLvl - 1);
+
+    const plotsMeta = cfg.createPlots();
+    const shelvesMeta = cfg.createShelves();
+    if (!st.plotStocks) st.plotStocks = {};
+    if (!st.plotGrowTimers) st.plotGrowTimers = {};
+    if (!st.shelfStocks) st.shelfStocks = {};
+    if (!Array.isArray(st.pickupOrders)) st.pickupOrders = [];
+
+    const unlockedPlots = plotsMeta.filter(p => (st.unlockedPlots || []).includes(p.id));
+    const unlockedTypes = unlockedPlots.map(p => p.type);
+    const unlockedShelves = shelvesMeta.filter(s => (st.unlockedShelves || []).includes(s.id) || unlockedTypes.includes(s.type));
+
+    // A. Grow crops & production goods
+    for (let i = 0; i < unlockedPlots.length; i++) {
+      const p = unlockedPlots[i];
+      const cur = st.plotStocks[p.id] || 0;
+      if (cur < maxPlotStock) {
+        st.plotGrowTimers[p.id] = (st.plotGrowTimers[p.id] || 0) + dt;
+        while (st.plotGrowTimers[p.id] >= growInterval && (st.plotStocks[p.id] || 0) < maxPlotStock) {
+          st.plotGrowTimers[p.id] -= growInterval;
+          st.plotStocks[p.id] = (st.plotStocks[p.id] || 0) + 1;
+        }
+      }
+    }
+
+    // B. Hired Stockers transfer goods from Plots -> Shelves
+    if (stockersCount > 0 && unlockedPlots.length > 0 && unlockedShelves.length > 0) {
+      const transferRate = stockersCount * (0.65 + (workerLvl - 1) * 0.35);
+      st.bgStockerAcc = (st.bgStockerAcc || 0) + transferRate * dt;
+      while (st.bgStockerAcc >= 1) {
+        st.bgStockerAcc -= 1;
+        // Find plot with stock whose matching shelf has room, favoring lowest shelf stock
+        let bestPair = null;
+        let lowestFill = 999;
+        for (let i = 0; i < unlockedPlots.length; i++) {
+          const plot = unlockedPlots[i];
+          if ((st.plotStocks[plot.id] || 0) <= 0) continue;
+          const shelf = unlockedShelves.find(s => s.type === plot.type);
+          if (!shelf) continue;
+          const shelfItems = st.shelfStocks[shelf.id] || 0;
+          if (shelfItems < maxShelfCap && shelfItems < lowestFill) {
+            lowestFill = shelfItems;
+            bestPair = { plot, shelf };
+          }
+        }
+        if (bestPair) {
+          st.plotStocks[bestPair.plot.id]--;
+          st.shelfStocks[bestPair.shelf.id] = (st.shelfStocks[bestPair.shelf.id] || 0) + 1;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // C. Remote Pickup Orders spawn, auto-pack by Courier, or expire
+    const maxOrders = st.courierHired ? Math.min(4, 2 + Math.floor(courierLvl / 2)) : 2;
+    const orderInterval = Math.max(5.5, 11.5 - (marketingLvl - 1) * 1.3);
+    if (st.pickupOrders.length < maxOrders && unlockedTypes.length > 0) {
+      st.pickupSpawnTimer = (st.pickupSpawnTimer !== undefined ? st.pickupSpawnTimer : 4.0) - dt;
+      if (st.pickupSpawnTimer <= 0) {
+        st.pickupSpawnTimer = orderInterval;
+        const ord = PickupStation.prototype.createOrderData(unlockedTypes, courierLvl, marketingLvl, Date.now() + Math.random());
+        if (ord) {
+          st.pickupOrders.push(ord);
+        }
+      }
+    }
+
+    if (st.courierHired && st.pickupOrders.length > 0) {
+      const packRate = 0.45 + (courierLvl - 1) * 0.25;
+      st.bgCourierAcc = (st.bgCourierAcc || 0) + packRate * dt;
+      while (st.bgCourierAcc >= 1 && st.pickupOrders.length > 0) {
+        let packedOne = false;
+        for (let i = 0; i < st.pickupOrders.length && !packedOne; i++) {
+          const ord = st.pickupOrders[i];
+          for (let j = 0; j < ord.itemsRemaining.length; j++) {
+            const needType = ord.itemsRemaining[j];
+            const shelf = unlockedShelves.find(s => s.type === needType && (st.shelfStocks[s.id] || 0) > 0);
+            if (shelf) {
+              st.shelfStocks[shelf.id]--;
+              ord.itemsRemaining.splice(j, 1);
+              packedOne = true;
+              st.bgCourierAcc -= 1;
+
+              if (ord.itemsRemaining.length === 0) {
+                st.pickupOrders.splice(i, 1);
+                this.money += ord.payout;
+                this.totalProfit += ord.payout;
+                st.awayProfit = (st.awayProfit || 0) + ord.payout;
+                st.unseenAwayProfit = (st.unseenAwayProfit || 0) + ord.payout;
+                st.awayDeliveriesCount = (st.awayDeliveriesCount || 0) + 1;
+                if (emitToast) {
+                  this.showRemoteToast(cfg.shortTitle, `Courier Delivered Pickup +$${ord.payout}`, cfg.accentColor);
+                }
+              }
+              break;
+            }
+          }
+        }
+        if (!packedOne) break;
+      }
+    }
+
+    // Tick down pickup timers & record expirations if unattended
+    for (let i = st.pickupOrders.length - 1; i >= 0; i--) {
+      st.pickupOrders[i].timeLeft -= dt;
+      if (st.pickupOrders[i].timeLeft <= 0) {
+        st.pickupOrders.splice(i, 1);
+        st.awayMissedOrders = (st.awayMissedOrders || 0) + 1;
+        if (emitToast) {
+          this.showRemoteToast(cfg.shortTitle, st.courierHired ? 'Pickup missed (Shelves empty!)' : 'Pickup expired (Hire Courier!)', '#ef4444');
+        }
+      }
+    }
+
+    // D. Remote In-Store Customer Shopping & Register Checkouts
+    const customerInterval = Math.max(1.9, 4.2 - (marketingLvl - 1) * 0.45);
+    st.bgCustomerTimer = (st.bgCustomerTimer || 0) + dt;
+    while (st.bgCustomerTimer >= customerInterval) {
+      st.bgCustomerTimer -= customerInterval;
+      const stockedShelves = unlockedShelves.filter(s => (st.shelfStocks[s.id] || 0) > 0);
+      if (stockedShelves.length === 0) break;
+
+      if (st.cashierHired) {
+        // Cashier rings up 1-2 items per shopper, sped up by cashierLevel
+        const basketCount = Math.min(2 + (cashierLvl >= 3 ? 1 : 0), stockedShelves.length);
+        let earned = 0;
+        for (let b = 0; b < basketCount; b++) {
+          const s = stockedShelves[Math.floor(Math.random() * stockedShelves.length)];
+          if ((st.shelfStocks[s.id] || 0) > 0) {
+            st.shelfStocks[s.id]--;
+            const basePrice = ITEM_TYPES[s.type] ? ITEM_TYPES[s.type].price : 8;
+            earned += basePrice;
+          }
+        }
+        if (earned > 0) {
+          const bonusEarned = Math.round(earned * (1 + (cashierLvl - 1) * 0.05));
+          this.money += bonusEarned;
+          this.totalProfit += bonusEarned;
+          st.awayProfit = (st.awayProfit || 0) + bonusEarned;
+          st.unseenAwayProfit = (st.unseenAwayProfit || 0) + bonusEarned;
+          st.awaySalesCount = (st.awaySalesCount || 0) + 1;
+          if (emitToast && (st.awaySalesCount % 3 === 0)) {
+            this.showRemoteToast(cfg.shortTitle, `Register Sale +$${bonusEarned} (Away Earnings: $${st.awayProfit})`, '#16a34a');
+          }
+        }
+      } else {
+        // Without a Cashier, shoppers queue up at the register (capped at 4) and wait for you!
+        if ((st.remoteWaitingCustomers || 0) < 4) {
+          const s = stockedShelves[Math.floor(Math.random() * stockedShelves.length)];
+          if ((st.shelfStocks[s.id] || 0) > 0) {
+            st.shelfStocks[s.id]--;
+            st.remoteWaitingCustomers = (st.remoteWaitingCustomers || 0) + 1;
+            if (emitToast && st.remoteWaitingCustomers >= 3) {
+              this.showRemoteToast(cfg.shortTitle, `${st.remoteWaitingCustomers} shoppers waiting (Hire Cashier!)`, '#f59e0b');
+            }
+          }
+        }
+      }
+    }
   }
 
   spawnCustomer() {
     const unlockedTypes = this.plots.filter(p => p.unlocked).map(p => p.type);
     if (unlockedTypes.length === 0) return;
 
-    const itemCount = Math.min(3, Math.floor(Math.random() * 2) + 1);
+    const maxBasket = this.marketingLevel >= 3 ? 4 : 3;
+    const itemCount = Math.min(maxBasket, Math.floor(Math.random() * 2) + 1 + (this.marketingLevel >= 4 ? 1 : 0));
     const list = [];
     for (let i = 0; i < itemCount; i++) {
       const randomItem = unlockedTypes[Math.floor(Math.random() * unlockedTypes.length)];
@@ -1237,7 +1988,9 @@ class MiniMartGame {
   render() {
     this.ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
 
+    const scale = this.viewScale || 1;
     this.ctx.save();
+    this.ctx.scale(scale, scale);
     this.ctx.translate(-Math.round(this.camera.x), -Math.round(this.camera.y));
 
     // 1. Draw Themed Supermarket & Patio Floor
@@ -1253,17 +2006,21 @@ class MiniMartGame {
     // 4. Draw Trash Can / Disposal Bin
     if (this.trashBin) this.trashBin.draw(this.ctx);
 
-    // 5. Draw Checkout Register
+    // 5. Draw Checkout Register & Pickup Delivery Station
     if (this.checkout) this.checkout.draw(this.ctx);
+    if (this.pickupStation) this.pickupStation.draw(this.ctx);
 
     // 6. Draw Hired Cashier behind counter (if hired)
     if (this.cashierHired && this.checkout) {
       this.drawCashier(this.ctx, this.checkout.x - 104, this.checkout.y);
     }
 
-    // 7. Draw Staff Helper (if hired)
-    if (this.staffHelper) {
-      this.staffHelper.draw(this.ctx);
+    // 7. Draw Hired Stocker Workers & Delivery Courier
+    for (let i = 0; i < this.staffHelpers.length; i++) {
+      this.staffHelpers[i].draw(this.ctx);
+    }
+    if (this.deliveryCourier) {
+      this.deliveryCourier.draw(this.ctx);
     }
 
     // 8. Draw Customers
@@ -1597,11 +2354,14 @@ class MiniMartGame {
       this.snapshotActiveMart();
       const data = {
         money: this.money,
+        totalProfit: this.totalProfit,
+        totalCustomersServed: this.totalCustomersServed,
         speedLevel: this.player.speedLevel,
         stackLevel: this.player.stackLevel,
         currentMartId: this.currentMartId,
         unlockedMarts: this.unlockedMarts,
         martsData: this.martsData,
+        lastSavedAt: Date.now(),
         tutorialProgress: this.tutorialQuests.map(q => ({
           id: q.id,
           current: q.current || 0,
@@ -1618,6 +2378,8 @@ class MiniMartGame {
       if (!raw) return;
       const data = JSON.parse(raw);
       if (data.money !== undefined) this.money = Math.max(150, data.money);
+      if (data.totalProfit !== undefined) this.totalProfit = data.totalProfit;
+      if (data.totalCustomersServed !== undefined) this.totalCustomersServed = data.totalCustomersServed;
 
       if (data.speedLevel) {
         this.player.speedLevel = data.speedLevel;
@@ -1638,10 +2400,26 @@ class MiniMartGame {
         this.martsData.mart_farm = {
           unlockedPlots: data.unlockedPlots,
           unlockedShelves: data.unlockedShelves || [],
-          staffHired: !!data.staffHired,
+          stockersCount: data.staffHired ? 1 : 0,
           cashierHired: !!data.cashierHired,
           unlockZones: []
         };
+      }
+
+      // Simulate capped offline progress (up to 90s) across unlocked remote marts on return
+      if (data.lastSavedAt) {
+        const elapsedSec = Math.min(90, Math.max(0, (Date.now() - data.lastSavedAt) / 1000));
+        if (elapsedSec >= 3) {
+          const steps = Math.floor(elapsedSec);
+          for (let i = 0; i < this.unlockedMarts.length; i++) {
+            const mId = this.unlockedMarts[i];
+            if (mId === (data.currentMartId || 'mart_farm')) continue;
+            if (!this.martsData[mId]) this.martsData[mId] = this.createDefaultMartState(mId);
+            for (let s = 0; s < steps; s++) {
+              this.simulateMartBackground(mId, this.martsData[mId], 1.0, false);
+            }
+          }
+        }
       }
 
       const targetMart = (data.currentMartId && MARTS_CONFIG[data.currentMartId]) ? data.currentMartId : 'mart_farm';

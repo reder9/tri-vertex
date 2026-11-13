@@ -233,6 +233,7 @@ html, body {
   max-width: 1000px;
   height: auto;
   max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
   aspect-ratio: 1000 / 600;
   object-fit: contain;
   background: #0a0d18;
@@ -683,6 +684,61 @@ html, body {
   }
   #gameCanvas {
     max-height: calc(100vh - 130px);
+    max-height: calc(100dvh - 130px);
     border-width: 2px;
+  }
+}
+
+button.gp-focus, .level-cell.gp-focus {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.7) !important;
+}
+
+/* Compact Landscape Handheld (Anbernic RG556 ~915x515 / Horizontal Phones) */
+@media (max-height: 580px) and (orientation: landscape) {
+  .arcade-navbar {
+    flex-wrap: nowrap;
+    padding: 5px calc(12px + env(safe-area-inset-right, 0px)) 5px calc(12px + env(safe-area-inset-left, 0px));
+    gap: 8px;
+  }
+  .nav-center {
+    order: 0;
+    width: auto;
+    padding-top: 0;
+    border-top: none;
+    gap: 6px;
+  }
+  .brand-text, .hud-pill-label, .action-btn span {
+    display: none;
+  }
+  .hud-pill {
+    padding: 3px 8px;
+  }
+  .hud-pill-value {
+    font-size: 0.68rem;
+  }
+  .action-btn {
+    padding: 4px 8px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .game-viewport {
+    padding: 4px 8px;
+  }
+  #gameCanvas {
+    max-height: calc(100dvh - 76px);
+    border-width: 2px;
+  }
+  .bottom-bar {
+    padding: 2px 8px;
+    margin-top: 2px;
+  }
+  .controller-pills {
+    display: none;
+  }
+  .modal-card, .modal-dialog {
+    max-height: 92dvh;
+    padding: 16px;
   }
 }

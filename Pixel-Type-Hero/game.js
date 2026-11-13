@@ -572,6 +572,51 @@ class TypeHeroGame {
       return down && !was;
     };
 
+    // If Shop, Levels, Pause, or Victory modal is open, let D-Pad/Stick + A navigate menus cleanly
+    const openModal = [this.ui.shopModal, this.ui.levelModal, this.ui.pauseModal, this.ui.victoryModal]
+      .find(m => m && !m.classList.contains('hidden'));
+
+    if (openModal) {
+      let lx = gp.axes[0] || 0;
+      let ly = gp.axes[1] || 0;
+      if (gp.buttons[12]?.pressed) ly = -1;
+      if (gp.buttons[13]?.pressed) ly = 1;
+      if (gp.buttons[14]?.pressed) lx = -1;
+      if (gp.buttons[15]?.pressed) lx = 1;
+
+      const btns = Array.from(openModal.querySelectorAll('button:not([disabled]):not(.icon-only)'))
+        .filter(b => b.offsetParent !== null);
+      this.modalNavCooldown = Math.max(0, (this.modalNavCooldown || 0) - dt);
+      if (this.modalFocusIdx === undefined) this.modalFocusIdx = 0;
+
+      if (btns.length > 0 && this.modalNavCooldown <= 0) {
+        let dir = 0;
+        if (ly > 0.45 || lx > 0.45 || isJustPressed(13) || isJustPressed(15)) dir = 1;
+        else if (ly < -0.45 || lx < -0.45 || isJustPressed(12) || isJustPressed(14)) dir = -1;
+        if (dir !== 0) {
+          this.modalFocusIdx = (this.modalFocusIdx + dir + btns.length) % btns.length;
+          this.modalNavCooldown = 0.18;
+          this.rumble(20, 0.15, 0.08);
+        }
+      }
+      btns.forEach((b, i) => {
+        if (i === (this.modalFocusIdx % Math.max(1, btns.length))) {
+          b.classList.add('gp-focus');
+          if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } else {
+          b.classList.remove('gp-focus');
+        }
+      });
+
+      if (isJustPressed(0) && btns.length > 0) {
+        const target = btns[this.modalFocusIdx % btns.length];
+        if (target) {
+          target.click();
+          this.rumble(30, 0.2, 0.15);
+        }
+      }
+    }
+
     // Button B (1): Close open modals
     if (isJustPressed(1)) {
       this.closeModals();

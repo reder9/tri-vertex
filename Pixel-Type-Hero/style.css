@@ -26,10 +26,17 @@
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background-color: var(--bg-dark);
   font-family: var(--font-pixel);
   color: #f8fafc;
+}
+
+button.gp-focus {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.7) !important;
 }
 
 /* CRT Scanline Retro Effect */
@@ -702,5 +709,34 @@ html, body {
   }
   .kb-key.key-space {
     min-width: 140px;
+  }
+}
+
+/* Compact Landscape Handheld (RG556 / Horizontal Phones) */
+@media (max-height: 580px) and (orientation: landscape) {
+  .top-hud {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .brand-info .hero-title {
+    font-size: 0.65rem;
+  }
+  .hud-btn span {
+    display: none;
+  }
+  .virtual-keyboard {
+    padding: 4px 6px;
+    gap: 3px;
+  }
+  .kb-key {
+    min-width: 26px;
+    height: 28px;
+    font-size: 0.56rem;
+  }
+  .kb-key.key-space {
+    min-width: 120px;
+  }
+  .modal-card {
+    max-height: 92dvh;
   }
 }

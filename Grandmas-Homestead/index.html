@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Grandma's Homestead - Farming Simulator</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -437,7 +437,9 @@
             <li><strong>Water Daily:</strong> Equip your Watering Can (2). Seeds only grow on days they are watered!</li>
             <li><strong>Refill Water:</strong> Click on the stone well or the pond on the east side to fill your can to 20/20.</li>
             <li><strong>Clear Debris:</strong> Use Scythe (3) for weeds, Axe (4) for wood logs, and Pickaxe (5) for stone boulders.</li>
-            <li><strong>Harvest & Sell:</strong> When crops shimmer with a golden sparkle, click them to harvest. Sell them at the Village Shop or Shipping Bin for Gold!</li>
+            <li><strong>Harvest &amp; Sell:</strong> When crops shimmer with a golden sparkle, click them to harvest. Sell individual items or stacks at the Village Shop or Shipping Bin for Gold!</li>
+            <li><strong>Go Fishing:</strong> Equip the <strong>Fishing Rod</strong> by Lake Hazel (east farm dock) or Oakhaven Canal! Press Space / Click / USE when you see <strong>! BITE !</strong>, then tap inside the green bar to catch 6 fish species!</li>
+            <li><strong>Forage &amp; Cook:</strong> Gather wild flowers, mushrooms, berries, and honey around the farm, then cook hearty recipes at the <strong>Kitchen Table</strong> inside Grandma's Cottage!</li>
           </ol>
         </div>
 
@@ -721,6 +723,7 @@
           <button class="shop-tab-btn active" data-inv-tab="all">All Items</button>
           <button class="shop-tab-btn" data-inv-tab="tool">Tools</button>
           <button class="shop-tab-btn" data-inv-tab="seed">Seeds &amp; Crops</button>
+          <button class="shop-tab-btn" data-inv-tab="fish">Fish &amp; Forage</button>
           <button class="shop-tab-btn" data-inv-tab="food">Food &amp; Energy</button>
           <button class="shop-tab-btn" data-inv-tab="material">Materials</button>
         </div>
@@ -734,6 +737,29 @@
   </div>
 
   <!-- Game Scripts -->
+  <!-- 12. Grandma's Country Kitchen & Angler Log Modal -->
+  <div id="cookingModal" class="game-modal">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <svg class="ui-icon" style="color: #ea580c;" viewBox="0 0 24 24">
+            <path d="M3 11h18v2a7 7 0 0 1-7 7h-4a7 7 0 0 1-7-7v-2Z"/>
+            <path d="M6 11V7a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v4"/>
+          </svg>
+          <span>Grandma's Country Kitchen &amp; Log</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Kitchen">
+          <svg class="ui-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="cookingContent">
+        <!-- Injected by game.js -->
+      </div>
+    </div>
+  </div>
   <script src="audio.js"></script>
   <script src="sprites.js"></script>
   <script src="game.js"></script>

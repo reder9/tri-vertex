@@ -527,9 +527,11 @@ class ProductionPlot {
     this.width = opts.width || 96;
     this.height = opts.height || 92;
     this.maxStorage = opts.maxStorage || 8;
+    this.baseMaxStorage = this.maxStorage;
     this.storage = opts.initialStock || 0;
     this.growTimer = 0;
     this.growInterval = opts.growInterval || 2.2;
+    this.baseGrowInterval = this.growInterval;
     this.unlocked = opts.unlocked !== undefined ? opts.unlocked : true;
     this.triggerRadius = 58;
     this.animTimer = Math.random() * 10;
@@ -538,6 +540,10 @@ class ProductionPlot {
   update(dt, game) {
     if (!this.unlocked) return;
     this.animTimer += dt;
+
+    const prodLevel = (game && game.prodLevel) ? game.prodLevel : 1;
+    this.maxStorage = this.baseMaxStorage + (prodLevel - 1) * 2;
+    this.growInterval = this.baseGrowInterval * Math.pow(0.86, prodLevel - 1);
 
     if (this.storage < this.maxStorage) {
       this.growTimer += dt;
@@ -556,7 +562,14 @@ class ProductionPlot {
       this.harvestTo(p, game);
     }
 
-    if (game.staffHelper && dist(this.x, this.y, game.staffHelper.x, game.staffHelper.y) < this.triggerRadius) {
+    if (Array.isArray(game.staffHelpers)) {
+      for (let i = 0; i < game.staffHelpers.length; i++) {
+        const helper = game.staffHelpers[i];
+        if (helper && dist(this.x, this.y, helper.x, helper.y) < this.triggerRadius) {
+          this.harvestTo(helper, game);
+        }
+      }
+    } else if (game.staffHelper && dist(this.x, this.y, game.staffHelper.x, game.staffHelper.y) < this.triggerRadius) {
       this.harvestTo(game.staffHelper, game);
     }
   }
@@ -1217,6 +1230,7 @@ class StoreShelf {
     this.width = opts.width || 96;
     this.height = opts.height || 74;
     this.maxCapacity = opts.maxCapacity || 12;
+    this.baseMaxCapacity = this.maxCapacity;
     this.items = opts.initialStock || 4;
     this.unlocked = opts.unlocked !== undefined ? opts.unlocked : true;
     this.triggerRadius = 60;
@@ -1225,12 +1239,22 @@ class StoreShelf {
   update(dt, game) {
     if (!this.unlocked) return;
 
+    const prodLevel = (game && game.prodLevel) ? game.prodLevel : 1;
+    this.maxCapacity = this.baseMaxCapacity + (prodLevel - 1) * 3;
+
     const p = game.player;
     if (p && dist(this.x, this.y, p.x, p.y) < this.triggerRadius) {
       this.restockFrom(p, game);
     }
 
-    if (game.staffHelper && dist(this.x, this.y, game.staffHelper.x, game.staffHelper.y) < this.triggerRadius) {
+    if (Array.isArray(game.staffHelpers)) {
+      for (let i = 0; i < game.staffHelpers.length; i++) {
+        const helper = game.staffHelpers[i];
+        if (helper && dist(this.x, this.y, helper.x, helper.y) < this.triggerRadius) {
+          this.restockFrom(helper, game);
+        }
+      }
+    } else if (game.staffHelper && dist(this.x, this.y, game.staffHelper.x, game.staffHelper.y) < this.triggerRadius) {
       this.restockFrom(game.staffHelper, game);
     }
   }
@@ -1298,15 +1322,17 @@ class StoreShelf {
     ctx.fillStyle = '#b45309';
     ctx.fillRect(-w / 2 + 6, 2, w - 12, 4);
 
-    // 3. Draw 12 Item Slots
+    // 3. Draw up to 12 Visible Item Slots cleanly inside the tray
     const cols = 4;
-    for (let i = 0; i < this.maxCapacity; i++) {
+    const visibleSlots = Math.min(12, this.maxCapacity);
+    const visualFilled = Math.min(visibleSlots, this.items);
+    for (let i = 0; i < visibleSlots; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const ix = -w / 2 + 18 + col * 20;
       const iy = -13 + row * 16;
 
-      if (i < this.items) {
+      if (i < visualFilled) {
         drawItemIcon(ctx, ix, iy, this.type, 0.92);
       } else {
         ctx.save();
@@ -1406,9 +1432,14 @@ class CheckoutCounter {
     }
 
     // 2. Scan items
+    const cashierLvl = (game && game.cashierLevel) ? game.cashierLevel : 1;
+    const activeScanInterval = cashierAttending
+      ? Math.max(0.14, this.scanInterval * Math.pow(0.78, cashierLvl - 1))
+      : this.scanInterval;
+
     if (canScan && this.activeCustomer && this.activeCustomer.basket && this.activeCustomer.basket.length > 0) {
       this.scanTimer += dt;
-      if (this.scanTimer >= this.scanInterval) {
+      if (this.scanTimer >= activeScanInterval) {
         this.scanTimer = 0;
         const item = this.activeCustomer.basket.shift();
         const itemVal = ITEM_TYPES[item] ? ITEM_TYPES[item].price : 8;
@@ -1946,15 +1977,24 @@ class MartCustomer {
 /**
  * AUTOMATED STAFF HELPER (RESTOCKER)
  */
+const WORKER_PALETTES = [
+  { shirt: '#f97316', cap: '#ea580c', label: 'S1' },
+  { shirt: '#0ea5e9', cap: '#0284c7', label: 'S2' },
+  { shirt: '#a855f7', cap: '#7e22ce', label: 'S3' },
+  { shirt: '#10b981', cap: '#047857', label: 'S4' }
+];
+
 class StaffHelper {
-  constructor(x, y) {
+  constructor(x, y, workerIndex = 0) {
     this.x = x;
     this.y = y;
-    this.speed = 140;
+    this.workerIndex = workerIndex;
+    this.palette = WORKER_PALETTES[workerIndex % WORKER_PALETTES.length];
+    this.speed = 145;
     this.carryStack = [];
     this.maxStack = 6;
     this.radius = 16;
-    this.walkAnim = 0;
+    this.walkAnim = Math.random() * 6;
     this.state = 'FIND_SUPPLY';
     this.targetPlot = null;
     this.targetShelf = null;
@@ -1962,32 +2002,72 @@ class StaffHelper {
 
   update(dt, game) {
     this.walkAnim += dt * 10;
+    const workerLevel = (game && game.workerLevel) ? game.workerLevel : 1;
+    this.speed = 145 + (workerLevel - 1) * 32;
+    this.maxStack = 6 + (workerLevel - 1) * 2;
 
     if (this.state === 'FIND_SUPPLY') {
-      if (!this.targetPlot || this.targetPlot.storage === 0) {
-        this.targetPlot = game.plots.find(p => p.unlocked && p.storage > 0);
+      // Pick plots that have stock AND whose shelf still needs stock, staggering across workers
+      const validPlots = game.plots.filter(p => {
+        if (!p.unlocked || p.storage <= 0) return false;
+        const shelf = game.shelves.find(s => s.unlocked && s.type === p.type && s.items < s.maxCapacity);
+        return !!shelf;
+      });
+
+      if (!this.targetPlot || !validPlots.includes(this.targetPlot)) {
+        if (validPlots.length > 0) {
+          // Prefer plots with lowest shelf fill ratio, offset by workerIndex for natural spreading
+          validPlots.sort((a, b) => {
+            const sa = game.shelves.find(s => s.type === a.type);
+            const sb = game.shelves.find(s => s.type === b.type);
+            const ra = sa ? sa.items / sa.maxCapacity : 1;
+            const rb = sb ? sb.items / sb.maxCapacity : 1;
+            return ra - rb;
+          });
+          this.targetPlot = validPlots[this.workerIndex % validPlots.length];
+        } else {
+          this.targetPlot = game.plots.find(p => p.unlocked && p.storage > 0) || null;
+        }
       }
 
       if (this.targetPlot) {
         this.moveTowards(this.targetPlot.x, this.targetPlot.y, dt);
-        if (dist(this.x, this.y, this.targetPlot.x, this.targetPlot.y) < 30) {
+        if (dist(this.x, this.y, this.targetPlot.x, this.targetPlot.y) < 34) {
           this.targetPlot.harvestTo(this, game);
           if (this.carryStack.length >= this.maxStack || this.targetPlot.storage === 0) {
             this.state = 'DELIVERING';
           }
         }
+      } else if (this.carryStack.length > 0) {
+        this.state = 'DELIVERING';
       }
     } else if (this.state === 'DELIVERING') {
       if (this.carryStack.length > 0) {
-        const itemType = this.carryStack[0];
-        const shelf = game.shelves.find(s => s.unlocked && s.type === itemType && s.items < s.maxCapacity);
+        // Find any shelf that matches an item in carryStack and needs stock
+        let shelf = null;
+        for (let i = 0; i < this.carryStack.length; i++) {
+          const candidate = game.shelves.find(s => s.unlocked && s.type === this.carryStack[i] && s.items < s.maxCapacity);
+          if (candidate) {
+            shelf = candidate;
+            break;
+          }
+        }
+
         if (shelf) {
           this.moveTowards(shelf.x, shelf.y + 38, dt);
-          if (dist(this.x, this.y, shelf.x, shelf.y + 38) < 30) {
+          if (dist(this.x, this.y, shelf.x, shelf.y + 38) < 34) {
             shelf.restockFrom(this, game);
           }
         } else {
-          this.state = 'FIND_SUPPLY';
+          // If pickup station wants an item we are holding, drop it off instead of wasting!
+          if (game.pickupStation && game.pickupStation.needsAnyItem(this.carryStack)) {
+            this.moveTowards(game.pickupStation.padX, game.pickupStation.padY, dt);
+            if (dist(this.x, this.y, game.pickupStation.padX, game.pickupStation.padY) < 42) {
+              game.pickupStation.acceptFrom(this, game);
+            }
+          } else {
+            this.state = 'FIND_SUPPLY';
+          }
         }
       } else {
         this.state = 'FIND_SUPPLY';
@@ -2014,8 +2094,8 @@ class StaffHelper {
     ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Orange Helper Uniform & Cap
-    ctx.fillStyle = '#f97316';
+    // Worker Uniform & Cap (color-coded by worker slot)
+    ctx.fillStyle = this.palette.shirt;
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -2029,7 +2109,7 @@ class StaffHelper {
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#ea580c';
+    ctx.fillStyle = this.palette.cap;
     ctx.beginPath();
     ctx.arc(0, -17, 10, Math.PI, 0);
     ctx.fill();
@@ -2096,8 +2176,12 @@ class UnlockZone {
     }
 
     if (this.targetId === 'hire_stocker') {
-      game.staffHelper = new StaffHelper(this.x, this.y);
-      game.staffHired = true;
+      if (game.hireStocker) {
+        game.hireStocker(this.x, this.y);
+      } else {
+        game.staffHelpers.push(new StaffHelper(this.x, this.y, game.staffHelpers.length));
+        game.staffHired = true;
+      }
     } else if (this.targetId === 'hire_cashier') {
       game.cashierHired = true;
     } else {
@@ -2586,4 +2670,519 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   }
 
   ctx.restore();
+}
+
+/**
+ * PICKUP & DELIVERY STATION (Curbside Orders + Animated Delivery Van)
+ */
+class PickupStation {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.padX = x - 98;
+    this.padY = y;
+    this.width = 114;
+    this.height = 76;
+    this.orders = [];
+    this.nextOrderId = 1;
+    this.spawnTimer = 3.5;
+    this.acceptCooldown = 0;
+    this.vanAnim = 0; // > 0 when van is dispatching
+    this.pulse = 0;
+    this.completedCount = 0;
+  }
+
+  getMaxOrders(game) {
+    const cLvl = (game && game.courierHired) ? (game.courierLevel || 1) : 1;
+    return Math.min(4, 2 + Math.floor(cLvl / 2));
+  }
+
+  getSpawnInterval(game) {
+    const mLvl = (game && game.marketingLevel) ? game.marketingLevel : 1;
+    return Math.max(5.5, 11.5 - (mLvl - 1) * 1.3);
+  }
+
+  createOrderData(unlockedTypes, courierLevel = 1, marketingLevel = 1, forceId = null) {
+    if (!unlockedTypes || unlockedTypes.length === 0) return null;
+    const isVip = unlockedTypes.length >= 2 && Math.random() < (0.22 + (marketingLevel - 1) * 0.04);
+    const count = isVip
+      ? Math.min(4, 3 + (Math.random() < 0.5 ? 1 : 0))
+      : (2 + (unlockedTypes.length >= 2 && Math.random() < 0.45 ? 1 : 0));
+
+    const items = [];
+    let baseSum = 0;
+    for (let i = 0; i < count; i++) {
+      const t = unlockedTypes[Math.floor(Math.random() * unlockedTypes.length)];
+      items.push(t);
+      baseSum += ITEM_TYPES[t] ? ITEM_TYPES[t].price : 8;
+    }
+
+    const mult = 1.65 + (courierLevel - 1) * 0.15 + (marketingLevel - 1) * 0.08 + (isVip ? 0.35 : 0);
+    const payout = Math.round(baseSum * mult);
+    const duration = isVip ? 48 : 62;
+
+    return {
+      id: forceId || this.nextOrderId++,
+      itemsRemaining: items,
+      totalItems: items.length,
+      payout,
+      isVip,
+      maxTime: duration,
+      timeLeft: duration
+    };
+  }
+
+  needsAnyItem(carryStack) {
+    if (!carryStack || carryStack.length === 0 || this.orders.length === 0) return false;
+    for (let i = 0; i < this.orders.length; i++) {
+      const ord = this.orders[i];
+      for (let j = 0; j < carryStack.length; j++) {
+        if (ord.itemsRemaining.includes(carryStack[j])) return true;
+      }
+    }
+    return false;
+  }
+
+  getFirstNeededItem(unlockedShelves) {
+    for (let i = 0; i < this.orders.length; i++) {
+      const ord = this.orders[i];
+      for (let j = 0; j < ord.itemsRemaining.length; j++) {
+        const type = ord.itemsRemaining[j];
+        const shelf = unlockedShelves.find(s => s.unlocked && s.type === type && s.items > 0);
+        if (shelf) return { type, shelf };
+      }
+    }
+    return null;
+  }
+
+  update(dt, game) {
+    this.pulse += dt * 4.5;
+    if (this.acceptCooldown > 0) this.acceptCooldown = Math.max(0, this.acceptCooldown - dt);
+    if (this.vanAnim > 0) this.vanAnim = Math.max(0, this.vanAnim - dt);
+
+    const unlockedTypes = game.plots.filter(p => p.unlocked).map(p => p.type);
+    const maxOrders = this.getMaxOrders(game);
+
+    // Spawn incoming pickup orders
+    if (this.orders.length < maxOrders && unlockedTypes.length > 0) {
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0) {
+        this.spawnTimer = this.getSpawnInterval(game);
+        const order = this.createOrderData(unlockedTypes, game.courierLevel || 1, game.marketingLevel || 1);
+        if (order) {
+          this.orders.push(order);
+          if (window.miniMartAudio) window.miniMartAudio.playOrderBell();
+          game.spawnFloatingText(this.x, this.y - 68, order.isVip ? 'VIP PICKUP ORDER!' : 'NEW PICKUP ORDER!', order.isVip ? '#d97706' : '#0284c7', 15);
+        }
+      }
+    }
+
+    // Tick existing pickup order timers
+    for (let i = this.orders.length - 1; i >= 0; i--) {
+      const ord = this.orders[i];
+      ord.timeLeft -= dt;
+      if (ord.timeLeft <= 0) {
+        this.orders.splice(i, 1);
+        game.spawnFloatingText(this.x, this.y - 45, 'ORDER EXPIRED', '#ef4444', 15);
+      }
+    }
+
+    // Accept items from player on the packing mat
+    const p = game.player;
+    if (p && this.orders.length > 0) {
+      const nearPad = Math.abs(p.x - this.padX) < 52 && Math.abs(p.y - this.padY) < 52;
+      if (nearPad) {
+        this.acceptFrom(p, game);
+      }
+    }
+
+    // Accept items from Delivery Courier if near pad
+    if (game.deliveryCourier && this.orders.length > 0) {
+      if (dist(game.deliveryCourier.x, game.deliveryCourier.y, this.padX, this.padY) < 46) {
+        this.acceptFrom(game.deliveryCourier, game);
+      }
+    }
+  }
+
+  acceptFrom(carrier, game) {
+    if (!carrier || !carrier.carryStack || carrier.carryStack.length === 0 || this.acceptCooldown > 0) return false;
+
+    for (let i = 0; i < this.orders.length; i++) {
+      const ord = this.orders[i];
+      for (let j = carrier.carryStack.length - 1; j >= 0; j--) {
+        const carriedType = carrier.carryStack[j];
+        const neededIdx = ord.itemsRemaining.indexOf(carriedType);
+        if (neededIdx !== -1) {
+          carrier.carryStack.splice(j, 1);
+          ord.itemsRemaining.splice(neededIdx, 1);
+          this.acceptCooldown = 0.11;
+
+          game.spawnFlyingItem(carrier.x, carrier.y, this, carriedType);
+          if (carrier === game.player && window.miniMartAudio) {
+            window.miniMartAudio.playRestock();
+            if (game.rumble) game.rumble(25, 0.12, 0.1);
+          }
+
+          if (ord.itemsRemaining.length === 0) {
+            this.completeOrder(i, game);
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  completeOrder(orderIdx, game) {
+    const ord = this.orders.splice(orderIdx, 1)[0];
+    if (!ord) return;
+
+    this.completedCount++;
+    this.vanAnim = 1.35;
+    game.money += ord.payout;
+    game.totalProfit += ord.payout;
+    game.totalCustomersServed = (game.totalCustomersServed || 0) + 1;
+
+    if (window.miniMartAudio) {
+      window.miniMartAudio.playDeliveryHorn();
+      window.miniMartAudio.playCash();
+    }
+    if (game.rumble) game.rumble(110, 0.35, 0.45);
+
+    game.spawnConfetti(this.x + 40, this.y - 20);
+    game.spawnCashParticles(this.x + 20, this.y - 10, 12);
+    game.spawnFloatingText(
+      this.x + 10,
+      this.y - 52,
+      `${ord.isVip ? 'VIP DELIVERY' : 'PICKUP SENT'} +$${ord.payout}`,
+      ord.isVip ? '#d97706' : '#16a34a',
+      20
+    );
+  }
+
+  draw(ctx) {
+    ctx.save();
+
+    // 1. Packing Zone Mat (Left side of Pickup Desk)
+    const matActive = this.orders.length > 0;
+    const pulseAlpha = matActive ? (0.85 + Math.sin(this.pulse) * 0.15) : 0.6;
+    ctx.save();
+    ctx.translate(this.padX, this.padY);
+    ctx.fillStyle = matActive ? `rgba(224, 242, 254, ${pulseAlpha})` : 'rgba(241, 245, 249, 0.85)';
+    ctx.strokeStyle = matActive ? '#0284c7' : '#94a3b8';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.roundRect(-42, -40, 84, 80, 16);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = '700 10px "Fredoka", "Nunito", sans-serif';
+    ctx.fillStyle = matActive ? '#0369a1' : '#64748b';
+    ctx.textAlign = 'center';
+    ctx.fillText('DROP PICKUP', 0, -24);
+    ctx.fillText('ITEMS HERE', 0, 31);
+
+    // Little package box icon inside pad
+    ctx.fillStyle = '#f59e0b';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-14, -12, 28, 22, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-14, -3);
+    ctx.lineTo(14, -3);
+    ctx.moveTo(0, -12);
+    ctx.lineTo(0, -3);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Delivery Van Bay (Right side of Pickup Counter)
+    let vanSlide = 0;
+    if (this.vanAnim > 0) {
+      const p = 1 - (this.vanAnim / 1.35);
+      vanSlide = p < 0.5 ? (p * 2 * 120) : ((1 - p) * 2 * 120);
+    }
+    ctx.save();
+    ctx.translate(this.x + 114 + vanSlide, this.y + 4);
+    // Parking bay outline
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(-42 - vanSlide, -34, 86, 66);
+    ctx.setLineDash([]);
+
+    // Cartoon Delivery Van
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+    ctx.beginPath();
+    ctx.roundRect(-34, -16, 72, 42, 10);
+    ctx.fill();
+
+    // Cargo Box
+    ctx.fillStyle = '#fef3c7';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(-34, -22, 46, 40, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Blue Delivery Stripe
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(-32, -5, 42, 9);
+
+    // Van Cab
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.roundRect(10, -16, 26, 34, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Windshield
+    ctx.fillStyle = '#bae6fd';
+    ctx.beginPath();
+    ctx.roundRect(18, -11, 14, 24, 4);
+    ctx.fill();
+
+    // Wheels
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-24, -26, 14, 6, 3);
+    ctx.roundRect(-24, 16, 14, 6, 3);
+    ctx.roundRect(14, -20, 13, 5, 2);
+    ctx.roundRect(14, 15, 13, 5, 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 3. Pickup Desk Body
+    ctx.translate(this.x, this.y);
+    const w = this.width;
+    const h = this.height;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 2, -h / 2 + 7, w, h, 16);
+    ctx.fill();
+
+    ctx.fillStyle = '#0284c7';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#e0f2fe';
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 6, -h / 2 + 12, w - 12, h - 20, 11);
+    ctx.fill();
+
+    // Striped Blue/Gold Awning
+    const stripes = 6;
+    const sw = (w - 8) / stripes;
+    for (let s = 0; s < stripes; s++) {
+      ctx.fillStyle = (s % 2 === 0) ? '#0ea5e9' : '#facc15';
+      ctx.beginPath();
+      ctx.roundRect(-w / 2 + 4 + s * sw, -h / 2 + 2, sw, 11, 4);
+      ctx.fill();
+    }
+
+    // Desk Countertop Details (Tablet & Crates)
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-40, -10, 26, 20, 4);
+    ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(-37, -7, 20, 14);
+
+    // Signboard Pill
+    ctx.fillStyle = '#0369a1';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-58, h / 2 + 4, 116, 20, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = '700 10.5px "Fredoka", "Nunito", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`PICKUP HUB (${this.orders.length})`, 0, h / 2 + 14.5);
+
+    // 4. Floating Order Cards above Pickup Desk
+    if (this.orders.length === 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-56, -h / 2 - 34, 112, 24, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#475569';
+      ctx.font = '700 10px "Fredoka", "Nunito", sans-serif';
+      ctx.fillText('NO ORDERS YET', 0, -h / 2 - 21.5);
+    } else {
+      const cardH = 38;
+      const gap = 6;
+      for (let idx = 0; idx < this.orders.length; idx++) {
+        const ord = this.orders[idx];
+        const cy = -h / 2 - 26 - idx * (cardH + gap);
+
+        // Tally remaining items by type for compact display
+        const counts = {};
+        ord.itemsRemaining.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+        const entries = Object.entries(counts);
+        const cardW = Math.max(136, 56 + entries.length * 32);
+
+        ctx.fillStyle = ord.isVip ? '#fffbeb' : '#ffffff';
+        ctx.strokeStyle = ord.isVip ? '#f59e0b' : '#1e293b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(-cardW / 2, cy - cardH / 2, cardW, cardH, 11);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw item icons & counts
+        let ix = -cardW / 2 + 20;
+        entries.forEach(([itemType, qty]) => {
+          drawItemIcon(ctx, ix, cy - 3, itemType, 0.78);
+          ctx.fillStyle = '#1e293b';
+          ctx.font = '800 10px "Fredoka", "Nunito", sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(`x${qty}`, ix + 8, cy + 1);
+          ix += 32;
+        });
+
+        // Payout Pill on right
+        ctx.fillStyle = ord.isVip ? '#f59e0b' : '#16a34a';
+        ctx.beginPath();
+        ctx.roundRect(cardW / 2 - 44, cy - 13, 38, 18, 7);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 10px "Fredoka", "Nunito", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`+$${ord.payout}`, cardW / 2 - 25, cy - 3.5);
+
+        // Timer Bar along bottom of ticket
+        const frac = Math.max(0, Math.min(1, ord.timeLeft / ord.maxTime));
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(-cardW / 2 + 8, cy + cardH / 2 - 6, cardW - 16, 3.5);
+        ctx.fillStyle = frac > 0.5 ? '#22c55e' : (frac > 0.25 ? '#f59e0b' : '#ef4444');
+        ctx.fillRect(-cardW / 2 + 8, cy + cardH / 2 - 6, (cardW - 16) * frac, 3.5);
+      }
+    }
+
+    ctx.restore();
+  }
+}
+
+/**
+ * PICKUP DELIVERY COURIER WORKER (Automatically packs orders from stocked shelves)
+ */
+class DeliveryCourier {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.speed = 155;
+    this.carryStack = [];
+    this.maxStack = 5;
+    this.walkAnim = 0;
+    this.state = 'IDLE';
+    this.targetShelf = null;
+  }
+
+  update(dt, game) {
+    this.walkAnim += dt * 11;
+    const cLvl = (game && game.courierLevel) ? game.courierLevel : 1;
+    this.speed = 155 + (cLvl - 1) * 32;
+    this.maxStack = 4 + cLvl;
+
+    const station = game.pickupStation;
+    if (!station) return;
+
+    if (this.carryStack.length > 0 && station.needsAnyItem(this.carryStack)) {
+      this.moveTowards(station.padX, station.padY, dt);
+      if (dist(this.x, this.y, station.padX, station.padY) < 38) {
+        station.acceptFrom(this, game);
+      }
+      return;
+    }
+
+    // Grab needed item from any stocked shelf
+    const needed = station.getFirstNeededItem(game.shelves);
+    if (needed && this.carryStack.length < this.maxStack) {
+      this.targetShelf = needed.shelf;
+      this.moveTowards(this.targetShelf.x, this.targetShelf.y + 38, dt);
+      if (dist(this.x, this.y, this.targetShelf.x, this.targetShelf.y + 38) < 36) {
+        if (this.targetShelf.items > 0) {
+          this.targetShelf.items--;
+          this.carryStack.push(this.targetShelf.type);
+          game.spawnFlyingItem(this.targetShelf.x, this.targetShelf.y, this, this.targetShelf.type);
+        }
+      }
+    } else if (this.carryStack.length > 0 && station.orders.length > 0) {
+      this.moveTowards(station.padX, station.padY, dt);
+    } else {
+      // Wait smoothly beside pickup loading bay
+      this.moveTowards(station.padX - 18, station.padY + 26, dt);
+    }
+  }
+
+  moveTowards(tx, ty, dt) {
+    const dx = tx - this.x;
+    const dy = ty - this.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 2) {
+      this.x += (dx / d) * this.speed * dt;
+      this.y += (dy / d) * this.speed * dt;
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Teal Delivery Courier Jacket
+    ctx.fillStyle = '#0d9488';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.roundRect(-10, -6, 20, 16, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // Yellow safety stripe
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-9, 1, 18, 3);
+
+    // Head
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.arc(0, -14, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Courier Visor Cap
+    ctx.fillStyle = '#0f766e';
+    ctx.beginPath();
+    ctx.arc(0, -17, 10, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    if (this.carryStack.length > 0) {
+      for (let i = 0; i < this.carryStack.length; i++) {
+        drawItemIcon(ctx, 0, -30 - i * 11, this.carryStack[i], 0.9);
+      }
+    }
+
+    ctx.restore();
+  }
 }

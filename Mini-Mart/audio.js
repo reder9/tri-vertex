@@ -310,6 +310,46 @@ class MiniMartAudio {
       });
     } catch (_) {}
   }
+
+  // Sound Effect: New Pickup Order notification ding
+  playOrderBell() {
+    if (!this.ctx || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      [784.0, 1046.5].forEach((f, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now + idx * 0.09);
+        gain.gain.setValueAtTime(0.11, now + idx * 0.09);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + idx * 0.09);
+        osc.stop(now + idx * 0.09 + 0.24);
+      });
+    } catch (_) {}
+  }
+
+  // Sound Effect: Delivery Van dispatch beep-beep & whoosh
+  playDeliveryHorn() {
+    if (!this.ctx || this.isMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      [0, 0.13].forEach((offset) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now + offset);
+        gain.gain.setValueAtTime(0.12, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.11);
+      });
+    } catch (_) {}
+  }
 }
 
 // Global audio engine singleton

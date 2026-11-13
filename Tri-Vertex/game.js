@@ -742,20 +742,24 @@ class GameEngine {
       btn.addEventListener('touchstart', switchTab, { passive: false });
     });
 
-    // Detect device type to activate optimal tab by default
-    const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024);
-    if (hasTouch) {
+    // Detect device type to activate optimal tab & avoid covering RG556/handheld screens if gamepad active
+    const connectedPads = navigator.getGamepads ? Array.from(navigator.getGamepads()).some(g => g && g.connected) : false;
+    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0);
+    if (connectedPads) {
+      this.input.gamepadConnected = true;
+      this.setTouchControlsActive(false);
+      const gpBtn = document.getElementById('tab-btn-gamepad');
+      if (gpBtn) gpBtn.click();
+    } else if (isCoarsePointer) {
       this.setTouchControlsActive(true);
       const touchBtn = document.getElementById('tab-btn-touch');
       if (touchBtn) touchBtn.click();
-    } else if (this.input.gamepadConnected) {
-      const gpBtn = document.getElementById('tab-btn-gamepad');
-      if (gpBtn) gpBtn.click();
     }
 
-    // Touch event listener to automatically activate touch controls upon first touch
-    window.addEventListener('touchstart', () => {
-      if (!this.input.touchControlsActive) {
+    // Touch event listener on canvas/touch zones restores touch controls cleanly if user switches from handheld controls to touch
+    window.addEventListener('touchstart', (e) => {
+      if (e.target && e.target.closest && e.target.closest('#btn-touch-toggle')) return;
+      if (!this.input.touchControlsActive && !this.input.gamepadConnected) {
         this.setTouchControlsActive(true);
       }
     }, { passive: true });
@@ -834,6 +838,7 @@ class GameEngine {
     window.addEventListener('gamepadconnected', (e) => {
       this.input.gamepadConnected = true;
       this.input.usingGamepadCursor = true;
+      this.setTouchControlsActive(false);
       if (this.ui.virtualCursor) {
         this.ui.virtualCursor.classList.remove('hidden');
       }

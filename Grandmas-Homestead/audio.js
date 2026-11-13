@@ -313,6 +313,83 @@ class SoundSystem {
       this.scheduleNextChord();
     }, 2200);
   }
+
+  // Fishing cast swoosh & plop
+  playCast() {
+    if (this.isMuted) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    this.playNoise(0.14, 1500, 0.14);
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(420, now + 0.14);
+    osc.frequency.exponentialRampToValueAtTime(160, now + 0.28);
+    gain.gain.setValueAtTime(0.16, now + 0.14);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now + 0.14);
+    osc.stop(now + 0.31);
+  }
+
+  // Fish bite exclamation chime + water splash
+  playBite() {
+    if (this.isMuted) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    this.playNoise(0.1, 1100, 0.18);
+    [740, 987.77].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+      gain.gain.setValueAtTime(0.18, now + idx * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.14);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.06);
+      osc.stop(now + idx * 0.06 + 0.15);
+    });
+  }
+
+  // Catch success fanfare
+  playCatch() {
+    if (this.isMuted) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const t = now + idx * 0.06;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    });
+  }
+
+  // Cozy kitchen cooking sizzle + ding
+  playCook() {
+    if (this.isMuted) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    this.playNoise(0.22, 2200, 0.12);
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1046.5, now + 0.18);
+    gain.gain.setValueAtTime(0.16, now + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now + 0.18);
+    osc.stop(now + 0.46);
+  }
 }
 
 window.soundSystem = new SoundSystem();

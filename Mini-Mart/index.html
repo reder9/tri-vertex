@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Sunny Mini Mart - Cartoon Market Tycoon</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -123,6 +123,9 @@
       <div id="active-goal-text">Loading milestone...</div>
     </div>
 
+    <!-- Non-blocking Live Activity Toast Banner (Remote Marts & Pickup Orders) -->
+    <div id="remote-toast-container" class="remote-toast-container"></div>
+
     <!-- Bottom HUD Bar -->
     <footer class="bottom-hud">
       <!-- Player Backpack Stack Counter -->
@@ -176,40 +179,26 @@
 
   <!-- Store Upgrades Modal Dialog -->
   <div id="upgrade-modal" class="modal-overlay hidden">
-    <div class="modal-card">
+    <div class="modal-card upgrade-modal-card">
       <div class="modal-header">
-        <h2 class="modal-title">STORE UPGRADES</h2>
-        <button id="btn-close-upgrades" class="hud-btn icon-only" title="Close">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20"/><path d="m17 7-5-5-5 5"/>
+          </svg>
+          <div>
+            <h2 class="modal-title" style="margin: 0;">STORE &amp; STAFF UPGRADES</h2>
+            <div id="upgrade-mart-subtitle" class="upgrade-modal-sub">Managing: Sunny Farm Valley</div>
+          </div>
+        </div>
+        <button id="btn-close-upgrades" class="hud-btn icon-only" title="Close (Hotkey Escape / Xbox B)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
 
-      <div class="modal-body">
-        <!-- Player Speed Upgrade -->
-        <div class="upgrade-item">
-          <div class="upgrade-details">
-            <div class="upgrade-name">Player Running Speed</div>
-            <div id="lbl-speed-lvl" class="upgrade-sub">Lv. 1/5</div>
-          </div>
-          <button id="btn-buy-speed" class="upgrade-btn">
-            <span>UPGRADE</span>
-            <span id="lbl-speed-cost">$50</span>
-          </button>
-        </div>
-
-        <!-- Carry Capacity Upgrade -->
-        <div class="upgrade-item">
-          <div class="upgrade-details">
-            <div class="upgrade-name">Carry Stack Capacity</div>
-            <div id="lbl-stack-lvl" class="upgrade-sub">Lv. 1/5 (6 Items)</div>
-          </div>
-          <button id="btn-buy-stack" class="upgrade-btn">
-            <span>UPGRADE</span>
-            <span id="lbl-stack-cost">$60</span>
-          </button>
-        </div>
+      <div id="upgrades-list" class="upgrades-list-container">
+        <!-- Dynamically populated by game.js -->
       </div>
     </div>
   </div>
