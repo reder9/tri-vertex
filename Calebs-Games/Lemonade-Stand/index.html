@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sunny Squeeze - Lemonade Stand Tycoon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hud">
+    <div class="brand">
+      <div class="brand-badge" aria-hidden="true">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18 6c-2.5-2.5-7-2.5-10.5 1S4 15.5 6.5 18s7 2.5 10.5-1S20.5 8.5 18 6Z" fill="#facc15" stroke="#2c1b0e"/><path d="M18 6c1.2-.8 2.5-.5 3 .2-.5 1-1.5 1.8-2.6 1.6" fill="#84cc16" stroke="#2c1b0e"/></svg>
+      </div>
+      <div>
+        <div class="brand-title cf">Sunny Squeeze</div>
+        <div class="brand-sub">Lemonade Tycoon</div>
+      </div>
+    </div>
+
+    <div class="hud-stats">
+      <div class="pill day"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span id="hudDay">Day 1</span></div>
+      <div class="pill weather"><span id="hudWeatherIcon"></span><span id="hudWeather">Sunny</span></div>
+      <div class="pill cash"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-5 0c0 2 5 1.5 5 4a2.5 2.5 0 0 1-5 0M12 6v12"/></svg><span id="hudCash">$25.00</span></div>
+      <div class="pill rep"><svg class="icon" viewBox="0 0 24 24" fill="#fb923c"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span id="hudRep">50%</span></div>
+    </div>
+
+    <div class="hud-actions">
+      <span class="gp-dot"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="6"/><path d="M6 12h4M8 10v4M15 11h.01M18 13h.01"/></svg>Pad</span>
+      <button class="btn btn-icon" id="btnMute" title="Sound"><svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
+      <button class="btn btn-icon" id="btnControls" title="Controls"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg></button>
+      <button class="btn btn-icon btn-danger" id="btnResetGame" title="New game"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+      <a class="btn btn-icon" href="../../index.html" id="btnBackHub" title="Back to Hub"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="loc-title"><svg class="icon" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span id="stageLoc">Driveway</span></div>
+        <div class="chip-info"><svg class="icon" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg><span id="forecast">Tomorrow: Sunny</span></div>
+      </div>
+      <div class="scene-body">
+        <div class="canvas-wrap">
+          <canvas id="gameCanvas" width="800" height="500"></canvas>
+          <div class="canvas-overlay">
+            <div class="live-badge"><span class="live-dot" id="liveDot"></span><span id="livePhase">PREP</span></div>
+            <div class="live-badge"><span id="liveCups">0 sold</span><span>|</span><span id="liveRev">$0.00</span></div>
+          </div>
+        </div>
+        <div class="scene-foot">
+          <div class="prog-row">
+            <span class="cf" style="min-width:5.2rem;font-weight:800;" id="clock">8:00 AM</span>
+            <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+            <span class="cf" style="font-weight:800;" id="progPct">0%</span>
+          </div>
+          <div class="speed-row">
+            <div class="speed-group">
+              <button class="btn btn-sm btn-speed active" data-speed="1" id="btnSpeed1">1x</button>
+              <button class="btn btn-sm btn-speed" data-speed="2" id="btnSpeed2">2x</button>
+              <button class="btn btn-sm btn-speed" data-speed="4" id="btnSpeed4">4x</button>
+              <button class="btn btn-sm" id="btnPause" disabled>Pause</button>
+            </div>
+            <button class="btn btn-sm btn-sky" id="btnSkip" disabled>Skip to Close</button>
+          </div>
+          <div class="stock-strip">
+            <div class="stock" id="stLemons"><span>Lemons</span><b id="invLemons">0</b></div>
+            <div class="stock" id="stSugar"><span>Sugar</span><b id="invSugar">0</b></div>
+            <div class="stock" id="stIce"><span>Ice</span><b id="invIce">0</b></div>
+            <div class="stock" id="stCups"><span>Cups</span><b id="invCups">0</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <nav class="tabs" id="tabBar">
+        <button class="tab active" data-tab="market"><svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span>Supplies</span></button>
+        <button class="tab" data-tab="recipe"><svg class="icon" viewBox="0 0 24 24"><path d="M10 2v7.31M14 9.3V1.99M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg><span>Recipe</span></button>
+        <button class="tab" data-tab="location"><svg class="icon" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>Spot</span></button>
+        <button class="tab" data-tab="marketing"><svg class="icon" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span>Ads</span></button>
+        <button class="tab" data-tab="machines"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Gear</span></button>
+      </nav>
+      <div class="deck-body" id="deckBody"></div>
+      <div class="deck-foot">
+        <div class="foot-sum" id="footSum"></div>
+        <button class="btn btn-primary btn-big" id="btnStart">
+          <span class="xb xb-x">X</span>
+          <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+          <span id="btnStartText">Open Stand!</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="legend" id="legend">
+    <span><i class="xb xb-a">A</i> Select</span>
+    <span><i class="xb xb-b">B</i> Back / Pause</span>
+    <span><i class="xb xb-x">X</i> Open Stand</span>
+    <span><i class="xb xb-y">Y</i> Buy Bundle</span>
+    <span><i class="xb xb-lb">LB</i><i class="xb xb-lb">RB</i> Switch Tab</span>
+    <span><i class="xb xb-lb">LT</i><i class="xb xb-lb">RT</i> Speed</span>
+  </footer>
+
+  <div class="backdrop" id="backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modalTitle">Title</h2>
+        <button class="btn btn-sm" id="btnCloseModal"><span class="xb xb-b">B</span><span>Close</span></button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-foot" id="modalFoot"></div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script src="audio.js"></script>
+  <script src="art.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
+
