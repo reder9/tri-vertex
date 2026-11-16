@@ -767,10 +767,10 @@
           const tile = this.farm.tiles[r][c];
           if (tile.type !== 'grass' || tile.isTilled) continue;
 
-          // Avoid cottage/barn/pasture, greenhouse lot, orchard glade/shrine & cave entrance
+          // Avoid cottage/barn/pasture, greenhouse lot, orchard glade/shrine & cave entrance/apron
           if (r < 15 && c < 39) continue;
           if (c >= 44 && c <= 56 && r >= 5 && r <= 14) continue;
-          if (c >= 5 && c <= 10 && r >= 34 && r <= 37) continue;
+          if (c >= 5 && c <= 10 && r >= 34 && r <= 39) continue;
 
           const rand = Math.random();
           const key = `${c},${r}`;
@@ -972,6 +972,24 @@
       }
     }
 
+    clearCaveExitApron() {
+      const clearDebris = (objs, healthMap) => {
+        if (!objs) return;
+        for (let r = 37; r <= 39; r++) {
+          for (let c = 5; c <= 9; c++) {
+            const key = `${c},${r}`;
+            const o = objs[key];
+            if (o === 'rock' || o === 'tree' || o === 'weed') {
+              delete objs[key];
+              if (healthMap) delete healthMap[key];
+            }
+          }
+        }
+      };
+      if (this.farm) clearDebris(this.farm.objects, this.farm.debrisHealth);
+      if (this.currentLocation === 'farm') clearDebris(this.objects, this.debrisHealth);
+    }
+
     exitCurrentInterior() {
       this.player.inBed = false;
       if (this.currentLocation === 'interior_cottage') {
@@ -993,6 +1011,7 @@
       } else if (this.currentLocation === 'interior_townhall') {
         this.transitionTo('city', 36.5 * TILE_SIZE, 23.5 * TILE_SIZE);
       } else if (this.currentLocation === 'interior_cave') {
+        this.clearCaveExitApron();
         this.transitionTo('farm', 7 * TILE_SIZE, 37.5 * TILE_SIZE);
       } else {
         this.transitionTo('farm');
@@ -1090,6 +1109,8 @@
           travelBtnText.textContent = loc === 'farm' ? "Visit City" : "Return to Farm";
         }
       }
+
+      window.soundSystem?.setLocation(loc);
     }
 
     transitionTo(targetLoc, spawnX, spawnY) {
@@ -1339,17 +1360,17 @@
         this.handleCanvasClick(this.mouse.tileX, this.mouse.tileY);
       }, { passive: true });
 
-      // Audio start on first gesture
-      const startAudio = () => {
-        if (window.soundSystem) {
-          window.soundSystem.init();
-          if (!window.soundSystem.isMuted) {
-            window.soundSystem.startMusic();
-          }
+      // Audio start on first gesture (retries gracefully if autoplay was deferred)
+      const ensureBgmStarted = (e) => {
+        if (e && e.target && e.target.closest && e.target.closest('#btnAudio')) return;
+        if (!window.soundSystem || window.soundSystem.isMuted) return;
+        window.soundSystem.init();
+        if (!window.soundSystem.isMusicPlaying) {
+          window.soundSystem.startMusic();
         }
       };
-      window.addEventListener('click', startAudio, { once: true });
-      window.addEventListener('keydown', startAudio, { once: true });
+      window.addEventListener('pointerdown', ensureBgmStarted);
+      window.addEventListener('keydown', ensureBgmStarted);
 
       // HUD Button click handlers
       document.getElementById('btnInventory')?.addEventListener('click', () => this.toggleInventoryModal());
@@ -3912,6 +3933,7 @@
             }
             this.farm.objects['16,44'] = 'sign_city';
             this.farm.objects['28,43'] = 'sign_city';
+            this.clearCaveExitApron();
           }
         }
       } catch (e) {

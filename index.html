@@ -1062,11 +1062,15 @@
   </main>
 
   <script>
-    // --- 1. Synthesizer 8-Bit Web Audio ---
+    // --- 1. Synthesizer 8-Bit Web Audio & Hub Soundtrack (Titans) ---
     class RetroSound {
       constructor() {
         this.ctx = null;
         this.muted = localStorage.getItem('leyten_arcade_muted') === 'true';
+        this.bgm = null;
+        this.bgmTargetVolume = 0.15;
+        this.bgmCurrentVolume = 0;
+        this.bgmFadeTimer = null;
       }
       init() {
         if (!this.ctx) {
@@ -1076,10 +1080,87 @@
         if (this.ctx && this.ctx.state === 'suspended') {
           this.ctx.resume();
         }
+        this.ensureBgm();
+      }
+      ensureBgm() {
+        if (typeof Audio === 'undefined') return;
+        if (!this.bgm) {
+          try {
+            const audio = new Audio('audio/titans.m4a');
+            audio.loop = true;
+            audio.preload = 'auto';
+            audio.volume = 0;
+            audio.muted = this.muted;
+            audio.addEventListener('ended', () => {
+              if (!this.bgm || this.muted) return;
+              this.bgm.currentTime = 0;
+              const p = this.bgm.play();
+              if (p && typeof p.catch === 'function') p.catch(() => {});
+            });
+            this.bgm = audio;
+          } catch (_) {
+            this.bgm = null;
+          }
+        }
+        if (!this.bgm) return;
+        if (this.muted) {
+          this.bgm.muted = true;
+          this.bgm.volume = 0;
+          this.bgmCurrentVolume = 0;
+          this.bgm.pause();
+          return;
+        }
+        if (this.bgm.paused) {
+          this.bgm.muted = false;
+          const p = this.bgm.play();
+          if (p && typeof p.then === 'function') {
+            p.then(() => this._fadeBgmTo(this.bgmTargetVolume)).catch(() => {});
+          } else {
+            this._fadeBgmTo(this.bgmTargetVolume);
+          }
+        }
+      }
+      _fadeBgmTo(targetVol) {
+        if (!this.bgm) return;
+        if (this.bgmFadeTimer) clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = setInterval(() => {
+          if (!this.bgm) {
+            clearInterval(this.bgmFadeTimer);
+            this.bgmFadeTimer = null;
+            return;
+          }
+          const goal = this.muted ? 0 : targetVol;
+          const diff = goal - this.bgmCurrentVolume;
+          if (Math.abs(diff) <= 0.01) {
+            this.bgmCurrentVolume = goal;
+            this.bgm.volume = Math.max(0, Math.min(1, goal));
+            clearInterval(this.bgmFadeTimer);
+            this.bgmFadeTimer = null;
+          } else {
+            this.bgmCurrentVolume += diff * 0.2;
+            this.bgm.volume = Math.max(0, Math.min(1, this.bgmCurrentVolume));
+          }
+        }, 60);
       }
       toggleMute() {
         this.muted = !this.muted;
         localStorage.setItem('leyten_arcade_muted', this.muted);
+        if (this.bgmFadeTimer) {
+          clearInterval(this.bgmFadeTimer);
+          this.bgmFadeTimer = null;
+        }
+        if (this.bgm) {
+          this.bgm.muted = this.muted;
+          if (this.muted) {
+            this.bgm.volume = 0;
+            this.bgmCurrentVolume = 0;
+            this.bgm.pause();
+          } else {
+            this.ensureBgm();
+          }
+        } else if (!this.muted) {
+          this.ensureBgm();
+        }
         return this.muted;
       }
       playBlip() {
@@ -1130,6 +1211,15 @@
       btnAudio.style.opacity = sound.muted ? '0.6' : '1';
     }
     updateAudioUI();
+    const startHubMusicOnGesture = (e) => {
+      if (e && e.target && e.target.closest && e.target.closest('#btnAudio')) return;
+      if (!sound.muted) sound.init();
+    };
+    window.addEventListener('pointerdown', startHubMusicOnGesture);
+    window.addEventListener('keydown', startHubMusicOnGesture);
+    // Attempt immediate playback if browser permits without prior gesture
+    if (!sound.muted) sound.ensureBgm();
+
     btnAudio.addEventListener('click', (e) => {
       e.stopPropagation();
       sound.init();

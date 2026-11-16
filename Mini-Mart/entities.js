@@ -8,6 +8,221 @@
 const distSq = (x1, y1, x2, y2) => (x1 - x2) ** 2 + (y1 - y2) ** 2;
 const dist = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
 
+// Shared Cartoon Face & Character Customization Helpers
+const CUSTOMER_SKIN_TONES = ['#fed7aa', '#fde68a', '#fdba74', '#e5a978', '#c68642'];
+const CUSTOMER_HAIR_STYLES = ['short', 'bob', 'curly', 'ponytail', 'spiky', 'bun'];
+const CUSTOMER_HAT_STYLES = ['none', 'none', 'none', 'baseball', 'beanie', 'sunhat', 'beret', 'headband'];
+const CUSTOMER_SHIRT_PATTERNS = ['solid', 'stripes', 'overalls', 'polka', 'vest'];
+const CUSTOMER_ACCESSORY_COLORS = ['#ef4444', '#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#ec4899', '#0f766e', '#334155'];
+
+function drawCartoonFace(ctx, { headY = -14, lookX = 0, mouthY = -11.1, glasses = false, eyeRadius = 1.9 } = {}) {
+  // Rosy cheeks
+  ctx.fillStyle = 'rgba(251, 113, 133, 0.55)';
+  ctx.beginPath();
+  ctx.ellipse(-5.2 + lookX * 0.45, headY + 2.4, 2.2, 1.4, 0, 0, Math.PI * 2);
+  ctx.ellipse(5.2 + lookX * 0.45, headY + 2.4, 2.2, 1.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-3.5 + lookX, headY - 0.3, eyeRadius, 0, Math.PI * 2);
+  ctx.arc(3.5 + lookX, headY - 0.3, eyeRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye shine dots
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(-4.0 + lookX, headY - 0.9, eyeRadius * 0.38, 0, Math.PI * 2);
+  ctx.arc(3.0 + lookX, headY - 0.9, eyeRadius * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Optional cute round glasses
+  if (glasses) {
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.arc(-3.5 + lookX, headY - 0.3, 3.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(3.5 + lookX, headY - 0.3, 3.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-0.3 + lookX, headY - 0.3);
+    ctx.lineTo(0.3 + lookX, headY - 0.3);
+    ctx.stroke();
+  }
+
+  // Happy friendly smile
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(lookX * 0.7, mouthY, 2.4, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+}
+
+function drawShirtPattern(ctx, pattern, accentColor) {
+  if (!pattern || pattern === 'solid') return;
+  ctx.save();
+  // Clip inside the rounded shirt rect (-10, -6, 20, 16, r=7)
+  ctx.beginPath();
+  ctx.roundRect(-10, -6, 20, 16, 7);
+  ctx.clip();
+
+  if (pattern === 'stripes') {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.fillRect(-10, -1, 20, 3);
+    ctx.fillRect(-10, 4.5, 20, 2.5);
+  } else if (pattern === 'overalls') {
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(-7, -6, 3.5, 16);
+    ctx.fillRect(3.5, -6, 3.5, 16);
+    ctx.fillRect(-8, 1, 16, 9);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-6, 1.8, 2, 2);
+    ctx.fillRect(4, 1.8, 2, 2);
+  } else if (pattern === 'polka') {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    const dots = [[-5, -2], [3, -3], [-2, 3], [5, 2], [-6, 6], [2, 7]];
+    for (const [dx, dy] of dots) {
+      ctx.beginPath();
+      ctx.arc(dx, dy, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (pattern === 'vest') {
+    ctx.fillStyle = accentColor || '#334155';
+    ctx.fillRect(-10, -6, 6.5, 16);
+    ctx.fillRect(3.5, -6, 6.5, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2.5, -6, 5, 16);
+  }
+  ctx.restore();
+}
+
+function drawCustomerHairAndHat(ctx, customer) {
+  const hair = customer.hairColor;
+  const hairStyle = customer.hairStyle || 'short';
+  const hatStyle = customer.hatStyle || 'none';
+  const hatColor = customer.hatColor || '#2563eb';
+  const hatTrim = customer.hatTrimColor || '#ffffff';
+
+  // Hair base (adjusted cleanly if wearing a hat)
+  ctx.fillStyle = hair;
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
+  ctx.lineWidth = 1.8;
+
+  if (hairStyle === 'bob' || hairStyle === 'ponytail') {
+    // Side hair locks framing the face
+    ctx.beginPath();
+    ctx.roundRect(-11.2, -17, 4.2, 11, 2);
+    ctx.roundRect(7.0, -17, 4.2, 11, 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  if (hairStyle === 'ponytail' && hatStyle === 'none') {
+    ctx.beginPath();
+    ctx.ellipse(9.5, -21, 3.6, 6.2, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Top hair crown
+  if (hatStyle === 'none' || hatStyle === 'headband') {
+    if (hairStyle === 'curly') {
+      const puffs = [[-7, -21, 4.6], [-2, -23.5, 5], [4, -23, 4.8], [8, -20, 4.3], [0, -20.5, 4.5]];
+      for (const [px, py, pr] of puffs) {
+        ctx.beginPath();
+        ctx.arc(px, py, pr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (hairStyle === 'spiky') {
+      ctx.beginPath();
+      ctx.moveTo(-10, -17);
+      ctx.lineTo(-9, -25);
+      ctx.lineTo(-4, -22);
+      ctx.lineTo(0, -27);
+      ctx.lineTo(4, -22);
+      ctx.lineTo(9, -25);
+      ctx.lineTo(10, -17);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, -17, 10.6, Math.PI, 0);
+      ctx.fill();
+      ctx.stroke();
+      if (hairStyle === 'bun') {
+        ctx.beginPath();
+        ctx.arc(0, -26.5, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Headwear (for regular non-VIP customers)
+  if (customer.isVip) return;
+  if (hatStyle === 'headband') {
+    ctx.fillStyle = hatColor;
+    ctx.beginPath();
+    ctx.roundRect(-10.5, -21, 21, 3.6, 1.8);
+    ctx.fill();
+    ctx.stroke();
+  } else if (hatStyle === 'baseball') {
+    ctx.fillStyle = hatColor;
+    ctx.beginPath();
+    ctx.arc(0, -18, 10.8, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+    // Visor
+    ctx.fillStyle = hatTrim;
+    ctx.beginPath();
+    ctx.roundRect(-10, -19.5, 22, 4, 2.2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (hatStyle === 'beanie') {
+    ctx.fillStyle = hatColor;
+    ctx.beginPath();
+    ctx.arc(0, -18, 10.8, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = hatTrim;
+    ctx.beginPath();
+    ctx.roundRect(-11.2, -20, 22.4, 4.5, 2.2);
+    ctx.fill();
+    ctx.stroke();
+    // Pom-pom
+    ctx.beginPath();
+    ctx.arc(0, -28.5, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (hatStyle === 'sunhat') {
+    // Wide straw brim + colored ribbon
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.ellipse(0, -18.5, 16, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, -19.5, 9.5, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = hatColor;
+    ctx.fillRect(-9.2, -21.5, 18.4, 3);
+  } else if (hatStyle === 'beret') {
+    ctx.fillStyle = hatColor;
+    ctx.beginPath();
+    ctx.ellipse(-1.5, -22, 12, 5.5, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-1, -27.5);
+    ctx.lineTo(-1, -29.5);
+    ctx.stroke();
+  }
+}
+
 // Item Definitions across Mart 1, Mart 2, and Mart 3
 const ITEM_TYPES = {
   // --- MART 1: SUNNY FARM VALLEY ---
@@ -1883,7 +2098,22 @@ class MartCustomer {
     this.shirtColor = isVip
       ? '#eab308'
       : ['#38bdf8', '#fb7185', '#a78bfa', '#facc15', '#f97316', '#34d399'][Math.floor(Math.random() * 6)];
-    this.hairColor = ['#78350f', '#1e293b', '#b45309', '#eab308'][Math.floor(Math.random() * 4)];
+    this.shirtPattern = isVip
+      ? 'vest'
+      : CUSTOMER_SHIRT_PATTERNS[Math.floor(Math.random() * CUSTOMER_SHIRT_PATTERNS.length)];
+    this.shirtAccent = isVip
+      ? '#1e293b'
+      : CUSTOMER_ACCESSORY_COLORS[Math.floor(Math.random() * CUSTOMER_ACCESSORY_COLORS.length)];
+    this.skinColor = CUSTOMER_SKIN_TONES[Math.floor(Math.random() * CUSTOMER_SKIN_TONES.length)];
+    this.hairColor = ['#78350f', '#1e293b', '#b45309', '#eab308', '#991b1b', '#64748b'][Math.floor(Math.random() * 6)];
+    this.hairStyle = CUSTOMER_HAIR_STYLES[Math.floor(Math.random() * CUSTOMER_HAIR_STYLES.length)];
+    this.hatStyle = isVip
+      ? 'none'
+      : CUSTOMER_HAT_STYLES[Math.floor(Math.random() * CUSTOMER_HAT_STYLES.length)];
+    this.hatColor = CUSTOMER_ACCESSORY_COLORS[Math.floor(Math.random() * CUSTOMER_ACCESSORY_COLORS.length)];
+    this.hatTrimColor = Math.random() < 0.5 ? '#ffffff' : '#fde047';
+    this.hasGlasses = !isVip && Math.random() < 0.2;
+    this.lookX = 0;
     this.walkAnim = Math.random() * 10;
     this.waitTimer = 0;
     this.maxPatience = isVip ? 28 : 22;
@@ -1990,6 +2220,7 @@ class MartCustomer {
     if (d > 2) {
       this.x += (dx / d) * this.speed * dt;
       this.y += (dy / d) * this.speed * dt;
+      this.lookX = Math.max(-1.6, Math.min(1.6, (dx / d) * 1.6));
     }
   }
 
@@ -2023,37 +2254,44 @@ class MartCustomer {
     ctx.ellipse(5, 10 - leg, 4.5, 3, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Rounded cartoon body
+    // Rounded cartoon body + shirt pattern
     ctx.fillStyle = this.shirtColor;
     ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.roundRect(-10, -6, 20, 16, 7);
     ctx.fill();
+    drawShirtPattern(ctx, this.shirtPattern, this.shirtAccent);
+    ctx.beginPath();
+    ctx.roundRect(-10, -6, 20, 16, 7);
     ctx.stroke();
 
     // Smooth cartoon head
-    ctx.fillStyle = '#fed7aa';
+    ctx.fillStyle = this.skinColor || '#fed7aa';
     ctx.beginPath();
     ctx.arc(0, -14, 10.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Hair
-    ctx.fillStyle = this.hairColor;
-    ctx.beginPath();
-    ctx.arc(0, -17, 10.5, Math.PI, 0);
-    ctx.fill();
-    ctx.stroke();
+    // Hair & Hat variation
+    drawCustomerHairAndHat(ctx, this);
 
     // Eyes & Smile (or VIP Shades & Crown)
+    const lookX = this.lookX || 0;
     if (this.isVip) {
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.roundRect(-8, -16, 7, 4.5, 1.5);
-      ctx.roundRect(1, -16, 7, 4.5, 1.5);
+      ctx.roundRect(-8 + lookX * 0.5, -16, 7, 4.5, 1.5);
+      ctx.roundRect(1 + lookX * 0.5, -16, 7, 4.5, 1.5);
       ctx.fill();
-      ctx.fillRect(-1.5, -14.8, 3, 1.5);
+      ctx.fillRect(-1.5 + lookX * 0.5, -14.8, 3, 1.5);
+
+      // VIP Smile
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(lookX * 0.6, -10.8, 2.4, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
 
       // Gold VIP Crown
       ctx.fillStyle = '#fbbf24';
@@ -2071,11 +2309,13 @@ class MartCustomer {
       ctx.fill();
       ctx.stroke();
     } else {
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(-3.5, -14, 1.8, 0, Math.PI * 2);
-      ctx.arc(3.5, -14, 1.8, 0, Math.PI * 2);
-      ctx.fill();
+      drawCartoonFace(ctx, {
+        headY: -13.6,
+        lookX,
+        mouthY: -10.8,
+        glasses: !!this.hasGlasses,
+        eyeRadius: 1.85
+      });
     }
 
     // Cute Shopping Basket at side
@@ -2250,6 +2490,7 @@ class StaffHelper {
     if (d > 2) {
       this.x += (dx / d) * this.speed * dt;
       this.y += (dy / d) * this.speed * dt;
+      this.lookX = Math.max(-1.6, Math.min(1.6, (dx / d) * 1.6));
     }
   }
 
@@ -2262,7 +2503,16 @@ class StaffHelper {
     ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Worker Uniform & Cap (color-coded by worker slot)
+    const legSwing = Math.sin(this.walkAnim) * 3.5;
+
+    // Walking sneakers
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.ellipse(-5, 10 + legSwing, 4.2, 2.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(5, 10 - legSwing, 4.2, 2.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Worker Uniform & Apron (color-coded by worker slot)
     ctx.fillStyle = this.palette.shirt;
     ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.2;
@@ -2271,15 +2521,30 @@ class StaffHelper {
     ctx.fill();
     ctx.stroke();
 
+    // Apron pocket accent
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(-6.5, 0, 13, 8, 3);
+    ctx.fill();
+
+    // Cartoon Head + Expressive Face
     ctx.fillStyle = '#fed7aa';
     ctx.beginPath();
     ctx.arc(0, -14, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
+    drawCartoonFace(ctx, { headY: -13.2, lookX: this.lookX || 0, mouthY: -10.5 });
+
+    // Worker Cap + Visor Brim
     ctx.fillStyle = this.palette.cap;
     ctx.beginPath();
-    ctx.arc(0, -17, 10, Math.PI, 0);
+    ctx.arc(0, -17.5, 10.2, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.roundRect(-10.5, -18.8, 21, 3.6, 2);
     ctx.fill();
     ctx.stroke();
 
@@ -3373,6 +3638,7 @@ class DeliveryCourier {
     if (d > 2) {
       this.x += (dx / d) * this.speed * dt;
       this.y += (dy / d) * this.speed * dt;
+      this.lookX = Math.max(-1.6, Math.min(1.6, (dx / d) * 1.6));
     }
   }
 
@@ -3383,6 +3649,15 @@ class DeliveryCourier {
     ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
     ctx.beginPath();
     ctx.ellipse(0, 14, 14, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const legSwing = Math.sin(this.walkAnim) * 3.5;
+
+    // Courier boots
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.ellipse(-5, 10 + legSwing, 4.2, 2.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(5, 10 - legSwing, 4.2, 2.8, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Teal Delivery Courier Jacket
@@ -3398,17 +3673,24 @@ class DeliveryCourier {
     ctx.fillStyle = '#facc15';
     ctx.fillRect(-9, 1, 18, 3);
 
-    // Head
+    // Head + Expressive Face
     ctx.fillStyle = '#fed7aa';
     ctx.beginPath();
     ctx.arc(0, -14, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
+    drawCartoonFace(ctx, { headY: -13.2, lookX: this.lookX || 0, mouthY: -10.5 });
+
     // Courier Visor Cap
     ctx.fillStyle = '#0f766e';
     ctx.beginPath();
-    ctx.arc(0, -17, 10, Math.PI, 0);
+    ctx.arc(0, -17.5, 10.2, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.roundRect(-10.5, -18.8, 21, 3.6, 2);
     ctx.fill();
     ctx.stroke();
 

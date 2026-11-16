@@ -732,9 +732,17 @@ class MiniMartGame {
   }
 
   setupInputs() {
+    const ensureBgmStarted = (e) => {
+      if (e && e.target && e.target.closest && e.target.closest('#btn-music, #btn-sfx')) return;
+      if (!window.miniMartAudio) return;
+      window.miniMartAudio.init();
+      window.miniMartAudio.resume();
+    };
+    window.addEventListener('pointerdown', ensureBgmStarted);
+
     window.addEventListener('keydown', (e) => {
       this.input.keys[e.code] = true;
-      if (window.miniMartAudio) window.miniMartAudio.init();
+      ensureBgmStarted();
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -2968,10 +2976,19 @@ class MiniMartGame {
     ctx.fill();
     ctx.stroke();
 
+    if (typeof drawCartoonFace === 'function') {
+      drawCartoonFace(ctx, { headY: -13.2, lookX: 1.0, mouthY: -10.5 });
+    }
+
     // Green Visor Cap
     ctx.fillStyle = '#059669';
     ctx.beginPath();
-    ctx.arc(0, -17, 10, Math.PI, 0);
+    ctx.arc(0, -17.5, 10.2, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#047857';
+    ctx.beginPath();
+    ctx.roundRect(-10.5, -18.8, 21, 3.6, 2);
     ctx.fill();
     ctx.stroke();
 

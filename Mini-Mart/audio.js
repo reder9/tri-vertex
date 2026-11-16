@@ -2,15 +2,35 @@
  * PIXEL MINI MART - AUDIO ENGINE
  * Web Audio API procedural sound synthesizer and retro low-fi soundtrack
  */
+const MINI_MART_PLAYLIST = [
+  'audio/asian-market.m4a',
+  'audio/plucky-field.m4a',
+  'audio/tasty-cheese.m4a',
+  'audio/bard.m4a',
+  'audio/grayman-castle-market.m4a',
+  'audio/wanderer.m4a',
+  'audio/project-saunderlust.m4a'
+];
+
 class MiniMartAudio {
   constructor() {
     this.ctx = null;
     this.isMuted = false;
-    this.musicEnabled = false;
+    this.musicEnabled = true;
+    this.isMusicPlaying = false;
     this.musicTimer = null;
     this.currentNote = 0;
 
-    // Cozy low-fi chiptune progression (C major / A minor pentatonic)
+    // Subtle looping market & countryside soundtrack
+    this.trackIndex = 0;
+    this.bgm = null;
+    this.bgmActiveSrc = '';
+    this.bgmTargetVolume = 0.15;
+    this.bgmCurrentVolume = 0;
+    this.bgmFadeTimer = null;
+    this.useProceduralFallback = false;
+
+    // Cozy low-fi chiptune fallback progression (C major / A minor pentatonic)
     this.melody = [
       261.63, 329.63, 392.00, 523.25,
       392.00, 329.63, 440.00, 392.00,
@@ -26,20 +46,50 @@ class MiniMartAudio {
         this.ctx = new AudioCtx();
       }
     }
+    this._ensureBgmElement();
+  }
+
+  _ensureBgmElement() {
+    if (this.bgm || this.useProceduralFallback || typeof Audio === 'undefined') return;
+    try {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.volume = 0;
+      audio.muted = this.isMuted;
+
+      audio.addEventListener('ended', () => {
+        if (!this.bgm || this.isMuted || !this.musicEnabled || !this.isMusicPlaying) return;
+        this.trackIndex = (this.trackIndex + 1) % MINI_MART_PLAYLIST.length;
+        this._playCurrentTrack();
+      });
+
+      audio.addEventListener('error', () => {
+        if (MINI_MART_PLAYLIST.length > 1) {
+          this.trackIndex = (this.trackIndex + 1) % MINI_MART_PLAYLIST.length;
+          this._playCurrentTrack();
+        }
+      });
+
+      this.bgm = audio;
+    } catch (_) {
+      this.useProceduralFallback = true;
+    }
   }
 
   resume() {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    if (this.musicEnabled && !this.isMuted && !this.isMusicPlaying) {
+      this.startMusic();
+    }
   }
 
   toggleMute() {
     this.isMuted = !this.isMuted;
-    if (this.isMuted && this.musicTimer) {
-      clearInterval(this.musicTimer);
-      this.musicTimer = null;
-    } else if (!this.isMuted && this.musicEnabled) {
+    if (this.isMuted) {
+      this.stopMusic();
+    } else if (this.musicEnabled) {
       this.startMusic();
     }
     return this.isMuted;
@@ -50,19 +100,90 @@ class MiniMartAudio {
     if (this.musicEnabled && !this.isMuted) {
       this.startMusic();
     } else {
-      if (this.musicTimer) {
-        clearInterval(this.musicTimer);
-        this.musicTimer = null;
-      }
+      this.stopMusic();
     }
     return this.musicEnabled;
   }
 
-  startMusic() {
-    this.init();
-    this.resume();
-    if (this.musicTimer) clearInterval(this.musicTimer);
+  stopMusic() {
+    this.isMusicPlaying = false;
+    if (this.musicTimer) {
+      clearInterval(this.musicTimer);
+      this.musicTimer = null;
+    }
+    if (this.bgmFadeTimer) {
+      clearInterval(this.bgmFadeTimer);
+      this.bgmFadeTimer = null;
+    }
+    if (this.bgm) {
+      this.bgm.muted = true;
+      this.bgm.volume = 0;
+      this.bgmCurrentVolume = 0;
+      this.bgm.pause();
+    }
+  }
 
+  _fadeBgmTo(targetVol) {
+    if (!this.bgm) return;
+    if (this.bgmFadeTimer) clearInterval(this.bgmFadeTimer);
+    this.bgmFadeTimer = setInterval(() => {
+      if (!this.bgm) {
+        clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = null;
+        return;
+      }
+      const goal = (this.isMuted || !this.musicEnabled) ? 0 : targetVol;
+      const diff = goal - this.bgmCurrentVolume;
+      if (Math.abs(diff) <= 0.01) {
+        this.bgmCurrentVolume = goal;
+        this.bgm.volume = Math.max(0, Math.min(1, goal));
+        clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = null;
+      } else {
+        this.bgmCurrentVolume += diff * 0.22;
+        this.bgm.volume = Math.max(0, Math.min(1, this.bgmCurrentVolume));
+      }
+    }, 55);
+  }
+
+  _playCurrentTrack() {
+    if (!this.bgm || this.isMuted || !this.musicEnabled) return;
+    const targetSrc = MINI_MART_PLAYLIST[this.trackIndex % MINI_MART_PLAYLIST.length];
+    this.bgm.loop = false;
+    this.bgm.muted = false;
+    if (this.bgmActiveSrc !== targetSrc) {
+      this.bgmActiveSrc = targetSrc;
+      this.bgm.src = targetSrc;
+      this.bgm.currentTime = 0;
+    }
+    const playPromise = this.bgm.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.then(() => {
+        this._fadeBgmTo(this.bgmTargetVolume);
+      }).catch(() => {
+        this.isMusicPlaying = false;
+      });
+    } else {
+      this._fadeBgmTo(this.bgmTargetVolume);
+    }
+  }
+
+  startMusic() {
+    if (this.isMuted || !this.musicEnabled) return;
+    this.init();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+
+    if (this.bgm && !this.useProceduralFallback) {
+      if (this.isMusicPlaying && !this.bgm.paused) return;
+      this.isMusicPlaying = true;
+      this._playCurrentTrack();
+      return;
+    }
+
+    if (this.musicTimer) clearInterval(this.musicTimer);
+    this.isMusicPlaying = true;
     this.musicTimer = setInterval(() => {
       if (this.isMuted || !this.musicEnabled || !this.ctx) return;
       const freq = this.melody[this.currentNote % this.melody.length];

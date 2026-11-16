@@ -1,6 +1,30 @@
 // Procedural Cozy Sound & Music System using Web Audio API
 // Fully offline, no external assets needed!
 
+const TOWN_LOCATIONS = new Set([
+  'city',
+  'interior_store',
+  'interior_church',
+  'interior_library',
+  'interior_bakery',
+  'interior_blacksmith',
+  'interior_townhall'
+]);
+
+const ZONE_PLAYLISTS = {
+  town: [
+    'audio/asian-market.m4a',
+    'audio/project-saunderlust.m4a',
+    'audio/grayman-castle-market.m4a'
+  ],
+  pastoral: [
+    'audio/bard.m4a',
+    'audio/plucky-field.m4a',
+    'audio/wanderer.m4a',
+    'audio/tasty-cheese.m4a'
+  ]
+};
+
 class SoundSystem {
   constructor() {
     this.ctx = null;
@@ -9,6 +33,17 @@ class SoundSystem {
     this.musicTimer = null;
     this.ambientTimer = null;
     this.currentTrackStep = 0;
+
+    // Area-aware subtle background music player
+    this.currentZone = 'pastoral'; // 'town' | 'pastoral'
+    this.zoneTrackIndex = { town: 0, pastoral: 0 };
+    this.bgm = null;
+    this.bgmActiveSrc = '';
+    this.bgmTargetVolume = 0.16;
+    this.bgmCurrentVolume = 0;
+    this.bgmFadeTimer = null;
+    this.bgmTransitioning = false;
+    this.useProceduralFallback = false;
   }
 
   init() {
@@ -18,6 +53,49 @@ class SoundSystem {
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
+    }
+    this._ensureBgmElement();
+  }
+
+  _advanceZoneTrack() {
+    const playlist = ZONE_PLAYLISTS[this.currentZone] || ZONE_PLAYLISTS.pastoral;
+    this.zoneTrackIndex[this.currentZone] = ((this.zoneTrackIndex[this.currentZone] || 0) + 1) % playlist.length;
+  }
+
+  _ensureBgmElement() {
+    if (this.bgm || this.useProceduralFallback || typeof Audio === 'undefined') return;
+    try {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.volume = 0;
+      audio.muted = this.isMuted;
+
+      audio.addEventListener('ended', () => {
+        if (!this.bgm || this.isMuted || !this.isMusicPlaying) return;
+        this._advanceZoneTrack();
+        this._playZoneTrack(false);
+      });
+
+      audio.addEventListener('error', () => {
+        const playlist = ZONE_PLAYLISTS[this.currentZone] || ZONE_PLAYLISTS.pastoral;
+        if (playlist.length > 1) {
+          this._advanceZoneTrack();
+          this._playZoneTrack(false);
+        }
+      });
+
+      this.bgm = audio;
+    } catch (e) {
+      this.useProceduralFallback = true;
+    }
+  }
+
+  setLocation(loc) {
+    const nextZone = TOWN_LOCATIONS.has(loc) ? 'town' : 'pastoral';
+    if (nextZone === this.currentZone) return;
+    this.currentZone = nextZone;
+    if (this.isMusicPlaying && !this.isMuted) {
+      this._playZoneTrack(true);
     }
   }
 
@@ -257,10 +335,19 @@ class SoundSystem {
     noise.stop(now + duration);
   }
 
-  // --- Background Acoustic Music Loop ---
+  // --- Background Subtle Music Loop ---
   startMusic() {
-    if (this.isMusicPlaying || this.isMuted) return;
+    if (this.isMuted) return;
     this.init();
+
+    if (this.bgm && !this.useProceduralFallback) {
+      if (this.isMusicPlaying && !this.bgm.paused) return;
+      this.isMusicPlaying = true;
+      this._playZoneTrack(false);
+      return;
+    }
+
+    if (this.isMusicPlaying) return;
     this.isMusicPlaying = true;
     this.scheduleNextChord();
   }
@@ -270,6 +357,92 @@ class SoundSystem {
     if (this.musicTimer) {
       clearTimeout(this.musicTimer);
       this.musicTimer = null;
+    }
+    if (this.bgmFadeTimer) {
+      clearInterval(this.bgmFadeTimer);
+      this.bgmFadeTimer = null;
+    }
+    this.bgmTransitioning = false;
+    if (this.bgm) {
+      this.bgm.muted = true;
+      this.bgm.volume = 0;
+      this.bgmCurrentVolume = 0;
+      this.bgm.pause();
+    }
+  }
+
+  _getDesiredTrack() {
+    const playlist = ZONE_PLAYLISTS[this.currentZone] || ZONE_PLAYLISTS.pastoral;
+    const idx = this.zoneTrackIndex[this.currentZone] || 0;
+    return playlist[idx % playlist.length];
+  }
+
+  _fadeBgmTo(targetVol, onComplete) {
+    if (!this.bgm) {
+      if (onComplete) onComplete();
+      return;
+    }
+    if (this.bgmFadeTimer) clearInterval(this.bgmFadeTimer);
+    this.bgmFadeTimer = setInterval(() => {
+      if (!this.bgm) {
+        clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = null;
+        if (onComplete) onComplete();
+        return;
+      }
+      const goal = this.isMuted ? 0 : targetVol;
+      const diff = goal - this.bgmCurrentVolume;
+      if (Math.abs(diff) <= 0.01) {
+        this.bgmCurrentVolume = goal;
+        this.bgm.volume = Math.max(0, Math.min(1, goal));
+        clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = null;
+        if (onComplete) onComplete();
+      } else {
+        this.bgmCurrentVolume += diff * 0.22;
+        this.bgm.volume = Math.max(0, Math.min(1, this.bgmCurrentVolume));
+      }
+    }, 55);
+  }
+
+  _playZoneTrack(fadeOutFirst = false) {
+    if (!this.bgm || this.isMuted) return;
+    const desiredSrc = this._getDesiredTrack();
+
+    const startTrack = () => {
+      if (!this.bgm || this.isMuted || !this.isMusicPlaying) return;
+      const targetSrc = this._getDesiredTrack();
+      this.bgm.loop = false;
+      this.bgm.muted = false;
+      if (this.bgmActiveSrc !== targetSrc) {
+        this.bgmActiveSrc = targetSrc;
+        this.bgm.src = targetSrc;
+        this.bgm.currentTime = 0;
+      }
+      const playPromise = this.bgm.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.then(() => {
+          this._fadeBgmTo(this.bgmTargetVolume);
+        }).catch(() => {
+          // Browser blocked autoplay before user gesture; allow next gesture to retry
+          this.isMusicPlaying = false;
+        });
+      } else {
+        this._fadeBgmTo(this.bgmTargetVolume);
+      }
+    };
+
+    if (fadeOutFirst && !this.bgm.paused && this.bgmCurrentVolume > 0.02 && this.bgmActiveSrc !== desiredSrc) {
+      this.bgmTransitioning = true;
+      this._fadeBgmTo(0, () => {
+        this.bgmTransitioning = false;
+        if (!this.isMuted && this.isMusicPlaying) {
+          startTrack();
+        }
+      });
+    } else {
+      this.bgm.loop = false;
+      startTrack();
     }
   }
 

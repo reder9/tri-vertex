@@ -1411,6 +1411,118 @@ class GameEngine {
     }, 600);
   }
 
+  formatUpgradeCardMeta(up) {
+    const CONCISE_STATS = {
+      magnet_t1: ['360px gem vacuum pulse', '+45px Magnet Radius', '+15% Pull Speed'],
+      magnet_t2: ['500px magnetic gem wave', '+70px Magnet Radius', '+25% Pull Speed'],
+      magnet_t3: ['680px quantum gem sweep', '+100px Magnet Radius', '+40% Pull Speed'],
+      magnet_t4: ['850px pulse · +130px Radius · +60% Speed', 'Gems restore +0.75 Energy & +0.4 Shield'],
+      magnet_t5: ['Full-arena pulse · +170px Radius · +85% Speed', 'Gems deal 12 DMG & restore +1.5E / +0.8 Shield'],
+      dash_t1: ['-18% Phase Dash Cooldown', '+20% Dash Speed & Distance'],
+      dash_t2: ['-25% Phase Dash Cooldown', 'Leaves Decoy that draws fire & explodes'],
+      dash_t3: ['-32% Phase Dash Cooldown', 'Drops scorching Ion Plasma Trail'],
+      dash_t4: ['-45% Phase Dash Cooldown', 'Lightning arcs shock, slow & deal 140 DPS'],
+      reach_t1: ['+20% Melee Reach & Arc'],
+      reach_t2: ['+25% Melee Reach & Arc', '+18% Melee Damage'],
+      reach_t3: ['Slashes fire a Vorpal Wave', 'Deals 50% Damage downrange'],
+      reach_t4: ['Infinite Pierce on Vorpal waves', 'Melee kills trigger 60 DMG Kinetic Nova'],
+      parry_t1: ['+35% Deflected Bolt Speed', '+60% Deflection Damage'],
+      parry_t2: ['Melee kills restore +8 Hull HP & +15 Shield'],
+      parry_t3: ['Parries trigger an EMP Shockwave', 'Clears nearby enemy fire'],
+      parry_t4: ['Deflected shots deal 350% Crit Damage', 'Explode on impact'],
+      ranged_fp_t1: ['+1 Pierce on all Ranged shots'],
+      ranged_fp_t2: ['+25% Ranged Bolt Speed', '+18% Ranged Damage'],
+      ranged_fp_t3: ['+1 Projectile per Ranged shot'],
+      ranged_fp_t4: ['Seekers & Orbs burst into Homing Shards', '+1 Pierce on all projectiles'],
+      ranged_energy_t1: ['Ranged hits apply +3.5s Vulnerability', '+60% Melee combo damage taken'],
+      ranged_energy_t2: ['-25% Ranged Energy Cost', 'Wider Beam Impact'],
+      ranged_energy_t3: ['Railgun & lasers leave scorching Plasma Trail'],
+      shield_t1: ['+40 Max Shield', '-15% Shield Recharge Delay'],
+      shield_t2: ['+45 Max Shield & +30 Max Hull HP', '+25% Shield Recharge Speed'],
+      shield_t3: ['+60 Max Shield', 'Shield break triggers Knockback Shockwave'],
+      shield_t4: ['+80 Max Shield', 'Shields regen in combat at 50% rate'],
+      reactor_t1: ['+25 Energy Capacity', '+25% Energy Recharge'],
+      reactor_t2: ['+35 Energy Capacity', '+50% Energy Recharge'],
+      reactor_t3: ['+50 Energy Capacity · +75% Recharge', '-20% All Weapon Energy Cost'],
+      agility_t1: ['+20% Flight Speed', 'Sharper Handling Agility'],
+      agility_t2: ['+25% Flight Speed', 'Continuous flight charges Slipstream boost'],
+      agility_t3: ['Alternating Melee/Ranged grants +75% DMG', 'Triggers Speed Burst'],
+      w_pulse_t1: ['+20% Pulse Laser Damage', '+15% Fire Rate'],
+      w_pulse_t2: ['+1 Target Pierce', '+20% Pulse Laser Damage'],
+      w_pulse_t3: ['+1 Parallel Bolt per shot', '+18% Fire Rate'],
+      w_tri_laser_t1: ['[Ranged] Wide 3-bolt crowd spread', '0.95s Fire Rate · 8E Cost'],
+      w_tri_laser_t2: ['+25% Bolt Damage', '-15% Cooldown'],
+      w_tri_laser_t3: ['+2 Spread Bolts · +2 Pierce', '-2 Energy Cost per volley'],
+      w_katana_t1: ['+30% Slash Damage', '+18% Swing Speed'],
+      w_katana_t2: ['+25% Slash Reach', '+30% Slice Damage'],
+      w_katana_t3: ['+35% Damage · +20% Strike Speed', '+30% Knockback'],
+      w_lance_t1: ['[Melee] Forward kinetic lunge', '2.2x Critical Damage at tip'],
+      w_lance_t2: ['+28% Thrust Damage', '+20% Spear Reach'],
+      w_lance_t3: ['+22% Faster Recovery', '+35% Impale Damage'],
+      w_hammer_t1: ['[Melee] 360° seismic shockwave', 'Heavy Knockback cleave'],
+      w_hammer_t2: ['+30% Shockwave Radius', '+30% Smash Damage'],
+      w_hammer_t3: ['+25% Swing Speed', '+40% Seismic Damage'],
+      w_glaives_t1: ['[Melee] 3 Orbiting razor blades', 'Shreds foes & Parries enemy fire'],
+      w_glaives_t2: ['+2 Blades (5 total)', '+25% Glaive Damage'],
+      w_glaives_t3: ['+2 Blades (7 total) · +35% Spin Speed', '+30% Glaive Damage'],
+      w_railgun_t1: ['[Ranged] Piercing hyper-velocity beam', '1.85s Cooldown · 22E Cost'],
+      w_railgun_t2: ['+30% Beam Width', '+30% Piercing Damage'],
+      w_railgun_t3: ['+35% Beam Damage · +20% Recharge', '-6 Energy Cost'],
+      w_seekers_t1: ['[Ranged] 3 Homing micro-missiles', '1.45s Cooldown · 16E Cost'],
+      w_seekers_t2: ['+2 Missiles per salvo', '+20% Warhead Damage'],
+      w_seekers_t3: ['+3 Missiles · -20% Cooldown', '-4 Energy Cost'],
+      w_flak_t1: ['[Ranged] Close-range shotgun blast', 'Heavy Knockback · 1.35s CD · 15E'],
+      w_flak_t2: ['+4 Shrapnel Pellets', '+25% Pellet Damage'],
+      w_flak_t3: ['+25% Fire Rate · +30% Damage', '-4 Energy Cost'],
+      w_void_t1: ['[Ranged] Gravity orb pulls & detonates', '2.5s Cooldown · 26E Cost'],
+      w_void_t2: ['+35% Pull Radius', '+30% Implosion Damage'],
+      w_void_t3: ['-28% Cooldown · -6 Energy Cost', '+40% Detonation Damage'],
+      fallback_repair: ['Restore +50 Hull HP immediately', 'Full Shield Recharge'],
+      fallback_overcharge: ['+10% All Weapon Damage', '+1,000 Bonus Score']
+    };
+
+    const rawTitle = up.title || '';
+    let isUnlock = false;
+    let eyebrow = '';
+    let title = rawTitle;
+
+    if (rawTitle.startsWith('Unlock: ')) {
+      isUnlock = true;
+      title = rawTitle.slice(8).trim();
+    } else if (rawTitle.includes(': ')) {
+      const colonIdx = rawTitle.indexOf(': ');
+      eyebrow = rawTitle.slice(0, colonIdx).trim();
+      title = rawTitle.slice(colonIdx + 2).trim();
+    }
+
+    const baseKey = up.id && up.id.startsWith('fallback_repair')
+      ? 'fallback_repair'
+      : (up.id && up.id.startsWith('fallback_overcharge') ? 'fallback_overcharge' : up.id);
+    const lines = CONCISE_STATS[baseKey] || (up.desc || '').split(/\.\s+/).map(s => s.replace(/\.$/, '').trim()).filter(Boolean);
+
+    return { isUnlock, eyebrow, title, lines };
+  }
+
+  escapeUpgradeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  renderUpgradeStatLineHtml(line) {
+    const escaped = this.escapeUpgradeHtml(line);
+    const tokenRegex = /(\[(?:Ranged|Melee)\])|([+-]?\d[\d.,]*(?:\s*(?:Energy|Hull HP|Shield|Blades?|total|DPS|DMG|CD|px|%|s(?!\w)|x(?!\w)|°|E(?!\w)))?|\b(?:Critical|Crit|EMP|Shockwave|Vulnerability|Homing|Infinite Pierce|Plasma Trail|Lightning|Decoy|Full Shield|Slipstream)\b)/gi;
+
+    return escaped.replace(tokenRegex, (match, slotTag, metric) => {
+      if (slotTag) {
+        const isRanged = /ranged/i.test(slotTag);
+        return `<span class="up-slot-pill ${isRanged ? 'is-ranged' : 'is-melee'}">${isRanged ? 'RANGED' : 'MELEE'}</span>`;
+      }
+      const isSpecCost = /^\d[\d.,]*\s*(?:s|E|CD)$/i.test(metric.trim());
+      const isPositiveBuff = metric.startsWith('+') || /Shield|Hull HP|Full Shield/i.test(metric);
+      const cls = isSpecCost ? 'up-hl up-hl-warn' : (isPositiveBuff ? 'up-hl up-hl-good' : 'up-hl');
+      return `<strong class="${cls}">${metric}</strong>`;
+    });
+  }
+
   generateUpgradeCards() {
     this.ui.upgradeContainer.innerHTML = '';
     this.controllerCardIndex = 0;
@@ -1526,19 +1638,33 @@ class GameEngine {
         ? `<span class="up-tier-tag">TIER ${up.tier}/${up.maxTier}</span>`
         : '';
 
+      const meta = this.formatUpgradeCardMeta(up);
+      const unlockBadge = meta.isUnlock ? '<span class="up-unlock-tag">UNLOCK</span>' : '';
+      const eyebrowHtml = meta.eyebrow ? `<span class="up-eyebrow">${this.escapeUpgradeHtml(meta.eyebrow)}</span>` : '';
+      const catClass = `cat-${up.category || 'utility'}`;
+      const statsHtml = meta.lines
+        .map(line => `<div class="up-stat-line">${this.renderUpgradeStatLineHtml(line)}</div>`)
+        .join('');
+
       card.innerHTML = `
         <div class="up-tags-row">
           <span class="up-rarity-tag tag-${up.rarity}">${up.rarity}</span>
           ${tierBadge}
+          ${unlockBadge}
         </div>
-        <div class="up-icon-box">
-          <svg class="ui-icon"><use href="${iconSvg}"></use></svg>
+        <div class="up-header">
+          ${eyebrowHtml}
+          <h4 class="up-title">${this.escapeUpgradeHtml(meta.title)}</h4>
         </div>
-        <h4 class="up-title">${up.title}</h4>
-        <p class="up-desc">${up.desc}</p>
+        <div class="up-icon-stage">
+          <div class="up-icon-box ${catClass}">
+            <svg class="ui-icon" viewBox="0 0 24 24"><use href="${iconSvg}"></use></svg>
+          </div>
+        </div>
+        <div class="up-desc">${statsHtml}</div>
         <div class="up-choose-btn">
-          <span>EQUIP AUGMENT</span>
-          <svg class="ui-icon"><use href="#icon-chevron-right"></use></svg>
+          <span>EQUIP</span>
+          <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-chevron-right"></use></svg>
         </div>
       `;
 
