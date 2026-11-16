@@ -1050,43 +1050,187 @@ class ProductionPlot {
       ctx.fill();
       ctx.stroke();
 
-      const cowBob = Math.sin(this.animTimer * 3.5) * 1.8;
-      ctx.save();
-      ctx.translate(-4, 2 + cowBob);
+      const cowBob = Math.sin(this.animTimer * 3.5) * 1.4;
+      const tailWag = Math.sin(this.animTimer * 5.0) * 3.2;
 
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
-      ctx.lineWidth = 2.5;
+      // Ground shadow under cow
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.16)';
       ctx.beginPath();
-      ctx.roundRect(-24, -14, 42, 28, 12);
+      ctx.ellipse(-4, 17, 23, 5.5, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.stroke();
 
+      ctx.save();
+      ctx.translate(-4, 0 + cowBob);
+
+      // Back legs (darker shade for depth)
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+      ctx.lineWidth = 2;
+      for (const lx of [-18, 4]) {
+        ctx.beginPath();
+        ctx.roundRect(lx, 7, 6, 10, 2.5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(lx + 0.5, 13.5, 5, 3.2);
+        ctx.fillStyle = '#e2e8f0';
+      }
+
+      // Swishing tail at back
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-23, -5);
+      ctx.quadraticCurveTo(-31, -2 + tailWag * 0.4, -29, 6 + tailWag);
+      ctx.stroke();
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.arc(-12, -5, 6.5, 0, Math.PI * 2);
-      ctx.arc(6, 4, 5.5, 0, Math.PI * 2);
+      ctx.ellipse(-29, 7 + tailWag, 3.2, 4.2, 0.2, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#ffffff';
+      // Pink udder underneath belly
+      ctx.fillStyle = '#f9a8d4';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.arc(16, -6, 12, 0, Math.PI * 2);
+      ctx.ellipse(-7, 11.5, 6.2, 3.8, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = '#fbcfe8';
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
+      // Plump cow body (white with dairy spots clipped cleanly)
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.roundRect(-24, -15, 42, 26, 12);
+      ctx.fill();
+
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.ellipse(-14, -7, 7, 5.5, 0.3, 0, Math.PI * 2);
+      ctx.ellipse(-2, 5, 6, 4.5, -0.2, 0, Math.PI * 2);
+      ctx.ellipse(5, -9, 5, 4, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.roundRect(-24, -15, 42, 26, 12);
+      ctx.stroke();
+
+      // Front legs & hooves
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+      ctx.lineWidth = 2;
+      for (const lx of [-13, 9]) {
+        ctx.beginPath();
+        ctx.roundRect(lx, 8, 6, 10.5, 2.5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(lx + 0.5, 15, 5, 3.4);
+        ctx.fillStyle = '#ffffff';
+      }
+
+      // Red collar & gold cowbell
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(10, -2);
+      ctx.lineTo(19, 3);
+      ctx.stroke();
+      ctx.fillStyle = '#fbbf24';
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(15, 5.5, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Floppy cow ears (white outer, pink inner)
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(17, -1, 9, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(4.5, -14.5, 6.5, 3.2, -0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(27.5, -14.5, 6.5, 3.2, 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#f9a8d4';
+      ctx.beginPath();
+      ctx.ellipse(4.5, -14.3, 3.8, 1.5, -0.42, 0, Math.PI * 2);
+      ctx.ellipse(27.5, -14.3, 3.8, 1.5, 0.42, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tiny curved cream horns
+      ctx.fillStyle = '#fde68a';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(9, -17);
+      ctx.quadraticCurveTo(6, -24, 11, -22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(23, -17);
+      ctx.quadraticCurveTo(26, -24, 21, -22);
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
+      // Cow head
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(16, -8, 11.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Eye patch spot on left brow
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.arc(13, -8, 2, 0, Math.PI * 2);
-      ctx.arc(21, -8, 2, 0, Math.PI * 2);
+      ctx.ellipse(11.5, -12, 4.2, 3.2, -0.25, 0, Math.PI * 2);
       ctx.fill();
+
+      // Expressive eyes + white shine
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(11.8, -11, 2.0, 0, Math.PI * 2);
+      ctx.arc(20.2, -11, 2.0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(11.2, -11.6, 0.75, 0, Math.PI * 2);
+      ctx.arc(19.6, -11.6, 0.75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cute pink snout + nostrils + smile
+      ctx.fillStyle = '#fbcfe8';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(16, -2.5, 8.8, 5.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#be185d';
+      ctx.beginPath();
+      ctx.ellipse(13, -3.5, 1.4, 1.0, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(19, -3.5, 1.4, 1.0, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#9d174d';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(16, -1.6, 2.6, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
       ctx.restore();
 
       for (let i = 0; i < Math.min(4, this.storage); i++) {
