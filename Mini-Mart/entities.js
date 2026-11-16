@@ -297,7 +297,7 @@ function drawOverheadSign(ctx, x, y, label, itemType = null, accentColor = '#f59
 
   // Signboard background
   ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#1e293b';
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.roundRect(-pillW / 2, -pillH / 2, pillW, pillH, 12);
@@ -471,7 +471,7 @@ class MiniMartPlayer {
 
     // Body: Shirt + Mart Apron (styled by selected outfit)
     ctx.fillStyle = outfit.shirt;
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.roundRect(-12, -8 - bounce, 24, 20, 8);
@@ -489,7 +489,7 @@ class MiniMartPlayer {
 
     // Cute cartoon hands
     ctx.fillStyle = '#fed7aa';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(-14, 1 - legSwing * 0.6 - bounce, 4.5, 0, Math.PI * 2);
@@ -502,7 +502,7 @@ class MiniMartPlayer {
 
     // Big Smooth Cartoon Head
     ctx.fillStyle = '#fed7aa';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.arc(0, -16 - bounce, 12.5, 0, Math.PI * 2);
@@ -534,7 +534,7 @@ class MiniMartPlayer {
       ctx.fill();
 
       // Happy smile
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.arc(eyeOffsetX, -13.5 - bounce, 2.8, 0.15 * Math.PI, 0.85 * Math.PI);
@@ -543,7 +543,7 @@ class MiniMartPlayer {
 
     // Shopkeeper Styled Cap
     ctx.fillStyle = outfit.cap;
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.arc(0, -20 - bounce, 12.5, Math.PI, 0);
@@ -672,7 +672,7 @@ class ProductionPlot {
     if (this.type === 'tomato') {
       // Wooden raised garden planter with fertile dark soil
       ctx.fillStyle = '#b45309';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -716,7 +716,7 @@ class ProductionPlot {
     } else if (this.type === 'egg') {
       // Sunny Straw Chicken Coop Pen
       ctx.fillStyle = '#fde68a';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -732,7 +732,7 @@ class ProductionPlot {
 
       // Red-Roofed Wooden Henhouse
       ctx.fillStyle = '#d97706';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.roundRect(-24, -h / 2 + 6, 48, 24, 5);
@@ -755,7 +755,7 @@ class ProductionPlot {
         ctx.translate(cx, cy + bob);
         ctx.scale(flip, 1);
         ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#1e293b';
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.ellipse(0, 0, 12, 10, 0, 0, Math.PI * 2);
@@ -792,7 +792,7 @@ class ProductionPlot {
     } else if (this.type === 'apple') {
       // Orchard Grass & Cartoon Apple Tree
       ctx.fillStyle = '#86efac';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -800,7 +800,7 @@ class ProductionPlot {
       ctx.stroke();
 
       ctx.fillStyle = '#92400e';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-9, 2, 18, 26, 5);
@@ -828,7 +828,7 @@ class ProductionPlot {
     } else if (this.type === 'milk') {
       // Dairy Cow Pen
       ctx.fillStyle = '#bbf7d0';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -840,7 +840,7 @@ class ProductionPlot {
       ctx.translate(-4, 2 + cowBob);
 
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-24, -14, 42, 28, 12);
@@ -860,7 +860,7 @@ class ProductionPlot {
       ctx.stroke();
 
       ctx.fillStyle = '#fbcfe8';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.ellipse(17, -1, 9, 6, 0, 0, Math.PI * 2);
@@ -881,7 +881,7 @@ class ProductionPlot {
     } else if (this.type === 'bread') {
       // Warm Bakery Oven
       ctx.fillStyle = '#ffedd5';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -889,7 +889,7 @@ class ProductionPlot {
       ctx.stroke();
 
       ctx.fillStyle = '#c2410c';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.arc(0, 4, 28, Math.PI, 0);
@@ -917,7 +917,7 @@ class ProductionPlot {
     } else if (this.type === 'banana') {
       // Tropical Banana Grove (Rich Green Grass & Banana Palm)
       ctx.fillStyle = '#fef08a';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -926,7 +926,7 @@ class ProductionPlot {
 
       // Curved Palm Trunk
       ctx.fillStyle = '#ca8a04';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-10, -4, 20, 32, 6);
@@ -954,7 +954,7 @@ class ProductionPlot {
     } else if (this.type === 'coconut') {
       // Beach Sand Island with Coconut Palm Tree
       ctx.fillStyle = '#fed7aa';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -963,7 +963,7 @@ class ProductionPlot {
 
       // Coconut Palm trunk
       ctx.fillStyle = '#78350f';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-8, -2, 16, 28, 5);
@@ -987,7 +987,7 @@ class ProductionPlot {
     } else if (this.type === 'pineapple') {
       // Tropical Pineapple Field
       ctx.fillStyle = '#ecfccb';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1010,7 +1010,7 @@ class ProductionPlot {
     } else if (this.type === 'smoothie') {
       // Tiki Blender Juice Bar
       ctx.fillStyle = '#cffafe';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1019,7 +1019,7 @@ class ProductionPlot {
 
       // Bamboo Blender Counter
       ctx.fillStyle = '#d97706';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.roundRect(-30, -10, 60, 28, 6);
@@ -1029,7 +1029,7 @@ class ProductionPlot {
       // 2 Glass Blender Jars with Swirling Smoothie
       const drawBlender = (bx, by, liquidColor) => {
         ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#1e293b';
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.roundRect(bx - 9, by - 14, 18, 20, 3);
@@ -1056,7 +1056,7 @@ class ProductionPlot {
     } else if (this.type === 'icecream') {
       // Vintage Gelato Churner Cart
       ctx.fillStyle = '#ffe4e6';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1065,7 +1065,7 @@ class ProductionPlot {
 
       // Chrome Gelato Machine
       ctx.fillStyle = '#f43f5e';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-26, -18, 52, 34, 8);
@@ -1088,7 +1088,7 @@ class ProductionPlot {
     } else if (this.type === 'strawberry') {
       // Sweet Strawberry Patch
       ctx.fillStyle = '#ffe4e6';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1117,7 +1117,7 @@ class ProductionPlot {
     } else if (this.type === 'cocoa') {
       // Cacao Tree & Cocoa Pods
       ctx.fillStyle = '#fef3c7';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1125,7 +1125,7 @@ class ProductionPlot {
       ctx.stroke();
 
       ctx.fillStyle = '#78350f';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-10, -8, 20, 36, 6);
@@ -1147,7 +1147,7 @@ class ProductionPlot {
     } else if (this.type === 'chocolate') {
       // Steaming Copper Chocolate Fondue Vat
       ctx.fillStyle = '#fed7aa';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1156,7 +1156,7 @@ class ProductionPlot {
 
       // Copper Kettle
       ctx.fillStyle = '#c2410c';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.arc(0, 0, 24, 0, Math.PI * 2);
@@ -1183,7 +1183,7 @@ class ProductionPlot {
     } else if (this.type === 'donut') {
       // Donut Baking Station
       ctx.fillStyle = '#fdf2f8';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1192,7 +1192,7 @@ class ProductionPlot {
 
       // Fryer counter
       ctx.fillStyle = '#f472b6';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-28, -16, 56, 32, 8);
@@ -1212,7 +1212,7 @@ class ProductionPlot {
     } else if (this.type === 'candy') {
       // Rainbow Candy Spinning Carousel
       ctx.fillStyle = '#faf5ff';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 18);
@@ -1221,7 +1221,7 @@ class ProductionPlot {
 
       // Glass Dome Base
       ctx.fillStyle = '#a855f7';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.roundRect(-26, 0, 52, 16, 6);
@@ -1358,7 +1358,7 @@ class StoreShelf {
 
     // 2. Cartoon Market Stand Body
     ctx.fillStyle = def.standBorder || '#d97706';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(-w / 2, -h / 2, w, h, 16);
@@ -1492,6 +1492,15 @@ class CheckoutCounter {
           this.activeCustomer = head;
         }
       }
+    }
+
+    // 1b. Guard against empty-basket customer deadlocking the register queue
+    if (this.activeCustomer && (!this.activeCustomer.basket || this.activeCustomer.basket.length === 0)) {
+      const stale = this.activeCustomer;
+      stale.state = 'LEAVING';
+      const qIdx = game.customerQueue ? game.customerQueue.indexOf(stale) : -1;
+      if (qIdx !== -1) game.customerQueue.splice(qIdx, 1);
+      this.activeCustomer = null;
     }
 
     // 2. Scan items
@@ -1650,7 +1659,7 @@ class CheckoutCounter {
 
     // 3. Bright Cartoon Checkout Desk Body
     ctx.fillStyle = '#f59e0b';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(-w / 2, -h / 2, w, h, 16);
@@ -1665,7 +1674,7 @@ class CheckoutCounter {
 
     // Moving Conveyor Belt
     ctx.fillStyle = '#334155';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-w / 2 + 12, -22, 60, 44, 6);
@@ -1682,7 +1691,7 @@ class CheckoutCounter {
 
     // Cartoon Cash Register
     ctx.fillStyle = '#0ea5e9';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.roundRect(16, -26, 36, 30, 6);
@@ -1791,7 +1800,7 @@ class TrashBin {
 
     // Trash Bin Body (Sleek Charcoal / Metallic with Ribs)
     ctx.fillStyle = '#475569';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(-20, -14, 40, 34, [4, 4, 10, 10]);
@@ -1825,7 +1834,7 @@ class TrashBin {
 
     // Lid Rim
     ctx.fillStyle = '#334155';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.roundRect(-24, -6, 48, 8, 4);
@@ -2016,7 +2025,7 @@ class MartCustomer {
 
     // Rounded cartoon body
     ctx.fillStyle = this.shirtColor;
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.roundRect(-10, -6, 20, 16, 7);
@@ -2071,7 +2080,7 @@ class MartCustomer {
 
     // Cute Shopping Basket at side
     ctx.fillStyle = '#f59e0b';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.roundRect(8, -2, 13, 10, 3);
@@ -2255,7 +2264,7 @@ class StaffHelper {
 
     // Worker Uniform & Cap (color-coded by worker slot)
     ctx.fillStyle = this.palette.shirt;
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.roundRect(-10, -6, 20, 16, 7);
@@ -2342,7 +2351,11 @@ class UnlockZone {
         game.staffHired = true;
       }
     } else if (this.targetId === 'hire_cashier') {
-      game.cashierHired = true;
+      if (game.hireCashier) {
+        game.hireCashier();
+      } else {
+        game.cashierHired = true;
+      }
     } else {
       const plot = game.plots.find(p => p.id === this.targetId);
       if (plot) plot.unlocked = true;
@@ -2409,7 +2422,7 @@ class UnlockZone {
       drawItemIcon(ctx, 0, -18 + bounce * 0.5, previewType, 1.0);
     } else {
       ctx.fillStyle = '#0ea5e9';
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, -18 + bounce * 0.5, 9, 0, Math.PI * 2);
@@ -2425,7 +2438,7 @@ class UnlockZone {
 
     // 5. Green Price Pill at Bottom
     ctx.fillStyle = '#22c55e';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-30, 11, 60, 20, 10);
@@ -2451,7 +2464,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   // --- MART 1 ITEMS ---
   if (type === 'tomato') {
     ctx.fillStyle = '#ef4444';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(0, 1, 8.5, 7.5, 0, 0, Math.PI * 2);
@@ -2474,7 +2487,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
   } else if (type === 'egg') {
     ctx.fillStyle = '#fef3c7';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(0, 0, 6.8, 8.8, 0, 0, Math.PI * 2);
@@ -2493,7 +2506,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
   } else if (type === 'apple') {
     ctx.fillStyle = '#84cc16';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 1, 8, 0, Math.PI * 2);
@@ -2518,7 +2531,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
   } else if (type === 'milk') {
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-6.5, -6, 13, 14, 3);
@@ -2537,7 +2550,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
   } else if (type === 'bread') {
     ctx.fillStyle = '#f59e0b';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-9, -6, 18, 12, 6);
@@ -2556,7 +2569,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'banana') {
     // Bright Yellow Banana Bunch
     ctx.fillStyle = '#eab308';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(-2, 2, 8, -0.2, 1.6);
@@ -2579,7 +2592,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'coconut') {
     // Rich Brown Tropical Coconut
     ctx.fillStyle = '#78350f';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
@@ -2603,7 +2616,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'pineapple') {
     // Golden Pineapple with Spiky Tropical Crown
     ctx.fillStyle = '#f59e0b';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(0, 2, 7.5, 9, 0, 0, Math.PI * 2);
@@ -2634,7 +2647,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'smoothie') {
     // Chilled Fruit Smoothie Cup with Straw
     ctx.fillStyle = '#ec4899';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-6, -4);
@@ -2662,7 +2675,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'icecream') {
     // Gelato Cone with Double Scoop & Cherry
     ctx.fillStyle = '#d97706';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.moveTo(-6, 0); ctx.lineTo(0, 11); ctx.lineTo(6, 0);
@@ -2678,7 +2691,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
     // Strawberry Scoop
     ctx.fillStyle = '#f43f5e';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.arc(0, -6, 6, 0, Math.PI * 2);
@@ -2695,7 +2708,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'strawberry') {
     // Plump Red Strawberry with Seeds
     ctx.fillStyle = '#f43f5e';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, 9);
@@ -2721,7 +2734,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'cocoa') {
     // Golden-Brown Cocoa Pod
     ctx.fillStyle = '#78350f';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(0, 0, 6.5, 9.5, 0.3, 0, Math.PI * 2);
@@ -2739,7 +2752,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'chocolate') {
     // Artisan Chocolate Bar with Gold Foil
     ctx.fillStyle = '#451a03';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-7, -8, 14, 16, 2);
@@ -2763,7 +2776,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'donut') {
     // Pink Frosted Glazed Donut with Sprinkles
     ctx.fillStyle = '#f59e0b';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
@@ -2778,7 +2791,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
     // Hole in center
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.arc(0, 0, 3, 0, Math.PI * 2);
@@ -2802,7 +2815,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
 
     // Lollipop Disc
     ctx.fillStyle = '#a855f7';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, -2, 7.5, 0, Math.PI * 2);
@@ -2830,7 +2843,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'apple_shake') {
     // Tall Apple Milkshake Cup with Straw & Cream
     ctx.fillStyle = '#fecdd3';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-6, -4);
@@ -2857,7 +2870,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'island_parfait') {
     // Sunny Island Parfait Cup with Tropical Layers
     ctx.fillStyle = '#fef08a';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-6.5, -4, 13, 13, 4);
@@ -2875,7 +2888,7 @@ function drawItemIcon(ctx, x, y, type, scale = 1.0) {
   } else if (type === 'choco_box') {
     // Gourmet Choco Berry Gift Box with Bow
     ctx.fillStyle = '#be123c';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-8, -6, 16, 13, 3);
@@ -3108,7 +3121,7 @@ class PickupStation {
 
     // Little package box icon inside pad
     ctx.fillStyle = '#f59e0b';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-14, -12, 28, 22, 5);
@@ -3145,7 +3158,7 @@ class PickupStation {
 
     // Cargo Box
     ctx.fillStyle = '#fef3c7';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.roundRect(-34, -22, 46, 40, 8);
@@ -3190,7 +3203,7 @@ class PickupStation {
     ctx.fill();
 
     ctx.fillStyle = '#0284c7';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(-w / 2, -h / 2, w, h, 16);
@@ -3374,7 +3387,7 @@ class DeliveryCourier {
 
     // Teal Delivery Courier Jacket
     ctx.fillStyle = '#0d9488';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.roundRect(-10, -6, 20, 16, 7);
@@ -3504,7 +3517,7 @@ class ComboStation {
 
     // Base station counter
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(-50, -30, 100, 60, 14);
@@ -3647,7 +3660,7 @@ class ShopDog {
 
     // Cute Corgi/Golden Pup Body
     ctx.fillStyle = '#fbbf24';
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(-11, -5 - bounce, 20, 12, 6);

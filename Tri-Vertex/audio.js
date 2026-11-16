@@ -14,12 +14,35 @@ class SoundEngine {
     this.musicGain = null;
     this.isInitialized = false;
 
-    // Ambient background synth state
-    this.droneInterval = null;
-    this.droneStep = 0;
+    // Subtle background music state (Stars Come Alive)
+    this.bgm = null;
+    this.bgmTargetVolume = 0.14;
+    this.bgmCurrentVolume = 0;
+    this.bgmFadeTimer = null;
   }
 
   init() {
+    if (!this.bgm && typeof Audio !== 'undefined') {
+      try {
+        this.bgm = new Audio('audio/stars-come-alive.m4a');
+        this.bgm.loop = true;
+        this.bgm.preload = 'auto';
+        this.bgm.volume = 0;
+        this.bgm.muted = this.isMuted;
+        // Fallback loop listener in case a mobile WebView ignores .loop on .m4a
+        this.bgm.addEventListener('ended', () => {
+          if (!this.bgm) return;
+          this.bgm.currentTime = 0;
+          if (!this.isMuted) {
+            const p = this.bgm.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+          }
+        });
+      } catch (e) {
+        this.bgm = null;
+      }
+    }
+
     if (this.isInitialized) return;
 
     try {
@@ -28,7 +51,7 @@ class SoundEngine {
 
       // Master gain
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
 
       // SFX bus
@@ -36,7 +59,7 @@ class SoundEngine {
       this.sfxGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
       this.sfxGain.connect(this.masterGain);
 
-      // Music / Drone bus
+      // Music bus
       this.musicGain = this.ctx.createGain();
       this.musicGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
       this.musicGain.connect(this.masterGain);
@@ -52,6 +75,11 @@ class SoundEngine {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+    this.startAmbientBeat();
+  }
+
+  toggle() {
+    return !this.toggleMute();
   }
 
   toggleMute() {
@@ -59,7 +87,46 @@ class SoundEngine {
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
     }
+    if (this.bgm) {
+      this.bgm.muted = this.isMuted;
+      if (this.isMuted) {
+        this.bgm.volume = 0;
+      } else {
+        this.startAmbientBeat();
+      }
+    }
     return this.isMuted;
+  }
+
+  setMusicState(mode = 'playing') {
+    // Keep background track subtle so combat lasers & SFX stay front and center
+    this.bgmTargetVolume = mode === 'playing' ? 0.20 : 0.11;
+    if (this.bgm && !this.isMuted && !this.bgm.paused) {
+      this._fadeBgmTo(this.bgmTargetVolume);
+    }
+  }
+
+  _fadeBgmTo(targetVol) {
+    if (!this.bgm) return;
+    if (this.bgmFadeTimer) clearInterval(this.bgmFadeTimer);
+    this.bgmFadeTimer = setInterval(() => {
+      if (!this.bgm) {
+        clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = null;
+        return;
+      }
+      const goal = this.isMuted ? 0 : targetVol;
+      const diff = goal - this.bgmCurrentVolume;
+      if (Math.abs(diff) <= 0.01) {
+        this.bgmCurrentVolume = goal;
+        this.bgm.volume = Math.max(0, Math.min(1, goal));
+        clearInterval(this.bgmFadeTimer);
+        this.bgmFadeTimer = null;
+      } else {
+        this.bgmCurrentVolume += diff * 0.18;
+        this.bgm.volume = Math.max(0, Math.min(1, this.bgmCurrentVolume));
+      }
+    }, 60);
   }
 
   // Helper to create synthetic white noise buffer
@@ -550,64 +617,17 @@ class SoundEngine {
   }
 
   /* ------------------------------------------------------------------
-     AMBIENT SYNTH BASSLINE & PULSE
+     SUBTLE AMBIENT BACKGROUND MUSIC ("Stars Come Alive")
      ------------------------------------------------------------------ */
   startAmbientBeat() {
-    if (this.droneInterval) return;
-
-    // 124 BPM electronic synth rhythm
-    const stepInterval = (60 / 124) * 1000 * 0.5; // Eighth note
-    const bassScale = [55, 55, 65.41, 73.42, 55, 82.41, 73.42, 65.41]; // A1 progression
-
-    this.droneInterval = setInterval(() => {
-      if (!this.ctx || this.isMuted || this.ctx.state !== 'running') return;
-
-      const now = this.ctx.currentTime;
-      const noteFreq = bassScale[this.droneStep % bassScale.length];
-
-      // Bass synth note
-      const osc = this.ctx.createOscillator();
-      const filter = this.ctx.createBiquadFilter();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(noteFreq, now);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(280, now);
-      filter.frequency.exponentialRampToValueAtTime(90, now + 0.22);
-      filter.Q.setValueAtTime(4, now);
-
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.musicGain);
-
-      osc.start(now);
-      osc.stop(now + 0.24);
-
-      // Hi-hat noise on alternating steps
-      if (this.droneStep % 2 === 1) {
-        const hh = this.ctx.createBufferSource();
-        hh.buffer = this.createNoiseBuffer(0.04);
-        const hhFilter = this.ctx.createBiquadFilter();
-        const hhGain = this.ctx.createGain();
-
-        hhFilter.type = 'highpass';
-        hhFilter.frequency.setValueAtTime(7000, now);
-        hhGain.gain.setValueAtTime(0.04, now);
-        hhGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
-        hh.connect(hhFilter);
-        hhFilter.connect(hhGain);
-        hhGain.connect(this.musicGain);
-        hh.start(now);
+    if (!this.bgm || this.isMuted) return;
+    if (this.bgm.paused) {
+      const p = this.bgm.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {});
       }
-
-      this.droneStep++;
-    }, stepInterval);
+    }
+    this._fadeBgmTo(this.bgmTargetVolume);
   }
 }
 

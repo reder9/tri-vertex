@@ -3,9 +3,24 @@
  * Player Triangle, Geometric Enemies, Bosses, Projectiles, Particles & Pickups
  */
 
-// Math helpers
-const distSq = (x1, y1, x2, y2) => (x1 - x2) ** 2 + (y1 - y2) ** 2;
-const dist = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
+// Math & Toroidal Wrap helpers (synced to arena dimensions)
+const getArenaW = () => (typeof window !== 'undefined' && window.ARENA_WIDTH) ? window.ARENA_WIDTH : 3200;
+const getArenaH = () => (typeof window !== 'undefined' && window.ARENA_HEIGHT) ? window.ARENA_HEIGHT : 2400;
+const wrapCoord = (v, max) => ((v % max) + max) % max;
+const wrapDelta = (d, max) => d - Math.round(d / max) * max;
+const toroidalDelta = (x1, y1, x2, y2) => ({
+  dx: wrapDelta(x2 - x1, getArenaW()),
+  dy: wrapDelta(y2 - y1, getArenaH())
+});
+const distSq = (x1, y1, x2, y2) => {
+  const dx = wrapDelta(x2 - x1, getArenaW());
+  const dy = wrapDelta(y2 - y1, getArenaH());
+  return dx * dx + dy * dy;
+};
+const dist = (x1, y1, x2, y2) => Math.hypot(
+  wrapDelta(x2 - x1, getArenaW()),
+  wrapDelta(y2 - y1, getArenaH())
+);
 const normalizeAngle = (ang) => Math.atan2(Math.sin(ang), Math.cos(ang));
 
 /**
@@ -49,15 +64,16 @@ class Player {
     this.invulnerable = false;
     this.invulnerableTimer = 0;
 
-    // Loadout (Start exclusively with the Tri-Repeater laser; unlock other weapons via power-ups)
-    this.meleeWeapons = [];
-    this.rangedWeapons = ['tri_laser'];
+    // Loadout (Start with the Cyber Katana sword + classic 1-shot blue Pulse Laser; unlock or upgrade more as you level up)
+    this.meleeWeapons = ['katana'];
+    this.rangedWeapons = ['pulse_laser'];
     this.activeMeleeIndex = 0;
     this.activeRangedIndex = 0;
     this.weaponMods = {};
 
     this.meleeCooldown = 0;
     this.rangedCooldown = 0;
+    this.prevLeftDown = false;
 
     // Attack state animations
     this.meleeAttackAnim = null; // { type, timer, maxTimer, angle, range, arc }
@@ -217,50 +233,27 @@ class Player {
   update(dt, input, arenaWidth, arenaHeight, game) {
     this.game = game;
 
-    // 1. Rotation: Direct twin-stick orientation (Xbox), Touch Auto-Aim / Drag Aim, or Mouse Cursor
-    let rawTargetAngle = Math.atan2(input.mouseY - this.y, input.mouseX - this.x);
+    // 1. Rotation: Direct twin-stick orientation (Xbox), Touch Drag/Flight, or Mouse Cursor
+    const aimDelta = toroidalDelta(this.x, this.y, input.mouseX, input.mouseY);
+    let rawTargetAngle = Math.atan2(aimDelta.dy, aimDelta.dx);
     const isRangedFiring = input.gamepadRangedHeld || input.gamepadLtHeld || input.touchRangedHeld;
 
     let targetAngle = rawTargetAngle;
 
-    // Mobile & Tablet Touch Aim Handling (Drag-to-Aim or Smart Auto-Aim)
-    if (input.touchControlsActive) {
+    // Mobile & Tablet Touch Aim Handling (Drag-to-Aim or movement facing — never overrides mouse cursor)
+    if (input.touchControlsActive && !input.usingMouse) {
       if (input.touchDragAiming) {
         rawTargetAngle = input.touchAimAngle;
         targetAngle = input.touchAimAngle;
         input.mouseX = this.x + Math.cos(targetAngle) * 260;
         input.mouseY = this.y + Math.sin(targetAngle) * 260;
-      } else if (game && game.enemies && game.enemies.length > 0) {
-        // Nearest enemy auto-aim priority
-        let bestTarget = null;
-        let bestDistSq = 900 * 900;
-        for (let i = 0; i < game.enemies.length; i++) {
-          const e = game.enemies[i];
-          if (!e || e.hp <= 0 || e.isDying) continue;
-          const d2 = distSq(this.x, this.y, e.x, e.y);
-          if (d2 < bestDistSq) {
-            bestDistSq = d2;
-            bestTarget = e;
-          }
-        }
-        if (bestTarget) {
-          rawTargetAngle = Math.atan2(bestTarget.y - this.y, bestTarget.x - this.x);
-          targetAngle = rawTargetAngle;
-          input.mouseX = bestTarget.x;
-          input.mouseY = bestTarget.y;
-        } else if (input.touchMoveMagnitude > 0.1) {
-          rawTargetAngle = Math.atan2(input.touchMoveY, input.touchMoveX);
-          targetAngle = rawTargetAngle;
-          input.mouseX = this.x + Math.cos(targetAngle) * 220;
-          input.mouseY = this.y + Math.sin(targetAngle) * 220;
-        }
       } else if (input.touchMoveMagnitude > 0.1) {
         rawTargetAngle = Math.atan2(input.touchMoveY, input.touchMoveX);
         targetAngle = rawTargetAngle;
         input.mouseX = this.x + Math.cos(targetAngle) * 220;
         input.mouseY = this.y + Math.sin(targetAngle) * 220;
       }
-    } else if (input.gamepadConnected && (input.usingGamepadCursor || input.gamepadAiming || input.gamepadMoveMagnitude > 0.15)) {
+    } else if (input.gamepadConnected && !input.usingMouse && (input.usingGamepadCursor || input.gamepadAiming || input.gamepadMoveMagnitude > 0.15)) {
       // Xbox Controller Direct Twin-Stick Aiming / Flight Steering Orientation
       if (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15) {
         rawTargetAngle = input.gamepadAimAngle;
@@ -277,9 +270,8 @@ class Player {
     this.prevTargetAngle = targetAngle;
     const isSpinningFast = spinAngularVelocity > 2.8; // > ~160 deg/sec
 
-    // Smart Soft Aim-Assist / Target Magnetism for Xbox Controller Ranged Weapons
-    // Only engages while actively firing ranged weapon AND tracking steadily (never while spinning/sweeping!)
-    if (input.gamepadConnected && game && game.enemies && isRangedFiring && !isSpinningFast) {
+    // Smart Soft Aim-Assist ONLY when actively playing with Gamepad (never alters Mouse Cursor aim)
+    if (input.gamepadConnected && !input.usingMouse && game && game.enemies && isRangedFiring && !isSpinningFast) {
       this.aimReticleActive = true;
       const maxLockDist = 750;
       const maxConeAngle = 0.42; // ~24 degrees cone
@@ -341,16 +333,12 @@ class Player {
       this.aimReticleAlpha = Math.max(0, this.aimReticleAlpha - dt * 4);
     }
 
-    // High-Speed Angular Tracking & Rotation
-    let diff = normalizeAngle(targetAngle - this.angle);
-    if (input.gamepadConnected && (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15)) {
-      // Direct 1:1 instantaneous angular response on Xbox Controller:
-      // When spinning or flicking the analog stick, triangle tracks smoothly at full stick speed with zero lag
+    // High-Speed Angular Tracking & Rotation (1:1 immediate cursor/stick tracking)
+    if (!input.touchControlsActive || input.usingMouse || (input.gamepadConnected && (input.gamepadAiming || input.gamepadMoveMagnitude > 0.15))) {
       this.angle = targetAngle;
     } else {
-      // Smooth interpolation for mouse / touch aiming
-      const turnSpeed = input.touchControlsActive ? 38 : 42;
-      this.angle += diff * Math.min(1, dt * turnSpeed);
+      const diff = normalizeAngle(targetAngle - this.angle);
+      this.angle += diff * Math.min(1, dt * 38);
     }
     this.angle = normalizeAngle(this.angle);
 
@@ -459,10 +447,9 @@ class Player {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    // Arena boundary clamp
-    const pad = 24;
-    this.x = Math.max(pad, Math.min(arenaWidth - pad, this.x));
-    this.y = Math.max(pad, Math.min(arenaHeight - pad, this.y));
+    // Seamless toroidal wrap-around (no wall edges or stuck corners!)
+    this.x = wrapCoord(this.x, arenaWidth);
+    this.y = wrapCoord(this.y, arenaHeight);
 
     // After-images decay
     for (let i = this.afterImages.length - 1; i >= 0; i--) {
@@ -526,63 +513,22 @@ class Player {
     // Thruster visual flicker
     this.thrusterFlicker = Math.sin(Date.now() * 0.02) * 4;
 
-    // Handle Attacks (Supports Manual Input + Smart Auto-Combat on Mobile)
-    let performedManualMelee = false;
-    let performedManualRanged = false;
+    // Handle Manual Attacks (Sword swings once per click/press; Ranged laser cycles at weapon cooldown)
+    const meleeJustPressed = !!input.leftMouseDown && !this.prevLeftDown;
 
     if (input.rightMouseDown && this.equippedRanged && this.rangedCooldown <= 0) {
       this.performRangedAttack(game);
-      performedManualRanged = true;
     }
 
-    if (input.leftMouseDown) {
-      if (this.equippedMelee) {
-        if (this.meleeCooldown <= 0) {
-          this.performMeleeAttack(game);
-          performedManualMelee = true;
-        }
-      } else if (!performedManualRanged && this.equippedRanged && this.rangedCooldown <= 0) {
-        // Before a melee weapon is unlocked, primary click/trigger fires the equipped laser
-        this.performRangedAttack(game);
-        performedManualRanged = true;
-      }
-    }
-
-    // Smart Auto-Combat (Active on Touch / Mobile for silky, one-thumb dodging & automatic weapon engagement)
-    if (input.touchControlsActive && game && game.enemies && game.enemies.length > 0) {
-      let nearestMeleeTarget = null;
-      let minMeleeDist = (this.equippedMelee ? this.equippedMelee.range : 115) * 1.35;
-      let nearestRangedTarget = null;
-      let minRangedDist = 650;
-
-      for (let i = 0; i < game.enemies.length; i++) {
-        const e = game.enemies[i];
-        if (!e || e.health <= 0 || e.isDying) continue;
-        const d = dist(this.x, this.y, e.x, e.y);
-
-        if (d < minMeleeDist) {
-          minMeleeDist = d;
-          nearestMeleeTarget = e;
-        }
-        if (d < minRangedDist) {
-          minRangedDist = d;
-          nearestRangedTarget = e;
-        }
-      }
-
-      // Auto-Melee strike when enemy breaches close perimeter
-      if (!performedManualMelee && this.equippedMelee && this.meleeCooldown <= 0 && nearestMeleeTarget) {
-        this.angle = Math.atan2(nearestMeleeTarget.y - this.y, nearestMeleeTarget.x - this.x);
+    if (meleeJustPressed) {
+      if (this.equippedMelee && this.meleeCooldown <= 0) {
         this.performMeleeAttack(game);
-      }
-
-      // Auto-Ranged discharge towards nearest threat
-      if (!performedManualRanged && this.equippedRanged && this.rangedCooldown <= 0 && nearestRangedTarget && !input.touchDragAiming) {
-        input.mouseX = nearestRangedTarget.x;
-        input.mouseY = nearestRangedTarget.y;
+      } else if (!this.equippedMelee && this.equippedRanged && this.rangedCooldown <= 0) {
         this.performRangedAttack(game);
       }
     }
+
+    this.prevLeftDown = !!input.leftMouseDown;
 
     // Ultimate trigger
     if (input.keys['KeyF'] && this.ultimateCharge >= this.ultimateMax) {
@@ -718,11 +664,12 @@ class Player {
     let hitCount = 0;
     const attackAngle = this.angle;
 
-    game.enemies.forEach(enemy => {
+    [...game.enemies].forEach(enemy => {
       const d = dist(this.x, this.y, enemy.x, enemy.y);
       if (d <= reach + enemy.radius) {
-        // Angle check
-        const enemyAngle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+        // Angle check using shortest toroidal vector
+        const ed = toroidalDelta(this.x, this.y, enemy.x, enemy.y);
+        const enemyAngle = Math.atan2(ed.dy, ed.dx);
         const angDiff = Math.abs(normalizeAngle(enemyAngle - attackAngle));
 
         if (angDiff <= arc / 2 || weapon.id === 'hammer') {
@@ -746,7 +693,7 @@ class Player {
           const isDead = enemy.takeDamage(dmg, game, 'melee');
 
           // Knockback
-          const kbAngle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+          const kbAngle = Math.atan2(ed.dy, ed.dx);
           enemy.vx += Math.cos(kbAngle) * weapon.knockback * kbMod;
           enemy.vy += Math.sin(kbAngle) * weapon.knockback * kbMod;
 
@@ -795,8 +742,9 @@ class Player {
           if (angDiff <= arc / 2 + 0.2) {
             // PARRY / DEFLECT!
             p.owner = 'player';
-            // Reverse velocity toward cursor / mouse
-            const refAngle = Math.atan2(game.input.mouseY - p.y, game.input.mouseX - p.x);
+            // Reverse velocity toward cursor / mouse using toroidal vector
+            const rd = toroidalDelta(p.x, p.y, game.input.mouseX, game.input.mouseY);
+            const refAngle = Math.atan2(rd.dy, rd.dx);
             const spd = Math.hypot(p.vx, p.vy) * (this.deflectSpeedMult || 1.35);
             p.vx = Math.cos(refAngle) * spd;
             p.vy = Math.sin(refAngle) * spd;
@@ -922,11 +870,11 @@ class Player {
         width: (isOverchargeShot ? 8 : 4) * modRangeMult
       });
 
-      // Check beam line vs circles
+      // Check beam line vs circles (toroidal shortest wrap relative to tip)
       let hits = 0;
-      game.enemies.forEach(enemy => {
-        // Line-point distance
-        const lDist = pointToSegmentDist(enemy.x, enemy.y, tipX, tipY, endX, endY);
+      [...game.enemies].forEach(enemy => {
+        const td = toroidalDelta(tipX, tipY, enemy.x, enemy.y);
+        const lDist = pointToSegmentDist(tipX + td.dx, tipY + td.dy, tipX, tipY, endX, endY);
         if (lDist <= enemy.radius + (12 * modRangeMult)) {
           hits++;
           enemy.takeDamage(weapon.damage * dmgMult, game, 'ranged');
@@ -968,10 +916,11 @@ class Player {
           cluster: this.clusterExplosions
         }));
       }
-    } else if (weapon.id === 'tri_laser') {
-      const count = (weapon.projectilesPerShot || 3) + this.extraProjectiles + modExtraProj;
+    } else if (weapon.id === 'pulse_laser' || weapon.id === 'tri_laser') {
+      const count = (weapon.projectilesPerShot || 1) + this.extraProjectiles + modExtraProj;
+      const spreadStep = weapon.spread || 0.14;
       for (let i = 0; i < count; i++) {
-        const spreadAng = (i - (count - 1) / 2) * weapon.spread;
+        const spreadAng = count > 1 ? (i - (count - 1) / 2) * spreadStep : 0;
         const boltAng = this.angle + spreadAng;
         const pSpd = weapon.projectileSpeed * (this.projectileSpeedMult || 1);
         game.projectiles.push(new Projectile({
@@ -984,7 +933,8 @@ class Player {
           owner: 'player',
           lifetime: weapon.lifetime,
           pierce: (this.bonusPiercing || 0) + modPierceBonus,
-          radius: 4
+          isLaserBolt: true,
+          radius: weapon.id === 'pulse_laser' ? 4.5 : 4
         }));
       }
     } else if (weapon.id === 'flak') {
@@ -1587,6 +1537,30 @@ class Enemy {
         this.isKamikaze = true;
         break;
 
+      case 'splitter': // Divides into 3 Mini-Splitters on defeat
+        this.radius = 22;
+        this.maxHealth = 88 + this.wave * 14;
+        this.health = this.maxHealth;
+        this.speed = 92 + Math.min(40, this.wave * 4);
+        this.damage = 20;
+        this.color = '#e879f9';
+        this.scoreVal = 200;
+        this.xpVal = 24;
+        this.shootTimer = 3.2;
+        break;
+
+      case 'mini_splitter': // Agile shard spawned when a Splitter is destroyed
+        this.radius = 10;
+        this.maxHealth = 22 + this.wave * 4;
+        this.health = this.maxHealth;
+        this.speed = 175 + Math.min(55, this.wave * 5);
+        this.damage = 11;
+        this.color = '#f472b6';
+        this.scoreVal = 55;
+        this.xpVal = 8;
+        this.shootTimer = 999; // Pure melee rusher shard
+        break;
+
       case 'boss_colossus': // The Octagon Colossus (Wave 5) - Tuned for engaging, balanced apex combat
         this.radius = 65;
         this.maxHealth = 1900 + this.wave * 240; // 3100 HP in Wave 5 (tuned up from 2500 HP for a touch more challenge)
@@ -1624,6 +1598,7 @@ class Enemy {
   }
 
   takeDamage(amount, game, attackSource = 'unknown') {
+    if (this.splitGrace > 0) return false;
     this.health -= amount;
     window.soundEngine.playEnemyHit();
 
@@ -1689,6 +1664,25 @@ class Enemy {
     // Debris shards explosion
     game.spawnSparks(this.x, this.y, this.color, this.isBoss ? 50 : 16);
 
+    // Splitter division: spawns 3 smaller agile shards bursting outward
+    if (this.type === 'splitter' && game && game.enemies) {
+      const childCount = 3;
+      const baseAng = Math.random() * Math.PI * 2;
+      for (let c = 0; c < childCount; c++) {
+        const ang = baseAng + (c * (Math.PI * 2 / childCount));
+        const cx = wrapCoord(this.x + Math.cos(ang) * 18, getArenaW());
+        const cy = wrapCoord(this.y + Math.sin(ang) * 18, getArenaH());
+        const child = new Enemy(cx, cy, 'mini_splitter', this.wave);
+        child.vx = Math.cos(ang) * 240;
+        child.vy = Math.sin(ang) * 240;
+        child.splitGrace = 0.22;
+        game.enemies.push(child);
+      }
+      if (game.spawnFloatingText) {
+        game.spawnFloatingText(this.x, this.y - 16, 'SPLIT x3!', '#f472b6');
+      }
+    }
+
     // Screen shake on boss death
     if (this.isBoss) {
       game.screenShake(16, 0.6);
@@ -1700,13 +1694,21 @@ class Enemy {
     if (this.vulnerableTimer > 0) {
       this.vulnerableTimer -= dt;
     }
+    if (this.splitGrace > 0) {
+      this.splitGrace -= dt;
+    }
 
-    const d = dist(this.x, this.y, player.x, player.y);
-    const toPlayerAngle = Math.atan2(player.y - this.y, player.x - this.x);
+    const pd = toroidalDelta(this.x, this.y, player.x, player.y);
+    const d = Math.hypot(pd.dx, pd.dy);
+    const toPlayerAngle = Math.atan2(pd.dy, pd.dx);
     this.angle = toPlayerAngle;
 
     // AI movement behavior
-    if (this.type === 'sniper') {
+    if (this.splitGrace > 0) {
+      // Initial outward radial split burst velocity glides briefly before locking on
+      this.vx *= 0.94;
+      this.vy *= 0.94;
+    } else if (this.type === 'sniper') {
       // Keep distance around 350-450px
       if (d < 320) {
         // Back away
@@ -1727,17 +1729,17 @@ class Enemy {
       this.vy = Math.sin(toPlayerAngle) * this.speed;
     }
 
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
+    this.x = wrapCoord(this.x + this.vx * dt, getArenaW());
+    this.y = wrapCoord(this.y + this.vy * dt, getArenaH());
 
     // Separation from player (prevent enemies from sticking/clipping onto player)
     const minDist = this.radius + player.radius + 8;
     if (d < minDist && d > 0.001) {
       const overlap = minDist - d;
-      const pushX = (this.x - player.x) / d;
-      const pushY = (this.y - player.y) / d;
-      this.x += pushX * overlap * 0.9;
-      this.y += pushY * overlap * 0.9;
+      const pushX = -pd.dx / d;
+      const pushY = -pd.dy / d;
+      this.x = wrapCoord(this.x + pushX * overlap * 0.9, getArenaW());
+      this.y = wrapCoord(this.y + pushY * overlap * 0.9, getArenaH());
 
       // Contact damage with repulsion bounce so enemy cannot glue to ship
       if (d < this.radius + player.radius) {
@@ -1761,7 +1763,8 @@ class Enemy {
   }
 
   fireWeapons(player, game) {
-    const toPlayerAngle = Math.atan2(player.y - this.y, player.x - this.x);
+    const pd = toroidalDelta(this.x, this.y, player.x, player.y);
+    const toPlayerAngle = Math.atan2(pd.dy, pd.dx);
 
     if (this.type === 'scout') {
       this.shootTimer = 3.2 + Math.random() * 2;
@@ -1817,6 +1820,22 @@ class Enemy {
         owner: 'enemy',
         radius: 5
       }));
+    } else if (this.type === 'splitter') {
+      this.shootTimer = 3.2;
+      // Splitters fire twin angled plasma bolts
+      for (const offset of [-0.18, 0.18]) {
+        const ang = toPlayerAngle + offset;
+        game.projectiles.push(new Projectile({
+          x: this.x,
+          y: this.y,
+          vx: Math.cos(ang) * 440,
+          vy: Math.sin(ang) * 440,
+          damage: 15,
+          color: this.color,
+          owner: 'enemy',
+          radius: 4.5
+        }));
+      }
     } else if (this.type === 'boss_colossus') {
       const isPhase2 = this.bossPhase >= 2;
       this.shootTimer = isPhase2 ? 1.75 : 2.0; // Tuned from 2.4s to 2.0s (Phase 1) and 1.75s (Phase 2)
@@ -1931,6 +1950,26 @@ class Enemy {
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+    } else if (this.type === 'splitter') {
+      // Dual-layered glowing Octagon core that splits into shards
+      drawPolygon(ctx, 0, 0, this.radius, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      drawPolygon(ctx, 0, 0, this.radius * 0.55, 4);
+      ctx.stroke();
+    } else if (this.type === 'mini_splitter') {
+      // Sharp fast split prism shard
+      ctx.beginPath();
+      ctx.moveTo(this.radius, 0);
+      ctx.lineTo(-this.radius * 0.6, -this.radius * 0.8);
+      ctx.lineTo(-this.radius * 0.25, 0);
+      ctx.lineTo(-this.radius * 0.6, this.radius * 0.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
     } else if (this.type === 'boss_colossus') {
       // Massive Octagon with rotating plates
       drawPolygon(ctx, 0, 0, this.radius, 8);
@@ -1994,6 +2033,7 @@ class Projectile {
     this.homing = opts.homing || false;
     this.isMeleeWave = opts.isMeleeWave || false;
     this.isVoidOrb = opts.isVoidOrb || false;
+    this.isLaserBolt = opts.isLaserBolt || false;
     this.pullRadius = opts.pullRadius || 180;
     this.pullForce = opts.pullForce || 400;
     this.cluster = opts.cluster || false;
@@ -2016,11 +2056,12 @@ class Projectile {
       const curAngle = Math.atan2(this.vy, this.vx);
 
       game.enemies.forEach(e => {
-        if (!e || e.hp <= 0 || e.isDying) return;
-        const d = dist(this.x, this.y, e.x, e.y);
+        if (!e || e.health <= 0 || e.isDying) return;
+        const ed = toroidalDelta(this.x, this.y, e.x, e.y);
+        const d = Math.hypot(ed.dx, ed.dy);
         if (d < minDist) {
           // Forward vision cone: only acquire targets within ~74 degrees of missile flight heading
-          const angToEnemy = Math.atan2(e.y - this.y, e.x - this.x);
+          const angToEnemy = Math.atan2(ed.dy, ed.dx);
           const angleDiff = Math.abs(normalizeAngle(angToEnemy - curAngle));
           if (angleDiff < 1.3) {
             minDist = d;
@@ -2030,7 +2071,8 @@ class Projectile {
       });
 
       if (nearest) {
-        const targetAngle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+        const nd = toroidalDelta(this.x, this.y, nearest.x, nearest.y);
+        const targetAngle = Math.atan2(nd.dy, nd.dx);
         const diff = normalizeAngle(targetAngle - curAngle);
         const newAngle = curAngle + diff * dt * 2.9; // Balanced curving rate (was 4.5) to prevent impossible right-angle turns
         const speed = Math.hypot(this.vx, this.vy);
@@ -2053,23 +2095,19 @@ class Projectile {
     // Void vortex singularity pulling nearby enemies
     if (this.isVoidOrb) {
       game.enemies.forEach(e => {
-        const d = dist(this.x, this.y, e.x, e.y);
+        const ed = toroidalDelta(e.x, e.y, this.x, this.y);
+        const d = Math.hypot(ed.dx, ed.dy);
         if (d < this.pullRadius && d > 5) {
-          const ang = Math.atan2(this.y - e.y, this.x - e.x);
+          const ang = Math.atan2(ed.dy, ed.dx);
           const force = (1 - (d / this.pullRadius)) * this.pullForce * dt;
-          e.x += Math.cos(ang) * force;
-          e.y += Math.sin(ang) * force;
+          e.x = wrapCoord(e.x + Math.cos(ang) * force, getArenaW());
+          e.y = wrapCoord(e.y + Math.sin(ang) * force, getArenaH());
         }
       });
     }
 
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-
-    // Boundary check
-    if (this.x < 0 || this.x > game.width || this.y < 0 || this.y > game.height) {
-      this.dead = true;
-    }
+    this.x = wrapCoord(this.x + this.vx * dt, game ? game.arenaWidth : getArenaW());
+    this.y = wrapCoord(this.y + this.vy * dt, game ? game.arenaHeight : getArenaH());
   }
 
   destroy(game) {
@@ -2130,6 +2168,27 @@ class Projectile {
       ctx.beginPath();
       ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (this.isLaserBolt) {
+      // Crisp glowing laser beam bolt with white core
+      const ang = Math.atan2(this.vy, this.vx);
+      const len = 20;
+      ctx.rotate(ang);
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 4.5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.moveTo(-len * 0.65, 0);
+      ctx.lineTo(len * 0.45, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(-len * 0.45, 0);
+      ctx.lineTo(len * 0.35, 0);
+      ctx.stroke();
     } else {
       // Standard energy pellet / bolt
       ctx.fillStyle = this.color;
@@ -2172,7 +2231,8 @@ class Gem {
     const speedMult = player.magnetSpeedBonus || 1.0;
 
     if (this.isVacuumed || d < pullRadius) {
-      const ang = Math.atan2(player.y - this.y, player.x - this.x);
+      const pd = toroidalDelta(this.x, this.y, player.x, player.y);
+      const ang = Math.atan2(pd.dy, pd.dx);
       const accel = this.isVacuumed ? 1500 : (((1 - (d / pullRadius)) * 1000) + 320) * speedMult;
       this.vx += Math.cos(ang) * accel * dt;
       this.vy += Math.sin(ang) * accel * dt;
@@ -2193,8 +2253,8 @@ class Gem {
       }
     }
 
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
+    this.x = wrapCoord(this.x + this.vx * dt, getArenaW());
+    this.y = wrapCoord(this.y + this.vy * dt, getArenaH());
 
     // Pickup collection check
     if (d < player.radius + this.radius + 8) {

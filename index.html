@@ -204,6 +204,118 @@
       line-height: 1.5;
     }
 
+    /* Hub Library Tabs */
+    .hub-tabs {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .hub-tab-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.68rem, 1.5vw, 0.82rem);
+      padding: 12px 20px;
+      background: #121626;
+      border: 3px solid #232b42;
+      color: #94a3b8;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 0 #090c14;
+      transition: all 0.12s ease;
+      letter-spacing: 1px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .hub-tab-btn:hover {
+      background: #1a2138;
+      color: #e2e8f0;
+      transform: translateY(-2px);
+    }
+
+    .hub-tab-btn.active[data-tab="leytens"] {
+      background: #0f1e33;
+      border-color: var(--tri-neon);
+      color: #ffffff;
+      box-shadow: 0 4px 0 #005566, 0 0 18px rgba(0, 240, 255, 0.3);
+    }
+
+    .hub-tab-btn.active[data-tab="calebs"] {
+      background: #231233;
+      border-color: var(--hero-purple);
+      color: #ffffff;
+      box-shadow: 0 4px 0 #581c87, 0 0 18px rgba(168, 85, 247, 0.35);
+    }
+
+    .tab-count-badge {
+      font-family: 'Silkscreen', monospace;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid currentColor;
+    }
+
+    .hub-panel.hidden {
+      display: none;
+    }
+
+    /* Empty Cartridge State for Caleb's Games */
+    .empty-library-card {
+      grid-column: 1 / -1;
+      background: var(--panel-bg);
+      border: 4px dashed #4c1d95;
+      box-shadow:
+        inset -4px -4px 0px 0px rgba(0, 0, 0, 0.5),
+        0 8px 24px rgba(0, 0, 0, 0.55);
+      padding: 40px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .empty-icon-wrap {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #090c14;
+      border: 3px solid var(--hero-purple);
+      color: var(--hero-purple);
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.28);
+    }
+
+    .empty-library-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.95rem, 2.2vw, 1.25rem);
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+
+    .empty-library-desc {
+      max-width: 580px;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+    }
+
+    .empty-path-pill {
+      font-family: 'Silkscreen', monospace;
+      font-size: 0.78rem;
+      padding: 8px 14px;
+      background: #090c14;
+      border: 2px solid #7c3aed;
+      color: #d8b4fe;
+      word-break: break-all;
+    }
+
     /* Games Grid */
     .games-grid {
       display: grid;
@@ -653,7 +765,7 @@
     <header class="top-bar">
       <div class="top-left-status">
         <span class="blinking-dot"></span>
-        <span>ARCADE HUB // LEYTEN'S ARCADE</span>
+        <span>ARCADE HUB // LEYTEN'S &amp; CALEB'S GAMES</span>
       </div>
       <div class="top-actions">
         <!-- Audio Synthesizer Toggle -->
@@ -686,12 +798,31 @@
         </svg>
         <span>SELECT YOUR GAME</span>
       </div>
-      <h1 class="arcade-title">LEYTEN'S GAMES</h1>
-      <p class="arcade-subtitle">Cosmic space combat, cozy farming &amp; city trade, 3D supermarket tycoon, typing RPG adventure, and physics slingshot action.</p>
+      <h1 class="arcade-title" id="hubTitle">LEYTEN'S GAMES</h1>
+      <p class="arcade-subtitle" id="hubSubtitle">Cosmic space combat, cozy farming &amp; city trade, 3D supermarket tycoon, typing RPG adventure, and physics slingshot action.</p>
     </section>
 
-    <!-- Games Grid -->
-    <section class="games-grid" aria-label="Game Library">
+    <!-- Library Tabs Switcher -->
+    <nav class="hub-tabs" role="tablist" aria-label="Game Libraries">
+      <button class="hub-tab-btn active" id="tabBtnLeytens" data-tab="leytens" role="tab" aria-selected="true" type="button">
+        <svg class="ui-icon" viewBox="0 0 24 24">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>LEYTEN'S GAMES</span>
+        <span class="tab-count-badge" id="countLeytens">5</span>
+      </button>
+      <button class="hub-tab-btn" id="tabBtnCalebs" data-tab="calebs" role="tab" aria-selected="false" type="button">
+        <svg class="ui-icon" viewBox="0 0 24 24">
+          <rect width="20" height="12" x="2" y="6" rx="6"/>
+          <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
+        </svg>
+        <span>CALEB'S GAMES</span>
+        <span class="tab-count-badge" id="countCalebs">0</span>
+      </button>
+    </nav>
+
+    <!-- Games Grid (Leyten's Games) -->
+    <section class="games-grid hub-panel" id="panel-leytens" aria-label="Leyten's Game Library">
 
       <!-- 1. TRI-VERTEX 2.0 -->
       <a href="Tri-Vertex/index.html" class="pixel-card tri-vertex" id="card-0" data-index="0" tabindex="0">
@@ -886,6 +1017,9 @@
 
     </section>
 
+    <!-- Games Grid (Caleb's Games) -->
+    <section class="games-grid hub-panel hidden" id="panel-calebs" aria-label="Caleb's Game Library"></section>
+
     <!-- Footer Status & Gamepad Guide -->
     <footer class="hub-footer">
       <div class="controls-group">
@@ -899,6 +1033,12 @@
           <span>/</span>
           <span class="ctrl-key">SPACE</span>
           <span>LAUNCH</span>
+        </div>
+        <div class="ctrl-item">
+          <span class="ctrl-key">TAB</span>
+          <span>/</span>
+          <span class="ctrl-key">LB RB</span>
+          <span>SWITCH LIBRARY</span>
         </div>
         <div class="ctrl-item">
           <span class="ctrl-key">1</span>
@@ -1085,17 +1225,127 @@
     }
     requestAnimationFrame(renderStarfield);
 
-    // --- 3. Card Selection, Navigation & Sound ---
-    const cards = [
-      document.getElementById('card-0'),
-      document.getElementById('card-1'),
-      document.getElementById('card-2'),
-      document.getElementById('card-3'),
-      document.getElementById('card-4')
+    // --- 3. Library Tabs, Card Selection, Navigation & Sound ---
+    // Add Caleb's games here as entries like:
+    // { title: 'Game Title', genre: 'ACTION', desc: 'Description...', href: '../Calebs Games/My-Game/index.html', theme: 'tri-vertex', features: ['Xbox Controller'] }
+    const CALEB_GAMES = [
+      {
+        title: 'SUNNY SQUEEZE',
+        genre: 'TYCOON',
+        desc: 'Modern cartoon lemonade stand simulator! Craft recipes, watch the weather & day of the week, rent prime locations, and build your citrus empire.',
+        href: '../Calebs Games/Lemonade-Stand/index.html',
+        theme: 'mini-mart',
+        features: ['Xbox Controller', 'Keyboard & Mouse', 'Cartoon Sim']
+      }
     ];
+
+    const panelLeytens = document.getElementById('panel-leytens');
+    const panelCalebs = document.getElementById('panel-calebs');
+    const tabBtnLeytens = document.getElementById('tabBtnLeytens');
+    const tabBtnCalebs = document.getElementById('tabBtnCalebs');
+    const hubTitle = document.getElementById('hubTitle');
+    const hubSubtitle = document.getElementById('hubSubtitle');
+    const countLeytens = document.getElementById('countLeytens');
+    const countCalebs = document.getElementById('countCalebs');
+
+    let activeLibraryTab = 'leytens';
+    let cards = Array.from(panelLeytens.querySelectorAll('.pixel-card'));
     let selectedIndex = 0;
 
+    function renderCalebsGames() {
+      if (countCalebs) countCalebs.textContent = String(CALEB_GAMES.length);
+      if (countLeytens) countLeytens.textContent = String(panelLeytens.querySelectorAll('.pixel-card').length);
+
+      if (CALEB_GAMES.length === 0) {
+        panelCalebs.innerHTML = `
+          <div class="empty-library-card">
+            <div class="empty-icon-wrap" aria-hidden="true">
+              <svg class="ui-icon" style="width: 34px; height: 34px;" viewBox="0 0 24 24">
+                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+              </svg>
+            </div>
+            <h2 class="empty-library-title">CALEB'S GAMES // READY FOR CARTRIDGES</h2>
+            <p class="empty-library-desc">
+              No games have been added to Caleb's Games yet! Drop new game folders inside the directory below and register them to launch straight from this tab.
+            </p>
+            <div class="empty-path-pill">D:\\Calebs Games\\</div>
+          </div>
+        `;
+        return;
+      }
+
+      panelCalebs.innerHTML = CALEB_GAMES.map((g, idx) => {
+        const theme = g.theme || 'type-hero';
+        const badges = (g.features || []).map(f => `<span class="feature-badge">${f}</span>`).join('');
+        return `
+          <a href="${g.href}" class="pixel-card ${theme}" data-index="${idx}" tabindex="0">
+            <div class="card-header-row">
+              <div class="pixel-icon-box" aria-hidden="true">
+                <svg class="ui-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24">
+                  <rect width="20" height="12" x="2" y="6" rx="6"/>
+                  <path d="M6 12h4m-2-2v4m9-3h.01m3 2h.01"/>
+                </svg>
+              </div>
+              <span class="genre-pill">${g.genre || 'ARCADE'}</span>
+            </div>
+            <div class="card-body">
+              <h2 class="game-title">${g.title}</h2>
+              <p class="game-desc">${g.desc || ''}</p>
+              ${badges ? `<div class="feature-list">${badges}</div>` : ''}
+            </div>
+            <div class="pixel-btn-action">
+              <span>LAUNCH GAME</span>
+              <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      Array.from(panelCalebs.querySelectorAll('.pixel-card')).forEach((c, i) => {
+        c.addEventListener('mouseenter', () => setFocusIndex(i, true));
+        c.addEventListener('click', () => sound.playLaunch());
+      });
+    }
+
+    function switchLibraryTab(tabName, playAudio = true) {
+      activeLibraryTab = tabName === 'calebs' ? 'calebs' : 'leytens';
+      const isCalebs = activeLibraryTab === 'calebs';
+
+      tabBtnLeytens.classList.toggle('active', !isCalebs);
+      tabBtnCalebs.classList.toggle('active', isCalebs);
+      tabBtnLeytens.setAttribute('aria-selected', String(!isCalebs));
+      tabBtnCalebs.setAttribute('aria-selected', String(isCalebs));
+
+      panelLeytens.classList.toggle('hidden', isCalebs);
+      panelCalebs.classList.toggle('hidden', !isCalebs);
+
+      if (hubTitle && hubSubtitle) {
+        if (isCalebs) {
+          hubTitle.textContent = "CALEB'S GAMES";
+          hubSubtitle.textContent = "Custom arcade picks, prototypes, and extra projects stored in Caleb's Games.";
+        } else {
+          hubTitle.textContent = "LEYTEN'S GAMES";
+          hubSubtitle.textContent = "Cosmic space combat, cozy farming & city trade, 3D supermarket tycoon, typing RPG adventure, and physics slingshot action.";
+        }
+      }
+
+      const activePanel = isCalebs ? panelCalebs : panelLeytens;
+      cards = Array.from(activePanel.querySelectorAll('.pixel-card'));
+      selectedIndex = 0;
+      if (cards.length > 0) {
+        setFocusIndex(0, false);
+      }
+      if (playAudio) sound.playBlip();
+    }
+
+    renderCalebsGames();
+    tabBtnLeytens.addEventListener('click', () => switchLibraryTab('leytens', true));
+    tabBtnCalebs.addEventListener('click', () => switchLibraryTab('calebs', true));
+
     function setFocusIndex(idx, playAudio = true) {
+      if (!cards || cards.length === 0) return;
       if (idx < 0) idx = cards.length - 1;
       if (idx >= cards.length) idx = 0;
       selectedIndex = idx;
@@ -1115,7 +1365,7 @@
 
     cards.forEach((c, i) => {
       c.addEventListener('mouseenter', () => setFocusIndex(i, true));
-      c.addEventListener('click', (e) => {
+      c.addEventListener('click', () => {
         sound.playLaunch();
       });
     });
@@ -1123,36 +1373,26 @@
     // Keyboard Navigation
     window.addEventListener('keydown', (e) => {
       sound.init();
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        switchLibraryTab(activeLibraryTab === 'leytens' ? 'calebs' : 'leytens', true);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         setFocusIndex(selectedIndex + 1, true);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         setFocusIndex(selectedIndex - 1, true);
-      } else if (e.key === 'Enter' || e.key === ' ') {
+      } else if ((e.key === 'Enter' || e.key === ' ') && cards.length > 0) {
         e.preventDefault();
         sound.playLaunch();
         setTimeout(() => cards[selectedIndex].click(), 120);
-      } else if (e.key === '1') {
-        setFocusIndex(0, true);
-        sound.playLaunch();
-        setTimeout(() => cards[0].click(), 120);
-      } else if (e.key === '2') {
-        setFocusIndex(1, true);
-        sound.playLaunch();
-        setTimeout(() => cards[1].click(), 120);
-      } else if (e.key === '3') {
-        setFocusIndex(2, true);
-        sound.playLaunch();
-        setTimeout(() => cards[2].click(), 120);
-      } else if (e.key === '4') {
-        setFocusIndex(3, true);
-        sound.playLaunch();
-        setTimeout(() => cards[3].click(), 120);
-      } else if (e.key === '5') {
-        setFocusIndex(4, true);
-        sound.playLaunch();
-        setTimeout(() => cards[4].click(), 120);
+      } else if (e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key, 10) - 1;
+        if (idx >= 0 && idx < cards.length) {
+          setFocusIndex(idx, true);
+          sound.playLaunch();
+          setTimeout(() => cards[idx].click(), 120);
+        }
       }
     });
 
@@ -1163,61 +1403,136 @@
     if (gpText) {
       gpText.textContent = isCoarseTouch ? 'TOUCH & GAMEPAD READY' : 'KEYBOARD & GAMEPAD READY';
     }
-    let prevButtonA = false;
+    let prevButtonA = true;
+    let prevButtonX = false;
+    let prevButtonY = false;
+    let prevButtonLB = false;
+    let prevButtonRB = false;
     let navCooldown = 0;
+    let lastGpTime = performance.now();
+    const gpInputUnlockTime = performance.now() + 350;
 
-    function pollHubGamepad() {
-      if (navigator.getGamepads) {
-        const gamepads = navigator.getGamepads();
-        let activeGp = null;
-        for (let i = 0; i < gamepads.length; i++) {
-          if (gamepads[i] && gamepads[i].connected) {
-            activeGp = gamepads[i];
-            break;
-          }
+    function getGridColumns() {
+      if (!cards || cards.length < 2) return 1;
+      const firstTop = cards[0].getBoundingClientRect().top;
+      let cols = 0;
+      for (let i = 0; i < cards.length; i++) {
+        if (Math.abs(cards[i].getBoundingClientRect().top - firstTop) < 20) cols++;
+        else break;
+      }
+      return Math.max(1, cols);
+    }
+
+    function readMergedGamepad() {
+      if (!navigator.getGamepads) return null;
+      const pads = Array.from(navigator.getGamepads()).filter(p => p && p.connected);
+      if (pads.length === 0) return null;
+
+      let btnA = false, btnB = false, btnX = false, btnY = false, btnLB = false, btnRB = false;
+      let up = false, down = false, left = false, right = false;
+
+      for (const gp of pads) {
+        const b = gp.buttons || [];
+        const a = gp.axes || [];
+        const isDown = idx => !!(b[idx] && (b[idx].pressed || b[idx].value > 0.45));
+
+        if (isDown(0)) btnA = true;
+        if (isDown(1)) btnB = true;
+        if (isDown(2)) btnX = true;
+        if (isDown(3)) btnY = true;
+        if (isDown(4)) btnLB = true;
+        if (isDown(5)) btnRB = true;
+
+        if (isDown(12) || (a[1] !== undefined && a[1] < -0.45) || (a[7] !== undefined && a[7] < -0.45)) up = true;
+        if (isDown(13) || (a[1] !== undefined && a[1] > 0.45) || (a[7] !== undefined && a[7] > 0.45)) down = true;
+        if (isDown(14) || (a[0] !== undefined && a[0] < -0.45) || (a[6] !== undefined && a[6] < -0.45)) left = true;
+        if (isDown(15) || (a[0] !== undefined && a[0] > 0.45) || (a[6] !== undefined && a[6] > 0.45)) right = true;
+
+        // DirectInput POV Hat on axes[9]
+        if (a[9] !== undefined && Math.abs(a[9]) <= 1.05) {
+          const pov = a[9];
+          if (pov < -0.7 || pov > 0.85) up = true;
+          if (pov > -0.15 && pov < 0.45) down = true;
+          if (pov > 0.45 && pov <= 1.05) left = true;
+          if (pov > -0.7 && pov < -0.15) right = true;
+        }
+      }
+
+      return { count: pads.length, btnA, btnB, btnX, btnY, btnLB, btnRB, up, down, left, right };
+    }
+
+    function pollHubGamepad(now = performance.now()) {
+      const dt = Math.min(0.05, (now - lastGpTime) / 1000);
+      lastGpTime = now;
+
+      const gpState = readMergedGamepad();
+      if (gpState) {
+        if (!gpIndicator.classList.contains('active')) {
+          gpIndicator.classList.add('active');
+          gpText.textContent = 'XBOX CONTROLLER CONNECTED';
         }
 
-        if (activeGp) {
-          if (!gpIndicator.classList.contains('active')) {
-            gpIndicator.classList.add('active');
-            gpText.textContent = 'XBOX CONTROLLER CONNECTED';
-          }
+        if ((gpState.btnLB && !prevButtonLB) || (gpState.btnRB && !prevButtonRB)) {
+          sound.init();
+          switchLibraryTab(activeLibraryTab === 'leytens' ? 'calebs' : 'leytens', true);
+        }
+        prevButtonLB = gpState.btnLB;
+        prevButtonRB = gpState.btnRB;
 
-          const btnA = activeGp.buttons[0] && (activeGp.buttons[0].pressed || activeGp.buttons[0].value > 0.5);
-          const dpadLeft = activeGp.buttons[14] && activeGp.buttons[14].pressed;
-          const dpadRight = activeGp.buttons[15] && activeGp.buttons[15].pressed;
-          const dpadUp = activeGp.buttons[12] && activeGp.buttons[12].pressed;
-          const dpadDown = activeGp.buttons[13] && activeGp.buttons[13].pressed;
-          const stickX = activeGp.axes[0] || 0;
-          const stickY = activeGp.axes[1] || 0;
+        if (gpState.btnX && !prevButtonX) {
+          const crtBtn = document.getElementById('btnCrt');
+          if (crtBtn) crtBtn.click();
+        }
+        prevButtonX = gpState.btnX;
 
-          if (navCooldown <= 0) {
-            if (dpadRight || stickX > 0.45 || dpadDown || stickY > 0.45) {
-              setFocusIndex(selectedIndex + 1, true);
-              navCooldown = 0.22;
-            } else if (dpadLeft || stickX < -0.45 || dpadUp || stickY < -0.45) {
-              setFocusIndex(selectedIndex - 1, true);
-              navCooldown = 0.22;
-            }
-          } else {
-            navCooldown -= 0.016;
-          }
+        if (gpState.btnY && !prevButtonY) {
+          const audioBtn = document.getElementById('btnAudio');
+          if (audioBtn) audioBtn.click();
+        }
+        prevButtonY = gpState.btnY;
 
-          if (btnA && !prevButtonA) {
-            sound.init();
-            sound.playLaunch();
-            setTimeout(() => cards[selectedIndex].click(), 120);
+        if (navCooldown <= 0) {
+          const cols = getGridColumns();
+          if (gpState.right) {
+            setFocusIndex(selectedIndex + 1, true);
+            navCooldown = 0.2;
+          } else if (gpState.left) {
+            setFocusIndex(selectedIndex - 1, true);
+            navCooldown = 0.2;
+          } else if (gpState.down) {
+            setFocusIndex(Math.min(cards.length - 1, selectedIndex + cols), true);
+            navCooldown = 0.2;
+          } else if (gpState.up) {
+            setFocusIndex(Math.max(0, selectedIndex - cols), true);
+            navCooldown = 0.2;
           }
-          prevButtonA = btnA;
         } else {
-          if (gpIndicator.classList.contains('active')) {
-            gpIndicator.classList.remove('active');
-            gpText.textContent = 'CONNECT GAMEPAD';
-          }
+          navCooldown -= dt;
         }
+
+        if (now > gpInputUnlockTime && gpState.btnA && !prevButtonA && cards.length > 0) {
+          sound.init();
+          sound.playLaunch();
+          setTimeout(() => cards[selectedIndex].click(), 120);
+        }
+        prevButtonA = gpState.btnA;
+      } else {
+        if (gpIndicator.classList.contains('active')) {
+          gpIndicator.classList.remove('active');
+          gpText.textContent = 'CONNECT GAMEPAD';
+        }
+        prevButtonA = false;
       }
       requestAnimationFrame(pollHubGamepad);
     }
+    window.addEventListener('gamepadconnected', () => {
+      window.focus();
+      if (gpIndicator) {
+        gpIndicator.classList.add('active');
+        gpText.textContent = 'XBOX CONTROLLER CONNECTED';
+      }
+    });
+    window.focus();
     requestAnimationFrame(pollHubGamepad);
 
     // Initial Focus

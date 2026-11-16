@@ -14,14 +14,14 @@ const WEAPONS = {
     icon: 'icon-sword',
     color: '#00f0ff',
     trailColor: 'rgba(0, 240, 255, 0.6)',
-    damage: 65,
-    cooldown: 0.28, // seconds
+    damage: 68,
+    cooldown: 0.38, // One deliberate swing per click
     range: 110,
     arcAngle: Math.PI * 0.85, // ~150 degrees slash
     duration: 0.16,
     deflectsBullets: true,
     knockback: 140,
-    description: 'Rapid wide-arc energy slash. Deflects incoming enemy fire back at attackers as critical shards.',
+    description: 'Clean single-click wide-arc energy slash. Deflects incoming enemy fire back at attackers as critical shards.',
     sound: 'playSwordSlash'
   },
   lance: {
@@ -83,21 +83,37 @@ const WEAPONS = {
   // ===================================================================
   // FAR-RANGE WEAPONS
   // ===================================================================
-  railgun: {
-    id: 'railgun',
-    name: 'Pulse Beam',
+  pulse_laser: {
+    id: 'pulse_laser',
+    name: 'Pulse Laser',
     type: 'ranged',
     icon: 'icon-crosshair',
     color: '#00f0ff',
-    damage: 180,
-    cooldown: 0.9,
-    energyCost: 15,
+    damage: 48,
+    cooldown: 0.65,
+    energyCost: 0,
+    projectilesPerShot: 1,
+    spread: 0,
+    projectileSpeed: 980,
+    lifetime: 1.75,
+    description: 'Classic single-shot blue laser bolt with measured fire rate and zero energy cost.',
+    sound: 'playLaserShot'
+  },
+  railgun: {
+    id: 'railgun',
+    name: 'Railgun Beam',
+    type: 'ranged',
+    icon: 'icon-crosshair',
+    color: '#00f0ff',
+    damage: 230,
+    cooldown: 1.85,
+    energyCost: 22,
     projectileSpeed: 2200,
     piercing: true,
     pierceCount: 999, // Infinite penetration through all targets in line
     range: 1500,
     shake: 8,
-    description: 'Fires an instantaneous hyper-velocity particle beam that pierces through every enemy in its path. Consumes 15 Energy.',
+    description: 'Fires an instantaneous heavy particle beam piercing every target in its line. Slow 1.85s recharge & consumes 22 Energy.',
     sound: 'playRailgunFire'
   },
   seekers: {
@@ -106,15 +122,15 @@ const WEAPONS = {
     type: 'ranged',
     icon: 'icon-crosshair',
     color: '#ff3366',
-    damage: 17,
-    cooldown: 0.90,
-    energyCost: 14,
+    damage: 28,
+    cooldown: 1.45,
+    energyCost: 16,
     projectilesPerShot: 3,
     spread: 0.65,
     homing: true,
     projectileSpeed: 430,
     lifetime: 1.6,
-    description: 'Launches a trio of agile micro-missiles from rear stabilizers that curve towards targets within their forward cone. Consumes 14 Energy.',
+    description: 'Launches 3 homing micro-missiles that curve toward enemies. Slow 1.45s salvo cooldown & consumes 16 Energy.',
     sound: 'playMissileLaunch'
   },
   tri_laser: {
@@ -123,14 +139,14 @@ const WEAPONS = {
     type: 'ranged',
     icon: 'icon-crosshair',
     color: '#00ff88',
-    damage: 32,
-    cooldown: 0.14,
-    energyCost: 0,
+    damage: 34,
+    cooldown: 0.95,
+    energyCost: 8,
     projectilesPerShot: 3,
-    spread: 0.16,
-    projectileSpeed: 950,
+    spread: 0.18,
+    projectileSpeed: 920,
     lifetime: 1.8,
-    description: 'High-frequency rotary laser discharging a continuous spray of rapid coherent plasma bolts. Zero-energy primary emitter.',
+    description: 'Heavy 3-way split laser array firing wide plasma tri-bolts. Slower 0.95s cycling & consumes 8 Energy.',
     sound: 'playLaserShot'
   },
   flak: {
@@ -139,15 +155,15 @@ const WEAPONS = {
     type: 'ranged',
     icon: 'icon-crosshair',
     color: '#ffb700',
-    damage: 16,
-    cooldown: 0.82,
-    energyCost: 12,
+    damage: 22,
+    cooldown: 1.35,
+    energyCost: 15,
     projectilesPerShot: 7,
     spread: 0.58,
     projectileSpeed: 720,
     lifetime: 0.55,
     knockback: 140,
-    description: 'Kinetic shotgun blast spraying a spread of shrapnel at close-to-medium range. Consumes 12 Energy.',
+    description: 'Heavy kinetic shotgun blast spraying 7 high-knockback shrapnel pellets. Slower 1.35s reload & consumes 15 Energy.',
     sound: 'playFlakShot'
   },
   void_orb: {
@@ -156,14 +172,14 @@ const WEAPONS = {
     type: 'ranged',
     icon: 'icon-crosshair',
     color: '#aa33ff',
-    damage: 36,
-    cooldown: 1.85,
-    energyCost: 22,
+    damage: 52,
+    cooldown: 2.50,
+    energyCost: 26,
     projectileSpeed: 340,
     lifetime: 1.8,
     pullRadius: 120,
     pullForce: 190,
-    description: 'Launches a tactical gravity orb that creates a localized vortex to group nearby enemies before detonating. Consumes 22 Energy.',
+    description: 'Heavy gravity orb creating a tactical pull vortex before detonating. Long 2.5s cooldown & consumes 26 Energy.',
     sound: 'playVoidShot'
   }
 };
@@ -807,7 +823,63 @@ const UPGRADE_TREES = {
     ]
   },
 
-  // 10. STARTING LASER AUGMENTS (Tri-Repeater Power-Ups)
+  // 10. STARTING ONE-SHOT LASER AUGMENTS (Pulse Laser Power-Ups)
+  weapon_pulse_laser: {
+    id: 'weapon_pulse_laser',
+    name: 'Pulse Laser',
+    category: 'ranged',
+    weaponId: 'pulse_laser',
+    iconSvg: '#icon-crosshair',
+    tiers: [
+      {
+        treeId: 'weapon_pulse_laser',
+        tier: 1,
+        maxTier: 3,
+        id: 'w_pulse_t1',
+        title: 'Pulse Laser: Capacitor Tune',
+        category: 'ranged',
+        weaponId: 'pulse_laser',
+        iconSvg: '#icon-crosshair',
+        rarity: 'common',
+        desc: 'Boosts starter Pulse Laser damage by +20% and increases fire rate by +15%.',
+        apply: (player) => {
+          player.upgradeWeapon('pulse_laser', { damageMult: 1.20, cooldownMult: 0.87 });
+        }
+      },
+      {
+        treeId: 'weapon_pulse_laser',
+        tier: 2,
+        maxTier: 3,
+        id: 'w_pulse_t2',
+        title: 'Pulse Laser: Focused Optics',
+        category: 'ranged',
+        weaponId: 'pulse_laser',
+        iconSvg: '#icon-crosshair',
+        rarity: 'rare',
+        desc: 'Pulse Laser beams punch through +1 additional target and gain +20% damage.',
+        apply: (player) => {
+          player.upgradeWeapon('pulse_laser', { pierceBonus: 1, damageMult: 1.20 });
+        }
+      },
+      {
+        treeId: 'weapon_pulse_laser',
+        tier: 3,
+        maxTier: 3,
+        id: 'w_pulse_t3',
+        title: 'Pulse Laser: Twin Focus',
+        category: 'ranged',
+        weaponId: 'pulse_laser',
+        iconSvg: '#icon-crosshair',
+        rarity: 'epic',
+        desc: 'Pulse Laser emits +1 extra parallel bolt per shot while firing +18% faster.',
+        apply: (player) => {
+          player.upgradeWeapon('pulse_laser', { extraProjectiles: 1, cooldownMult: 0.85, damageMult: 1.15 });
+        }
+      }
+    ]
+  },
+
+  // 10b. TRI-REPEATER SPREAD LASER (UNLOCK + POWER-UPS)
   weapon_tri_laser: {
     id: 'weapon_tri_laser',
     name: 'Tri-Repeater',
@@ -820,14 +892,15 @@ const UPGRADE_TREES = {
         tier: 1,
         maxTier: 3,
         id: 'w_tri_laser_t1',
-        title: 'Tri-Repeater: Laser Overclock',
+        title: 'Unlock: Tri-Repeater',
         category: 'ranged',
         weaponId: 'tri_laser',
+        isWeaponUnlock: true,
         iconSvg: '#icon-crosshair',
         rarity: 'uncommon',
-        desc: 'Boosts your Tri-Repeater laser damage by +22% and accelerates fire rate by +18%.',
+        desc: 'Equips the Tri-Repeater [Ranged]: wide 3-bolt spread laser for crowd sweeps (slower 0.95s fire rate, 8E).',
         apply: (player) => {
-          player.upgradeWeapon('tri_laser', { damageMult: 1.22, cooldownMult: 0.85 });
+          player.unlockWeapon('tri_laser');
         }
       },
       {
@@ -835,14 +908,14 @@ const UPGRADE_TREES = {
         tier: 2,
         maxTier: 3,
         id: 'w_tri_laser_t2',
-        title: 'Tri-Repeater: Pentagram Emitter',
+        title: 'Tri-Repeater: Heavy Coils',
         category: 'ranged',
         weaponId: 'tri_laser',
         iconSvg: '#icon-crosshair',
         rarity: 'rare',
-        desc: 'Tri-Repeater discharges +2 additional laser bolts per shot with +15% plasma damage.',
+        desc: 'Boosts Tri-Repeater bolt damage by +25% and tightens cycle cooldown by 15%.',
         apply: (player) => {
-          player.upgradeWeapon('tri_laser', { extraProjectiles: 2, damageMult: 1.15 });
+          player.upgradeWeapon('tri_laser', { damageMult: 1.25, cooldownMult: 0.85 });
         }
       },
       {
@@ -850,20 +923,20 @@ const UPGRADE_TREES = {
         tier: 3,
         maxTier: 3,
         id: 'w_tri_laser_t3',
-        title: 'Tri-Repeater: Coherent Array',
+        title: 'Tri-Repeater: Pentagram Array',
         category: 'ranged',
         weaponId: 'tri_laser',
         iconSvg: '#icon-crosshair',
         rarity: 'epic',
-        desc: 'Tri-Repeater bolts gain +2 enemy pierce, +22% faster cycling, and +25% damage.',
+        desc: 'Tri-Repeater fires +2 additional spread bolts with +2 pierce and -2 Energy cost per volley.',
         apply: (player) => {
-          player.upgradeWeapon('tri_laser', { pierceBonus: 2, cooldownMult: 0.82, damageMult: 1.25 });
+          player.upgradeWeapon('tri_laser', { extraProjectiles: 2, pierceBonus: 2, energyDiscount: 2 });
         }
       }
     ]
   },
 
-  // 11. CYBER KATANA (UNLOCK + POWER-UPS)
+  // 11. CYBER KATANA (STARTER SWORD POWER-UPS)
   weapon_katana: {
     id: 'weapon_katana',
     name: 'Cyber Katana',
@@ -876,15 +949,14 @@ const UPGRADE_TREES = {
         tier: 1,
         maxTier: 3,
         id: 'w_katana_t1',
-        title: 'Unlock: Cyber Katana',
+        title: 'Katana: Razor Resonance',
         category: 'melee',
         weaponId: 'katana',
-        isWeaponUnlock: true,
         iconSvg: '#icon-sword',
-        rarity: 'uncommon',
-        desc: 'Equips the Cyber Katana [Melee]: rapid wide-arc energy slash that deflects hostile shots.',
+        rarity: 'common',
+        desc: 'Upgrades your starter Cyber Katana with +30% slash damage and +18% faster swing cadence.',
         apply: (player) => {
-          player.unlockWeapon('katana');
+          player.upgradeWeapon('katana', { damageMult: 1.30, cooldownMult: 0.85 });
         }
       },
       {
@@ -892,14 +964,14 @@ const UPGRADE_TREES = {
         tier: 2,
         maxTier: 3,
         id: 'w_katana_t2',
-        title: 'Katana: Razor Resonance',
+        title: 'Katana: Tempest Edge',
         category: 'melee',
         weaponId: 'katana',
         iconSvg: '#icon-sword',
         rarity: 'rare',
-        desc: 'Cyber Katana gains +30% slash damage and +18% faster swing cadence.',
+        desc: 'Cyber Katana slash reach expands +25% and deals +30% bonus slice damage.',
         apply: (player) => {
-          player.upgradeWeapon('katana', { damageMult: 1.30, cooldownMult: 0.85 });
+          player.upgradeWeapon('katana', { rangeMult: 1.25, damageMult: 1.30 });
         }
       },
       {
@@ -907,14 +979,14 @@ const UPGRADE_TREES = {
         tier: 3,
         maxTier: 3,
         id: 'w_katana_t3',
-        title: 'Katana: Tempest Edge',
+        title: 'Katana: Vorpal Core',
         category: 'melee',
         weaponId: 'katana',
         iconSvg: '#icon-sword',
         rarity: 'epic',
-        desc: 'Cyber Katana slash reach expands +25% and deals +35% bonus critical slice damage.',
+        desc: 'Master-forges your Cyber Katana for +35% damage, +20% faster strikes, and +30% knockback.',
         apply: (player) => {
-          player.upgradeWeapon('katana', { rangeMult: 1.25, damageMult: 1.35 });
+          player.upgradeWeapon('katana', { damageMult: 1.35, cooldownMult: 0.83, knockbackMult: 1.30 });
         }
       }
     ]
@@ -1091,10 +1163,10 @@ const UPGRADE_TREES = {
     ]
   },
 
-  // 15. PULSE BEAM RAILGUN (UNLOCK + POWER-UPS)
+  // 15. RAILGUN BEAM LASER (UNLOCK + POWER-UPS)
   weapon_railgun: {
     id: 'weapon_railgun',
-    name: 'Pulse Beam',
+    name: 'Railgun Beam',
     category: 'ranged',
     weaponId: 'railgun',
     iconSvg: '#icon-crosshair',
@@ -1104,13 +1176,13 @@ const UPGRADE_TREES = {
         tier: 1,
         maxTier: 3,
         id: 'w_railgun_t1',
-        title: 'Unlock: Pulse Beam',
+        title: 'Unlock: Railgun Beam',
         category: 'ranged',
         weaponId: 'railgun',
         isWeaponUnlock: true,
         iconSvg: '#icon-crosshair',
         rarity: 'rare',
-        desc: 'Equips the Pulse Beam [Ranged]: instantaneous hyper-velocity beam piercing every target in line (15E).',
+        desc: 'Equips the Railgun Beam [Ranged]: massive hyper-velocity beam piercing every target in line (slow 1.85s cooldown, 22E).',
         apply: (player) => {
           player.unlockWeapon('railgun');
         }
@@ -1120,12 +1192,12 @@ const UPGRADE_TREES = {
         tier: 2,
         maxTier: 3,
         id: 'w_railgun_t2',
-        title: 'Pulse Beam: Capacitor Bore',
+        title: 'Railgun: Capacitor Bore',
         category: 'ranged',
         weaponId: 'railgun',
         iconSvg: '#icon-crosshair',
         rarity: 'rare',
-        desc: 'Widens Pulse Beam ionization envelope by +30% and boosts piercing damage by +30%.',
+        desc: 'Widens Railgun ionization envelope by +30% and boosts piercing damage by +30%.',
         apply: (player) => {
           player.upgradeWeapon('railgun', { rangeMult: 1.30, damageMult: 1.30 });
         }
@@ -1135,14 +1207,14 @@ const UPGRADE_TREES = {
         tier: 3,
         maxTier: 3,
         id: 'w_railgun_t3',
-        title: 'Pulse Beam: Omega Lance',
+        title: 'Railgun: Omega Lance',
         category: 'ranged',
         weaponId: 'railgun',
         iconSvg: '#icon-crosshair',
         rarity: 'epic',
-        desc: 'Reduces Pulse Beam cost by 5 Energy, speeds recharge by +22%, and adds +35% beam damage.',
+        desc: 'Reduces Railgun cost by 6 Energy, speeds recharge by +20%, and adds +35% beam damage.',
         apply: (player) => {
-          player.upgradeWeapon('railgun', { energyDiscount: 5, cooldownMult: 0.78, damageMult: 1.35 });
+          player.upgradeWeapon('railgun', { energyDiscount: 6, cooldownMult: 0.80, damageMult: 1.35 });
         }
       }
     ]
@@ -1167,7 +1239,7 @@ const UPGRADE_TREES = {
         isWeaponUnlock: true,
         iconSvg: '#icon-crosshair',
         rarity: 'uncommon',
-        desc: 'Equips Swarm Seekers [Ranged]: launches 3 homing micro-missiles that track hostiles (14E).',
+        desc: 'Equips Swarm Seekers [Ranged]: launches 3 homing micro-missiles that track hostiles (1.45s cooldown, 16E).',
         apply: (player) => {
           player.unlockWeapon('seekers');
         }
@@ -1224,7 +1296,7 @@ const UPGRADE_TREES = {
         isWeaponUnlock: true,
         iconSvg: '#icon-crosshair',
         rarity: 'uncommon',
-        desc: 'Equips Scatter Flak [Ranged]: close-range kinetic shotgun blast with heavy knockback (12E).',
+        desc: 'Equips Scatter Flak [Ranged]: close-range kinetic shotgun blast with heavy knockback (1.35s cooldown, 15E).',
         apply: (player) => {
           player.unlockWeapon('flak');
         }
@@ -1281,7 +1353,7 @@ const UPGRADE_TREES = {
         isWeaponUnlock: true,
         iconSvg: '#icon-crosshair',
         rarity: 'rare',
-        desc: 'Equips Void Vortex [Ranged]: tactical gravity orb that pulls enemies together before detonating (22E).',
+        desc: 'Equips Void Vortex [Ranged]: tactical gravity orb that pulls enemies together before detonating (2.5s cooldown, 26E).',
         apply: (player) => {
           player.unlockWeapon('void_orb');
         }

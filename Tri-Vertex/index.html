@@ -196,15 +196,17 @@
         </div>
       </div>
 
-      <!-- Wave & Score Info -->
+      <!-- Wave & Score Info (Compact Top Center Bar) -->
       <div class="hud-center">
-        <div class="wave-badge">
-          <span class="badge-label">SECTOR WAVE</span>
-          <span id="wave-number" class="badge-value">01</span>
-        </div>
-        <div class="score-display">
-          <span class="score-label">SCORE</span>
-          <span id="score-text" class="score-val">000000</span>
+        <div class="wave-score-row">
+          <div class="wave-badge">
+            <span class="badge-label">WAVE</span>
+            <span id="wave-number" class="badge-value">01</span>
+          </div>
+          <div class="score-display">
+            <span class="score-label">PTS</span>
+            <span id="score-text" class="score-val">000000</span>
+          </div>
         </div>
         <!-- Combo Indicator -->
         <div id="combo-container" class="combo-pill hidden">
@@ -269,12 +271,12 @@
       <div id="synergy-tracker" class="synergy-meter">
         <div class="synergy-label">
           <svg class="ui-icon icon-amber"><use href="#icon-flame"></use></svg>
-          <span>COMBAT SYNERGY</span>
+          <span>SYNERGY</span>
         </div>
         <div class="synergy-bar-track">
           <div id="synergy-bar" class="synergy-bar-fill" style="width: 0%;"></div>
         </div>
-        <div id="synergy-status" class="synergy-desc">MELEE HITS CHARGE RANGED CRITS // RANGED HITS WEAKEN ARMOR</div>
+        <div id="synergy-status" class="synergy-desc">MELEE CHARGES LASER</div>
       </div>
 
       <div class="weapons-dock">
@@ -282,8 +284,8 @@
         <div class="dock-column">
           <div class="dock-header">
             <svg class="ui-icon icon-cyan"><use href="#icon-sword"></use></svg>
-            <span>PRIMARY MELEE [L-CLICK / RT / R2]</span>
-            <span class="key-hint">Keys 1-4 / Q / RB</span>
+            <span>SWORD [L-CLICK / RT]</span>
+            <span class="key-hint">[1-4 / Q]</span>
           </div>
           <div class="weapon-slots" id="melee-slots">
             <!-- Populated via JS -->
@@ -296,7 +298,7 @@
             <div class="ult-ring" id="ult-ring"></div>
             <div class="ult-inner">
               <span class="ult-key">[F / Y]</span>
-              <span class="ult-title">SUPER NOVA</span>
+              <span class="ult-title">NOVA</span>
               <span id="ult-ready-tag" class="ult-tag">0%</span>
             </div>
           </div>
@@ -306,8 +308,8 @@
         <div class="dock-column">
           <div class="dock-header">
             <svg class="ui-icon icon-pink"><use href="#icon-crosshair"></use></svg>
-            <span>FAR RANGE [R-CLICK / LT / L2]</span>
-            <span class="key-hint">Keys 5-8 / E / B</span>
+            <span>LASER [R-CLICK / LT]</span>
+            <span class="key-hint">[5-8 / E]</span>
           </div>
           <div class="weapon-slots" id="ranged-slots">
             <!-- Populated via JS -->
@@ -399,7 +401,7 @@
             </div>
             <div class="box-content">
               <h3>MELEE ARSENAL</h3>
-              <p>Slash with Katana, impale with Lance, crush with Hammer, shred with Glaives. Parries and deflects bullets!</p>
+              <p>Start with the Cyber Katana sword, upgrade its edge, or unlock Lance, Hammer &amp; Glaives. Parries &amp; deflects bullets!</p>
             </div>
           </div>
           <div class="overview-box">
@@ -407,8 +409,8 @@
               <svg class="ui-icon"><use href="#icon-crosshair"></use></svg>
             </div>
             <div class="box-content">
-              <h3>FAR-RANGE GUNS</h3>
-              <p>Snipe with Railgun, lock on with Seekers, shred with Tri-Laser, control crowds with Void Vortex!</p>
+              <h3>FAR-RANGE LASERS</h3>
+              <p>Start with the fast 1-shot Pulse Laser, then unlock heavier slower-cycling Tri-Repeater, Railgun, Seekers, Flak &amp; Void Vortex!</p>
             </div>
           </div>
         </div>
@@ -519,6 +521,13 @@
             <svg class="ui-icon"><use href="#icon-rotate"></use></svg>
             <span>RESTART ARENA</span>
           </button>
+          <button id="btn-main-menu" class="secondary-button">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>MAIN MENU</span>
+          </button>
         </div>
       </div>
     </div>
@@ -585,11 +594,11 @@
         <div class="touch-weapon-switches">
           <button id="touch-btn-swap-melee" class="touch-swap-btn touch-swap-melee" title="Cycle Melee Weapon">
             <svg class="ui-icon icon-cyan"><use href="#icon-sword"></use></svg>
-            <span id="touch-melee-label">LOCKED</span>
+            <span id="touch-melee-label">CYBER</span>
           </button>
           <button id="touch-btn-swap-ranged" class="touch-swap-btn touch-swap-ranged" title="Cycle Ranged Weapon">
             <svg class="ui-icon icon-pink"><use href="#icon-crosshair"></use></svg>
-            <span id="touch-ranged-label">TRI-REPEATER</span>
+            <span id="touch-ranged-label">PULSE LASER</span>
           </button>
         </div>
 

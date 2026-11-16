@@ -76,10 +76,11 @@ class GameEngine {
       gamepadSlashHeld: false,
       gamepadRangedHeld: false,
       // Virtual Cursor for Xbox Controller
-      cursorX: this.width / 2,
-      cursorY: this.height / 2,
+      cursorX: (this.viewportWidth || window.innerWidth || 1280) / 2,
+      cursorY: (this.viewportHeight || window.innerHeight || 720) / 2,
       virtualCursorSpeed: 1050,
       usingGamepadCursor: false,
+      usingMouse: false,
       // Mobile & Tablet Touch Controls
       touchControlsActive: false,
       touchMoveX: 0,
@@ -168,6 +169,9 @@ class GameEngine {
 
     this.toastTimeout = null;
     this.lastTime = performance.now();
+    this.backdropCamX = 0;
+    this.backdropCamY = 0;
+    this.smoothedWave = 1;
 
     // Round-specific upgrade progression tracking
     this.playerUpgradeTiers = {};
@@ -180,6 +184,7 @@ class GameEngine {
   init() {
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    this.initGalaxyBackdrop();
 
     // Bind event listeners
     this.setupInputHandlers();
@@ -204,16 +209,20 @@ class GameEngine {
     this.canvas.style.width = `${this.viewportWidth}px`;
     this.canvas.style.height = `${this.viewportHeight}px`;
 
-    // World arena boundaries remain expansive (3200 x 2400)
+    // World arena boundaries remain expansive (3200 x 2400) & toroidally wrapped
     this.width = this.arenaWidth;
     this.height = this.arenaHeight;
+    if (typeof window !== 'undefined') {
+      window.ARENA_WIDTH = this.arenaWidth;
+      window.ARENA_HEIGHT = this.arenaHeight;
+    }
 
-    // Center camera on player immediately to avoid jump
+    // Center camera on player immediately with toroidal wrapping
     if (this.player) {
       this.camera.targetX = this.player.x - this.viewportWidth / 2;
       this.camera.targetY = this.player.y - this.viewportHeight / 2;
-      this.camera.x = Math.max(0, Math.min(this.arenaWidth - this.viewportWidth, this.camera.targetX));
-      this.camera.y = Math.max(0, Math.min(this.arenaHeight - this.viewportHeight, this.camera.targetY));
+      this.camera.x = wrapCoord(this.camera.targetX, this.arenaWidth);
+      this.camera.y = wrapCoord(this.camera.targetY, this.arenaHeight);
     }
   }
 
@@ -292,25 +301,36 @@ class GameEngine {
         return;
       }
       this.input.usingGamepadCursor = false;
+      this.input.usingMouse = true;
+      if (this.input.touchControlsActive && moveDelta > 2.5) {
+        this.setTouchControlsActive(false);
+      }
       const rect = this.canvas.getBoundingClientRect();
       // Translate screen pointer to arena world coordinates via camera offset
-      const mx = (e.clientX - rect.left) + this.camera.x;
-      const my = (e.clientY - rect.top) + this.camera.y;
-      this.input.mouseX = mx;
-      this.input.mouseY = my;
-      this.input.cursorX = e.clientX - rect.left;
-      this.input.cursorY = e.clientY - rect.top;
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      this.input.cursorX = cx;
+      this.input.cursorY = cy;
+      this.input.mouseX = cx + this.camera.x;
+      this.input.mouseY = cy + this.camera.y;
       if (this.ui.virtualCursor) {
         this.ui.virtualCursor.classList.add('hidden');
       }
     });
 
     window.addEventListener('mousedown', (e) => {
+      this.input.usingGamepadCursor = false;
+      this.input.usingMouse = true;
+      if (this.input.touchControlsActive) {
+        this.setTouchControlsActive(false);
+      }
       const rect = this.canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left) + this.camera.x;
-      const my = (e.clientY - rect.top) + this.camera.y;
-      this.input.mouseX = mx;
-      this.input.mouseY = my;
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      this.input.cursorX = cx;
+      this.input.cursorY = cy;
+      this.input.mouseX = cx + this.camera.x;
+      this.input.mouseY = cy + this.camera.y;
       if (e.button === 0) {
         this.input.isMouseLeftHeld = true;
         this.input.leftMouseDown = true;
@@ -449,6 +469,11 @@ class GameEngine {
       this.startGame();
     });
 
+    // Return to Game Main Menu from pause
+    document.getElementById('btn-main-menu')?.addEventListener('click', () => {
+      this.returnToMainMenu();
+    });
+
     // Restart from gameover
     document.getElementById('btn-restart').addEventListener('click', () => {
       this.startGame();
@@ -465,8 +490,8 @@ class GameEngine {
   setupTouchControls() {
     if (!this.ui.touchControls) return;
 
-    // Detect if device has touch capability or is on mobile/tablet viewport
-    const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth <= 1024 && window.innerHeight <= 1366);
+    // Only enable touch controls automatically when primary input is coarse touch (phones/tablets/handhelds)
+    const hasTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     this.setTouchControlsActive(hasTouch);
 
     // Audio unlock on user touch interaction anywhere
@@ -744,7 +769,7 @@ class GameEngine {
 
     // Detect device type to activate optimal tab & avoid covering RG556/handheld screens if gamepad active
     const connectedPads = navigator.getGamepads ? Array.from(navigator.getGamepads()).some(g => g && g.connected) : false;
-    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0);
+    const isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     if (connectedPads) {
       this.input.gamepadConnected = true;
       this.setTouchControlsActive(false);
@@ -759,6 +784,7 @@ class GameEngine {
     // Touch event listener on canvas/touch zones restores touch controls cleanly if user switches from handheld controls to touch
     window.addEventListener('touchstart', (e) => {
       if (e.target && e.target.closest && e.target.closest('#btn-touch-toggle')) return;
+      this.input.usingMouse = false;
       if (!this.input.touchControlsActive && !this.input.gamepadConnected) {
         this.setTouchControlsActive(true);
       }
@@ -842,7 +868,9 @@ class GameEngine {
   }
 
   setupGamepadListeners() {
+    window.focus();
     window.addEventListener('gamepadconnected', (e) => {
+      window.focus();
       this.input.gamepadConnected = true;
       this.input.usingGamepadCursor = true;
       this.setTouchControlsActive(false);
@@ -902,15 +930,9 @@ class GameEngine {
     const gamepads = navigator.getGamepads();
     if (!gamepads) return;
 
-    let gp = null;
-    for (let i = 0; i < gamepads.length; i++) {
-      if (gamepads[i] && gamepads[i].connected) {
-        gp = gamepads[i];
-        break;
-      }
-    }
+    const pads = Array.from(gamepads).filter((p) => p && p.connected);
 
-    if (!gp) {
+    if (pads.length === 0) {
       if (this.input.gamepadConnected) {
         this.input.gamepadConnected = false;
         this.updateGamepadBadge(false);
@@ -918,22 +940,22 @@ class GameEngine {
       return;
     }
 
+    const gp = pads[0];
     if (!this.input.gamepadConnected) {
       this.input.gamepadConnected = true;
       const gpName = (gp.id || 'Xbox Controller').split('(')[0].trim();
       this.updateGamepadBadge(true, gpName);
     }
 
-    // Helper for debounced button press
-    const isJustPressed = (btnIndex) => {
-      const isDown = gp.buttons[btnIndex] && (gp.buttons[btnIndex].pressed || gp.buttons[btnIndex].value > 0.5);
-      const wasDown = !!this.prevGamepadButtons[btnIndex];
-      return isDown && !wasDown;
+    const isButtonDown = (btnIndex, threshold = 0.18) => {
+      return pads.some((p) => p.buttons[btnIndex] && (p.buttons[btnIndex].pressed || p.buttons[btnIndex].value > threshold));
     };
 
-    const isButtonDown = (btnIndex, threshold = 0.18) => {
-      if (!gp.buttons[btnIndex]) return false;
-      return gp.buttons[btnIndex].pressed || gp.buttons[btnIndex].value > threshold;
+    // Helper for debounced button press
+    const isJustPressed = (btnIndex) => {
+      const isDown = isButtonDown(btnIndex, 0.5);
+      const wasDown = !!this.prevGamepadButtons[btnIndex];
+      return isDown && !wasDown;
     };
 
     const applyDeadzone = (val, deadzone = 0.15) => {
@@ -941,14 +963,52 @@ class GameEngine {
       return (val - Math.sign(val) * deadzone) / (1 - deadzone);
     };
 
-    // 1. Left Analog Stick (Axes 0, 1) & D-Pad (Flight & Nav) with Pure Radial Deadzone
-    let rawLx = gp.axes[0] || 0;
-    let rawLy = gp.axes[1] || 0;
-    // D-Pad buttons: 12=Up, 13=Down, 14=Left, 15=Right
-    if (gp.buttons[12] && gp.buttons[12].pressed) rawLy = -1;
-    if (gp.buttons[13] && gp.buttons[13].pressed) rawLy = 1;
-    if (gp.buttons[14] && gp.buttons[14].pressed) rawLx = -1;
-    if (gp.buttons[15] && gp.buttons[15].pressed) rawLx = 1;
+    // 1. Left Analog Stick (Axes 0, 1) & D-Pad (Buttons 12-15, Axes 6-7, POV Hat Axis 9) merged across all pads
+    let rawLx = 0;
+    let rawLy = 0;
+    let rawRx = 0;
+    let rawRy = 0;
+
+    for (const p of pads) {
+      const ax0 = p.axes[0] || 0;
+      const ax1 = p.axes[1] || 0;
+      if (Math.hypot(ax0, ax1) > Math.hypot(rawLx, rawLy)) {
+        rawLx = ax0;
+        rawLy = ax1;
+      }
+
+      const ax2 = p.axes[2] || 0;
+      const ax3 = p.axes[3] || 0;
+      if (Math.hypot(ax2, ax3) > Math.hypot(rawRx, rawRy)) {
+        rawRx = ax2;
+        rawRy = ax3;
+      }
+
+      // Standard D-Pad buttons: 12=Up, 13=Down, 14=Left, 15=Right
+      if (p.buttons[12] && p.buttons[12].pressed) rawLy = -1;
+      if (p.buttons[13] && p.buttons[13].pressed) rawLy = 1;
+      if (p.buttons[14] && p.buttons[14].pressed) rawLx = -1;
+      if (p.buttons[15] && p.buttons[15].pressed) rawLx = 1;
+
+      // Android/Linux D-Pad axes (Axes 6, 7)
+      if (p.axes.length > 7) {
+        if (Math.abs(p.axes[6]) > 0.5) rawLx = Math.sign(p.axes[6]);
+        if (Math.abs(p.axes[7]) > 0.5) rawLy = Math.sign(p.axes[7]);
+      }
+
+      // DirectInput POV Hat (Axis 9)
+      if (p.axes.length > 9 && p.axes[9] >= -1 && p.axes[9] <= 1.05) {
+        const hat = p.axes[9];
+        if (hat < -0.9) rawLy = -1; // Up
+        else if (Math.abs(hat - (-0.714)) < 0.15) { rawLx = 1; rawLy = -1; } // Up-Right
+        else if (Math.abs(hat - (-0.428)) < 0.15) rawLx = 1; // Right
+        else if (Math.abs(hat - (-0.142)) < 0.15) { rawLx = 1; rawLy = 1; } // Down-Right
+        else if (Math.abs(hat - 0.142) < 0.15) rawLy = 1; // Down
+        else if (Math.abs(hat - 0.428) < 0.15) { rawLx = -1; rawLy = 1; } // Down-Left
+        else if (Math.abs(hat - 0.714) < 0.15) rawLx = -1; // Left
+        else if (Math.abs(hat - 1.0) < 0.08) { rawLx = -1; rawLy = -1; } // Up-Left
+      }
+    }
 
     const rawLMag = Math.hypot(rawLx, rawLy);
     const L_DEADZONE = 0.16;
@@ -969,8 +1029,6 @@ class GameEngine {
     }
 
     // 2. Right Analog Stick (Axes 2, 3) (Pure Radial Deadzone - Zero Cardinal Snapping)
-    const rawRx = gp.axes[2] || 0;
-    const rawRy = gp.axes[3] || 0;
     const rawRMag = Math.hypot(rawRx, rawRy);
     const R_DEADZONE = 0.16;
     let rMag = 0;
@@ -1205,7 +1263,7 @@ class GameEngine {
 
     // Record previous button states for debounce edge detection
     for (let i = 0; i < 17; i++) {
-      this.prevGamepadButtons[i] = gp.buttons[i] ? (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) : false;
+      this.prevGamepadButtons[i] = isButtonDown(i, 0.5);
     }
   }
 
@@ -1223,6 +1281,7 @@ class GameEngine {
   startGame() {
     this.state = 'playing';
     this.wave = 1;
+    this.smoothedWave = 1;
     this.waveTimer = 0;
     if (this.ui.orientationPrompt) {
       this.ui.orientationPrompt.classList.add('hidden');
@@ -1254,6 +1313,9 @@ class GameEngine {
     this.spawnSparks(this.player.x, this.player.y, '#00f0ff', 24);
     this.spawnFloatingText(this.player.x, this.player.y - 35, 'COMBAT TRIANGLE ONLINE', '#00f0ff');
     this.showToast('SECTOR 01 INITIALIZED', 'Hostile geometric signatures incoming!', '#00f0ff');
+    if (window.soundEngine && window.soundEngine.setMusicState) {
+      window.soundEngine.setMusicState('playing');
+    }
   }
 
   pauseGame() {
@@ -1262,12 +1324,43 @@ class GameEngine {
     document.getElementById('pause-kills').innerText = this.enemiesDefeated;
     document.getElementById('pause-score').innerText = this.player.score;
     this.ui.screenPause.classList.remove('hidden');
+    if (window.soundEngine && window.soundEngine.setMusicState) {
+      window.soundEngine.setMusicState('paused');
+    }
   }
 
   resumeGame() {
     this.state = 'playing';
     this.ui.screenPause.classList.add('hidden');
     this.lastTime = performance.now();
+    if (window.soundEngine && window.soundEngine.setMusicState) {
+      window.soundEngine.setMusicState('playing');
+    }
+  }
+
+  returnToMainMenu() {
+    this.state = 'start';
+    if (window.soundEngine && window.soundEngine.setMusicState) {
+      window.soundEngine.setMusicState('menu');
+    }
+    this.enemies = [];
+    this.projectiles = [];
+    this.gems = [];
+    this.particles = [];
+    this.floatingTexts = [];
+    this.beams = [];
+    this.shockwaves = [];
+    this.electricTrails = [];
+    this.input.leftMouseDown = false;
+    this.input.rightMouseDown = false;
+    this.ui.screenPause.classList.add('hidden');
+    this.ui.screenGameOver.classList.add('hidden');
+    this.ui.screenUpgrade.classList.add('hidden');
+    this.ui.screenStart.classList.remove('hidden');
+    const recordText = document.getElementById('menu-record-text');
+    if (recordText) {
+      recordText.innerText = `BEST RECORD: SECTOR ${this.bestSector} • ${this.highScore.toLocaleString()} PTS`;
+    }
   }
 
   gameOver() {
@@ -1684,14 +1777,14 @@ class GameEngine {
   }
 
   spawnBoss(type) {
-    // Spawn boss directly above player within active camera view
-    const x = Math.max(80, Math.min(this.arenaWidth - 80, this.player ? this.player.x : this.arenaWidth / 2));
-    const y = Math.max(50, this.camera.y - 120);
+    // Spawn boss ahead/above player wrapped cleanly in the toroidal arena
+    const x = wrapCoord(this.player ? this.player.x : this.arenaWidth / 2, this.arenaWidth);
+    const y = wrapCoord((this.player ? this.player.y : this.arenaHeight / 2) - 320, this.arenaHeight);
     this.enemies.push(new Enemy(x, y, type, this.wave));
   }
 
   spawnRandomEnemy() {
-    // Spawn hostiles just outside the active camera viewport so they enter combat seamlessly
+    // Spawn hostiles just outside the active camera viewport, wrapped seamlessly around torus
     const camLeft = this.camera.x;
     const camRight = this.camera.x + this.viewportWidth;
     const camTop = this.camera.y;
@@ -1715,22 +1808,19 @@ class GameEngine {
       y = camTop + Math.random() * this.viewportHeight;
     }
 
-    // Clamp coordinates safely within the expansive arena perimeter
-    x = Math.max(30, Math.min(this.arenaWidth - 30, x));
-    y = Math.max(30, Math.min(this.arenaHeight - 30, y));
+    x = wrapCoord(x, this.arenaWidth);
+    y = wrapCoord(y, this.arenaHeight);
 
-    // Determine type by wave unlocked with smooth weighting:
-    // Sector 1: 100% Scouts
-    // Sector 2: 80% Scouts, 20% Armored Cube (rare mini-tank instead of flooding the sector)
+    // Determine type by wave unlocked (Splitter enters at Wave 2+)
     let pool = ['scout'];
     if (this.wave === 2) {
-      pool = ['scout', 'scout', 'scout', 'scout', 'cube'];
+      pool = ['scout', 'scout', 'splitter', 'cube'];
     } else if (this.wave === 3) {
-      pool = ['scout', 'scout', 'cube', 'pentagon'];
+      pool = ['scout', 'splitter', 'cube', 'pentagon'];
     } else if (this.wave >= 4 && this.wave < 6) {
-      pool = ['scout', 'cube', 'pentagon', 'sniper'];
+      pool = ['scout', 'splitter', 'cube', 'pentagon', 'sniper'];
     } else if (this.wave >= 6) {
-      pool = ['scout', 'cube', 'pentagon', 'sniper', 'rhombus'];
+      pool = ['scout', 'splitter', 'cube', 'pentagon', 'sniper', 'rhombus'];
     }
 
     const chosen = pool[Math.floor(Math.random() * pool.length)];
@@ -1755,27 +1845,19 @@ class GameEngine {
       this.update(dt);
     }
 
-    // Smooth Camera Follow: Tracks Player Ship in Cosmic Arena
+    // Smooth Toroidal Camera Follow: Tracks Player Ship seamlessly across wrap boundaries
     if (this.player) {
-      this.camera.targetX = this.player.x - this.viewportWidth / 2;
-      this.camera.targetY = this.player.y - this.viewportHeight / 2;
+      this.camera.targetX = wrapCoord(this.player.x - this.viewportWidth / 2, this.arenaWidth);
+      this.camera.targetY = wrapCoord(this.player.y - this.viewportHeight / 2, this.arenaHeight);
       const camLerp = Math.min(1.0, dt * 8.5);
-      this.camera.x += (this.camera.targetX - this.camera.x) * camLerp;
-      this.camera.y += (this.camera.targetY - this.camera.y) * camLerp;
-
-      // Clamp camera within arena boundaries
-      if (this.arenaWidth > this.viewportWidth) {
-        this.camera.x = Math.max(0, Math.min(this.arenaWidth - this.viewportWidth, this.camera.x));
-      } else {
-        this.camera.x = (this.arenaWidth - this.viewportWidth) / 2;
-      }
-
-      if (this.arenaHeight > this.viewportHeight) {
-        this.camera.y = Math.max(0, Math.min(this.arenaHeight - this.viewportHeight, this.camera.y));
-      } else {
-        this.camera.y = (this.arenaHeight - this.viewportHeight) / 2;
-      }
+      const stepX = wrapDelta(this.camera.targetX - this.camera.x, this.arenaWidth) * camLerp;
+      const stepY = wrapDelta(this.camera.targetY - this.camera.y, this.arenaHeight) * camLerp;
+      this.camera.x = wrapCoord(this.camera.x + stepX, this.arenaWidth);
+      this.camera.y = wrapCoord(this.camera.y + stepY, this.arenaHeight);
+      this.backdropCamX = (this.backdropCamX || 0) + stepX;
+      this.backdropCamY = (this.backdropCamY || 0) + stepY;
     }
+    this.smoothedWave = (this.smoothedWave || 1) + ((this.wave || 1) - (this.smoothedWave || 1)) * Math.min(1, dt * 0.35);
 
     this.draw();
   }
@@ -1786,6 +1868,12 @@ class GameEngine {
       this.shakeDuration -= dt;
     } else {
       this.shakeMag = 0;
+    }
+
+    // Keep world mouse aim synchronized with screen cursor as the camera scrolls
+    if (!this.input.gamepadConnected && !this.input.touchControlsActive && this.input.usingMouse) {
+      this.input.mouseX = this.input.cursorX + this.camera.x;
+      this.input.mouseY = this.input.cursorY + this.camera.y;
     }
 
     // Update Player
@@ -1806,21 +1894,22 @@ class GameEngine {
       }
     }
 
-    // Inter-enemy separation so enemies don't stack/glitch on top of each other
+    // Inter-enemy separation (toroidal-aware so enemies don't stack/glitch across seams)
     for (let i = 0; i < this.enemies.length; i++) {
       for (let j = i + 1; j < this.enemies.length; j++) {
         const e1 = this.enemies[i];
         const e2 = this.enemies[j];
-        const ed = dist(e1.x, e1.y, e2.x, e2.y);
+        const edDelta = toroidalDelta(e2.x, e2.y, e1.x, e1.y);
+        const ed = Math.hypot(edDelta.dx, edDelta.dy);
         const minEDist = e1.radius + e2.radius + 6;
         if (ed < minEDist && ed > 0.01) {
           const push = (minEDist - ed) * 0.5;
-          const nx = (e1.x - e2.x) / ed;
-          const ny = (e1.y - e2.y) / ed;
-          e1.x += nx * push;
-          e1.y += ny * push;
-          e2.x -= nx * push;
-          e2.y -= ny * push;
+          const nx = edDelta.dx / ed;
+          const ny = edDelta.dy / ed;
+          e1.x = wrapCoord(e1.x + nx * push, this.arenaWidth);
+          e1.y = wrapCoord(e1.y + ny * push, this.arenaHeight);
+          e2.x = wrapCoord(e2.x - nx * push, this.arenaWidth);
+          e2.y = wrapCoord(e2.y - ny * push, this.arenaHeight);
         }
       }
     }
@@ -1841,7 +1930,8 @@ class GameEngine {
               this.spawnSparks(p.x, p.y, p.color, 6);
 
               if (p.knockback) {
-                const ang = Math.atan2(enemy.y - p.y, enemy.x - p.x);
+                const kd = toroidalDelta(p.x, p.y, enemy.x, enemy.y);
+                const ang = Math.atan2(kd.dy, kd.dx);
                 enemy.vx += Math.cos(ang) * p.knockback;
                 enemy.vy += Math.sin(ang) * p.knockback;
               }
@@ -1861,7 +1951,8 @@ class GameEngine {
             p.dead = true;
             this.spawnSparks(p.x, p.y, p.color, 8);
             // Kinetic bounce away from impact point so player is not stuck or pinned down
-            const hitAng = Math.atan2(this.player.y - p.y, this.player.x - p.x);
+            const hd = toroidalDelta(p.x, p.y, this.player.x, this.player.y);
+            const hitAng = Math.atan2(hd.dy, hd.dx);
             this.player.vx += Math.cos(hitAng) * 90;
             this.player.vy += Math.sin(hitAng) * 90;
           }
@@ -2030,10 +2121,10 @@ class GameEngine {
       this.ui.mobileSynergyBar.style.width = `${this.player.synergyMeter}%`;
     }
     if (this.player.synergyMeter >= 100) {
-      this.ui.synergyStatus.innerText = 'OVERCHARGED // NEXT RANGED STRIKE DEALS 200% DAMAGE & EXPLODES';
+      this.ui.synergyStatus.innerText = '200% RANGED CRIT READY!';
       this.ui.synergyStatus.style.color = '#ffb700';
     } else {
-      this.ui.synergyStatus.innerText = 'MELEE HITS BUILD RANGED OVERCHARGE // RANGED HITS WEAKEN ARMOR';
+      this.ui.synergyStatus.innerText = 'MELEE CHARGES LASER';
       this.ui.synergyStatus.style.color = '#8b9bb4';
     }
 
@@ -2081,19 +2172,35 @@ class GameEngine {
     const sx = this.shakeMag > 0 ? (Math.random() - 0.5) * this.shakeMag : 0;
     const sy = this.shakeMag > 0 ? (Math.random() - 0.5) * this.shakeMag : 0;
 
-    // Clear visible viewport background
-    this.ctx.fillStyle = '#07090e';
+    // Clear visible viewport background & render living swirling galaxy backdrop
+    this.ctx.fillStyle = '#060810';
     this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+    this.drawGalaxyBackdrop();
 
     // World Camera Translation Transform
     this.ctx.save();
     this.ctx.translate(-Math.round(this.camera.x) + sx, -Math.round(this.camera.y) + sy);
+    const camCenterX = this.camera.x + this.viewportWidth / 2;
+    const camCenterY = this.camera.y + this.viewportHeight / 2;
+    const withWrappedPos = (entity, drawFn) => {
+      const ox = entity.x;
+      const oy = entity.y;
+      entity.x = camCenterX + wrapDelta(ox - camCenterX, this.arenaWidth);
+      entity.y = camCenterY + wrapDelta(oy - camCenterY, this.arenaHeight);
+      drawFn();
+      entity.x = ox;
+      entity.y = oy;
+    };
 
-    // Subtle Cyber Grid & Perimeter Fence Boundaries
+    // Infinite Repeating Cosmic Grid
     this.drawGrid();
 
-    // Draw Beams (Railgun tracer beams)
+    // Draw Beams (Railgun tracer beams, wrapped to nearest viewport instance)
     this.beams.forEach(b => {
+      const rx1 = camCenterX + wrapDelta(b.x1 - camCenterX, this.arenaWidth);
+      const ry1 = camCenterY + wrapDelta(b.y1 - camCenterY, this.arenaHeight);
+      const rx2 = rx1 + (b.x2 - b.x1);
+      const ry2 = ry1 + (b.y2 - b.y1);
       this.ctx.save();
       this.ctx.globalAlpha = b.alpha;
       this.ctx.strokeStyle = b.color;
@@ -2101,32 +2208,34 @@ class GameEngine {
       this.ctx.shadowColor = b.color;
       this.ctx.shadowBlur = 18;
       this.ctx.beginPath();
-      this.ctx.moveTo(b.x1, b.y1);
-      this.ctx.lineTo(b.x2, b.y2);
+      this.ctx.moveTo(rx1, ry1);
+      this.ctx.lineTo(rx2, ry2);
       this.ctx.stroke();
 
       // White inner core
       this.ctx.strokeStyle = '#ffffff';
       this.ctx.lineWidth = b.width * 0.35;
       this.ctx.beginPath();
-      this.ctx.moveTo(b.x1, b.y1);
-      this.ctx.lineTo(b.x2, b.y2);
+      this.ctx.moveTo(rx1, ry1);
+      this.ctx.lineTo(rx2, ry2);
       this.ctx.stroke();
       this.ctx.restore();
     });
 
     // Draw Shockwaves
     this.shockwaves.forEach(sw => {
-      this.ctx.save();
-      this.ctx.globalAlpha = sw.alpha;
-      this.ctx.strokeStyle = sw.color;
-      this.ctx.lineWidth = 3;
-      this.ctx.shadowColor = sw.color;
-      this.ctx.shadowBlur = 14;
-      this.ctx.beginPath();
-      this.ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-      this.ctx.stroke();
-      this.ctx.restore();
+      withWrappedPos(sw, () => {
+        this.ctx.save();
+        this.ctx.globalAlpha = sw.alpha;
+        this.ctx.strokeStyle = sw.color;
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowColor = sw.color;
+        this.ctx.shadowBlur = 14;
+        this.ctx.beginPath();
+        this.ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.restore();
+      });
     });
 
     // Draw Electric Lightning Trails
@@ -2135,21 +2244,23 @@ class GameEngine {
       for (let i = 0; i < this.electricTrails.length; i++) {
         const node = this.electricTrails[i];
         const alpha = Math.min(1, node.life / 0.4);
+        const nx = camCenterX + wrapDelta(node.x - camCenterX, this.arenaWidth);
+        const ny = camCenterY + wrapDelta(node.y - camCenterY, this.arenaHeight);
 
-        // Ground plasma glow
         this.ctx.globalAlpha = alpha * 0.35;
         this.ctx.fillStyle = '#00f0ff';
         this.ctx.shadowColor = '#00f0ff';
         this.ctx.shadowBlur = 16;
         this.ctx.beginPath();
-        this.ctx.arc(node.x, node.y, node.radius * 0.65, 0, Math.PI * 2);
+        this.ctx.arc(nx, ny, node.radius * 0.65, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Connect adjacent nodes with zig-zag crackling lightning arcs
         if (i > 0) {
           const prev = this.electricTrails[i - 1];
           const segDist = dist(node.x, node.y, prev.x, prev.y);
           if (segDist < 85) {
+            const px = camCenterX + wrapDelta(prev.x - camCenterX, this.arenaWidth);
+            const py = camCenterY + wrapDelta(prev.y - camCenterY, this.arenaHeight);
             this.ctx.globalAlpha = alpha * 0.9;
             this.ctx.strokeStyle = '#00f0ff';
             this.ctx.lineWidth = 3.5;
@@ -2158,22 +2269,21 @@ class GameEngine {
 
             const jitterX = Math.sin(Date.now() * 0.04 + i) * 10;
             const jitterY = Math.cos(Date.now() * 0.04 + i) * 10;
-            const midX = (node.x + prev.x) / 2 + jitterX;
-            const midY = (node.y + prev.y) / 2 + jitterY;
+            const midX = (nx + px) / 2 + jitterX;
+            const midY = (ny + py) / 2 + jitterY;
 
             this.ctx.beginPath();
-            this.ctx.moveTo(prev.x, prev.y);
+            this.ctx.moveTo(px, py);
             this.ctx.lineTo(midX, midY);
-            this.ctx.lineTo(node.x, node.y);
+            this.ctx.lineTo(nx, ny);
             this.ctx.stroke();
 
-            // Inner hot-white discharge core
             this.ctx.strokeStyle = '#ffffff';
             this.ctx.lineWidth = 1.5;
             this.ctx.beginPath();
-            this.ctx.moveTo(prev.x, prev.y);
+            this.ctx.moveTo(px, py);
             this.ctx.lineTo(midX, midY);
-            this.ctx.lineTo(node.x, node.y);
+            this.ctx.lineTo(nx, ny);
             this.ctx.stroke();
           }
         }
@@ -2181,31 +2291,22 @@ class GameEngine {
       this.ctx.restore();
     }
 
-    // Draw Gems
-    this.gems.forEach(g => g.draw(this.ctx));
-
-    // Draw Enemies
-    this.enemies.forEach(e => e.draw(this.ctx));
-
-    // Draw Projectiles
-    this.projectiles.forEach(p => p.draw(this.ctx));
-
-    // Draw Player
+    // Draw Gems, Enemies, Projectiles, Player, Particles, Floating Texts (wrapped cleanly across seams)
+    this.gems.forEach(g => withWrappedPos(g, () => g.draw(this.ctx)));
+    this.enemies.forEach(e => withWrappedPos(e, () => e.draw(this.ctx)));
+    this.projectiles.forEach(p => withWrappedPos(p, () => p.draw(this.ctx)));
     if (this.player) {
-      this.player.draw(this.ctx, this);
+      withWrappedPos(this.player, () => this.player.draw(this.ctx, this));
     }
-
-    // Draw Particles
-    this.particles.forEach(pt => pt.draw(this.ctx));
-
-    // Draw Floating Texts
-    this.floatingTexts.forEach(ft => ft.draw(this.ctx));
+    this.particles.forEach(pt => withWrappedPos(pt, () => pt.draw(this.ctx)));
+    this.floatingTexts.forEach(ft => withWrappedPos(ft, () => ft.draw(this.ctx)));
 
     // Restore World Camera Transform
     this.ctx.restore();
 
-    // Draw Screen-Space Offscreen Threat Radar Indicators
+    // Draw Screen-Space Offscreen Threat Radar Indicators & Tactical Minimap
     this.drawThreatRadar();
+    this.drawMinimap();
 
     this.ctx.restore();
   }
@@ -2218,21 +2319,24 @@ class GameEngine {
     const maxX = this.viewportWidth - pad;
     const minY = 50; // Under top HUD
     const maxY = this.viewportHeight - pad;
+    const camCenterX = this.camera.x + this.viewportWidth / 2;
+    const camCenterY = this.camera.y + this.viewportHeight / 2;
 
     for (let i = 0; i < this.enemies.length; i++) {
       const e = this.enemies[i];
       if (!e || e.health <= 0 || e.isDying) continue;
-      const isBoss = e.type === 'apex' || e.type === 'titan' || e.type === 'monolith';
-      const isDangerous = isBoss || e.type === 'sniper' || e.type === 'rhombus';
+      const isBoss = e.isBoss;
+      const isDangerous = isBoss || e.type === 'sniper' || e.type === 'rhombus' || e.type === 'splitter';
 
-      const sx = e.x - this.camera.x;
-      const sy = e.y - this.camera.y;
+      const wx = camCenterX + wrapDelta(e.x - camCenterX, this.arenaWidth);
+      const wy = camCenterY + wrapDelta(e.y - camCenterY, this.arenaHeight);
+      const sx = wx - this.camera.x;
+      const sy = wy - this.camera.y;
 
       const isOffscreen = sx < 0 || sx > this.viewportWidth || sy < 0 || sy > this.viewportHeight;
       if (isOffscreen && isDangerous) {
-        const dx = e.x - this.player.x;
-        const dy = e.y - this.player.y;
-        const angle = Math.atan2(dy, dx);
+        const dVec = toroidalDelta(this.player.x, this.player.y, e.x, e.y);
+        const angle = Math.atan2(dVec.dy, dVec.dx);
 
         const edgeX = Math.max(minX, Math.min(maxX, this.viewportWidth / 2 + Math.cos(angle) * (this.viewportWidth / 2 - 35)));
         const edgeY = Math.max(minY, Math.min(maxY, this.viewportHeight / 2 + Math.sin(angle) * (this.viewportHeight / 2 - 35)));
@@ -2241,7 +2345,7 @@ class GameEngine {
         this.ctx.translate(edgeX, edgeY);
         this.ctx.rotate(angle);
 
-        const color = isBoss ? '#ff007b' : '#ffb700';
+        const color = isBoss ? '#ff007b' : (e.type === 'splitter' ? '#e879f9' : '#ffb700');
         this.ctx.fillStyle = color;
         this.ctx.shadowColor = color;
         this.ctx.shadowBlur = 10;
@@ -2259,6 +2363,89 @@ class GameEngine {
     }
   }
 
+  drawMinimap() {
+    if (!this.player || this.state !== 'playing') return;
+    const isCompact = this.viewportWidth <= 820 || this.viewportHeight <= 560;
+    const mapW = isCompact ? 88 : 118;
+    const mapH = isCompact ? 66 : 88;
+    const x0 = 12;
+    const y0 = isCompact ? 76 : 98; // Tucked directly below compact top-left Vitals panel
+    const cx = x0 + mapW / 2;
+    const cy = y0 + mapH / 2;
+    const scaleX = mapW / this.arenaWidth;
+    const scaleY = mapH / this.arenaHeight;
+
+    const ctx = this.ctx;
+    ctx.save();
+
+    // Rounded neon radar panel
+    ctx.fillStyle = 'rgba(8, 13, 24, 0.72)';
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(x0, y0, mapW, mapH, 7);
+    } else {
+      ctx.rect(x0, y0, mapW, mapH);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Subtle radar crosshairs & range ring
+    ctx.strokeStyle = 'rgba(70, 95, 140, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0 + 4, cy);
+    ctx.lineTo(x0 + mapW - 4, cy);
+    ctx.moveTo(cx, y0 + 4);
+    ctx.lineTo(cx, y0 + mapH - 4);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(mapW, mapH) * 0.28, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Active viewport box around center player
+    const vw = this.viewportWidth * scaleX;
+    const vh = this.viewportHeight * scaleY;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.strokeRect(cx - vw / 2, cy - vh / 2, vw, vh);
+
+    // Plot XP gems relative to player (toroidal shortest wrap)
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.75)';
+    for (let i = 0; i < this.gems.length; i++) {
+      const g = this.gems[i];
+      const d = toroidalDelta(this.player.x, this.player.y, g.x, g.y);
+      ctx.fillRect(cx + d.dx * scaleX - 0.8, cy + d.dy * scaleY - 0.8, 1.8, 1.8);
+    }
+
+    // Plot Enemies & Splitters & Bosses
+    for (let i = 0; i < this.enemies.length; i++) {
+      const e = this.enemies[i];
+      if (!e || e.health <= 0 || e.isDying) continue;
+      const d = toroidalDelta(this.player.x, this.player.y, e.x, e.y);
+      const mx = cx + d.dx * scaleX;
+      const my = cy + d.dy * scaleY;
+      ctx.fillStyle = e.isBoss ? '#ffb700' : (e.type === 'splitter' || e.type === 'mini_splitter' ? '#f472b6' : '#ff3366');
+      ctx.beginPath();
+      ctx.arc(mx, my, e.isBoss ? 3.8 : (e.type === 'mini_splitter' ? 1.5 : 2.2), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Player chevron in radar center
+    ctx.translate(cx, cy);
+    ctx.rotate(this.player.angle);
+    ctx.fillStyle = '#00f0ff';
+    ctx.beginPath();
+    ctx.moveTo(4.2, 0);
+    ctx.lineTo(-3, -2.8);
+    ctx.lineTo(-3, 2.8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
   drawGrid() {
     const camLeft = this.camera.x;
     const camRight = this.camera.x + this.viewportWidth;
@@ -2266,39 +2453,220 @@ class GameEngine {
     const camBottom = this.camera.y + this.viewportHeight;
 
     const gridSize = 80;
-    const startX = Math.floor(Math.max(0, camLeft) / gridSize) * gridSize;
-    const endX = Math.min(this.arenaWidth, camRight + gridSize);
-    const startY = Math.floor(Math.max(0, camTop) / gridSize) * gridSize;
-    const endY = Math.min(this.arenaHeight, camBottom + gridSize);
+    const startX = Math.floor(camLeft / gridSize) * gridSize;
+    const endX = camRight + gridSize;
+    const startY = Math.floor(camTop / gridSize) * gridSize;
+    const endY = camBottom + gridSize;
 
-    // Efficient viewport-culled cyber grid
-    this.ctx.strokeStyle = 'rgba(70, 95, 140, 0.12)';
+    // Seamless infinite cosmic grid (toroidal arena has no wall boundaries)
+    this.ctx.strokeStyle = 'rgba(70, 95, 140, 0.14)';
     this.ctx.lineWidth = 1;
     this.ctx.beginPath();
     for (let x = startX; x <= endX; x += gridSize) {
-      this.ctx.moveTo(x, Math.max(0, camTop));
-      this.ctx.lineTo(x, Math.min(this.arenaHeight, camBottom));
+      this.ctx.moveTo(x, camTop);
+      this.ctx.lineTo(x, camBottom);
     }
     for (let y = startY; y <= endY; y += gridSize) {
-      this.ctx.moveTo(Math.max(0, camLeft), y);
-      this.ctx.lineTo(Math.min(this.arenaWidth, camRight), y);
+      this.ctx.moveTo(camLeft, y);
+      this.ctx.lineTo(camRight, y);
     }
     this.ctx.stroke();
 
-    // Glowing Arena Perimeter Fences (Neon Cyber Barriers)
-    const pulse = 0.5 + Math.sin(Date.now() * 0.003) * 0.25;
-    this.ctx.save();
-    this.ctx.strokeStyle = `rgba(0, 240, 255, ${pulse})`;
-    this.ctx.lineWidth = 4;
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 18;
-    this.ctx.strokeRect(0, 0, this.arenaWidth, this.arenaHeight);
+    // Subtle sector loop guide markers at origin multiples (0,0) wrapped into view
+    const ox = (Math.round(camLeft / this.arenaWidth) * this.arenaWidth);
+    const oy = (Math.round(camTop / this.arenaHeight) * this.arenaHeight);
+    if (ox >= camLeft - 40 && ox <= camRight + 40 && oy >= camTop - 40 && oy <= camBottom + 40) {
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.18)';
+      this.ctx.beginPath();
+      this.ctx.arc(ox, oy, 18, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
+  }
 
-    // Hazard warning outer perimeter line
-    this.ctx.strokeStyle = 'rgba(255, 0, 123, 0.45)';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(-10, -10, this.arenaWidth + 20, this.arenaHeight + 20);
-    this.ctx.restore();
+  initGalaxyBackdrop() {
+    // 1. Subtle distant starfield (2 parallax layers like classic space shooters)
+    const starColors = ['#e2e8f0', '#bfdbfe', '#ddd6fe', '#a7f3d0', '#fecdd3'];
+    this.galaxyStars = [];
+    for (let i = 0; i < 110; i++) {
+      const far = i % 3 !== 0;
+      this.galaxyStars.push({
+        nx: Math.random(),
+        ny: Math.random(),
+        size: far ? 1.1 : 1.7,
+        parallax: far ? 0.06 : 0.14,
+        driftY: far ? 4 : 9,
+        color: starColors[i % starColors.length],
+        baseAlpha: far ? 0.26 : 0.48,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    // 2. Non-grid organic 2D fBm nebula cloud texture (256x256 baked once at startup)
+    this.nebulaAlphaCanvas = null;
+    this.nebulaTintCanvas = null;
+    if (typeof document !== 'undefined') {
+      const size = 256;
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = size;
+      maskCanvas.height = size;
+      const mCtx = maskCanvas.getContext && maskCanvas.getContext('2d');
+      if (mCtx && typeof mCtx.createImageData === 'function') {
+        const seedOffset = Math.random() * 1000;
+        const hash2 = (ix, iy, period) => {
+          const wx = ((ix % period) + period) % period;
+          const wy = ((iy % period) + period) % period;
+          const n = Math.sin(wx * 127.1 + wy * 311.7 + seedOffset) * 43758.5453;
+          return n - Math.floor(n);
+        };
+        const valueNoise = (u, v, period) => {
+          const x = u * period;
+          const y = v * period;
+          const ix = Math.floor(x);
+          const iy = Math.floor(y);
+          const fx = x - ix;
+          const fy = y - iy;
+          const sx = fx * fx * (3 - 2 * fx);
+          const sy = fy * fy * (3 - 2 * fy);
+          const a = hash2(ix, iy, period);
+          const b = hash2(ix + 1, iy, period);
+          const c = hash2(ix, iy + 1, period);
+          const d = hash2(ix + 1, iy + 1, period);
+          const top = a + (b - a) * sx;
+          const bot = c + (d - c) * sx;
+          return top + (bot - top) * sy;
+        };
+
+        const img = mCtx.createImageData(size, size);
+        const data = img.data;
+        for (let y = 0; y < size; y++) {
+          const v = y / size;
+          for (let x = 0; x < size; x++) {
+            const u = x / size;
+            // True multi-octave random fBm clouds (zero lattice / stripes)
+            const fbm =
+              valueNoise(u, v, 3) * 0.52 +
+              valueNoise(u + 0.17, v + 0.31, 6) * 0.28 +
+              valueNoise(u + 0.53, v + 0.11, 12) * 0.14 +
+              valueNoise(u + 0.79, v + 0.67, 24) * 0.06;
+            const shaped = Math.max(0, Math.min(1, (fbm - 0.28) / 0.58));
+            const cloud = shaped * shaped * (3 - 2 * shaped);
+            const idx = (y * size + x) * 4;
+            data[idx] = 255;
+            data[idx + 1] = 255;
+            data[idx + 2] = 255;
+            data[idx + 3] = Math.round(cloud * 255);
+          }
+        }
+        mCtx.putImageData(img, 0, 0);
+        this.nebulaAlphaCanvas = maskCanvas;
+
+        const tintCanvas = document.createElement('canvas');
+        tintCanvas.width = size;
+        tintCanvas.height = size;
+        this.nebulaTintCanvas = tintCanvas;
+      }
+    }
+  }
+
+  _drawTintedNebulaLayer(destCtx, rgbStr, alpha, panU, panV) {
+    if (!this.nebulaAlphaCanvas || !this.nebulaTintCanvas) return;
+    const tCtx = this.nebulaTintCanvas.getContext('2d');
+    const size = this.nebulaTintCanvas.width;
+    if (!tCtx) return;
+
+    tCtx.clearRect(0, 0, size, size);
+    tCtx.globalCompositeOperation = 'source-over';
+    tCtx.fillStyle = rgbStr;
+    tCtx.fillRect(0, 0, size, size);
+    tCtx.globalCompositeOperation = 'destination-in';
+    tCtx.drawImage(this.nebulaAlphaCanvas, 0, 0);
+    tCtx.globalCompositeOperation = 'source-over';
+
+    // Draw as a single continuous screen-spanning cloud wrap (never tiled small squares)
+    const w = this.viewportWidth;
+    const h = this.viewportHeight;
+    const spanW = Math.max(w, 1280);
+    const spanH = Math.max(h, 800);
+    const ox = -(((panU % 1) + 1) % 1) * spanW;
+    const oy = -(((panV % 1) + 1) % 1) * spanH;
+
+    destCtx.save();
+    destCtx.imageSmoothingEnabled = true;
+    destCtx.globalAlpha = alpha;
+    for (let dy = 0; dy <= 1; dy++) {
+      const py = Math.floor(oy + dy * spanH);
+      const nh = Math.floor(oy + (dy + 1) * spanH) - py;
+      for (let dx = 0; dx <= 1; dx++) {
+        const px = Math.floor(ox + dx * spanW);
+        const nw = Math.floor(ox + (dx + 1) * spanW) - px;
+        if (px < w && py < h && px + nw > 0 && py + nh > 0) {
+          destCtx.drawImage(this.nebulaTintCanvas, px, py, nw, nh);
+        }
+      }
+    }
+    destCtx.restore();
+  }
+
+  drawGalaxyBackdrop() {
+    if (!this.galaxyStars) return;
+    const ctx = this.ctx;
+    const w = this.viewportWidth;
+    const h = this.viewportHeight;
+    const now = performance.now() * 0.001;
+
+    // Continuous smooth palette cycle (~72s full loop + gently eased wave hue shift, zero snaps)
+    const palette = [
+      [34, 98, 214],   // Cosmic Blue
+      [16, 156, 124],  // Nebula Emerald
+      [118, 52, 208],  // Deep Violet Purple
+      [182, 42, 92]    // Subtle Crimson Rose
+    ];
+    const smoothWave = (this.smoothedWave !== undefined ? this.smoothedWave : (this.wave || 1)) - 1;
+    const progress = (now * 0.014 + smoothWave * 0.16) % palette.length;
+    const i0 = Math.floor(progress);
+    const i1 = (i0 + 1) % palette.length;
+    const i2 = (i0 + 2) % palette.length;
+    const t = progress - i0;
+    const smoothT = t * t * (3 - 2 * t);
+
+    const mixColor = (a, b, f) => [
+      Math.round(a[0] + (b[0] - a[0]) * f),
+      Math.round(a[1] + (b[1] - a[1]) * f),
+      Math.round(a[2] + (b[2] - a[2]) * f)
+    ];
+    const primaryRgb = mixColor(palette[i0], palette[i1], smoothT);
+    const accentRgb = mixColor(palette[i1], palette[i2], smoothT);
+
+    // Continuous unwrapped camera coordinates guarantee zero seam jumps when wrapping arena edges
+    const camX = this.backdropCamX || 0;
+    const camY = this.backdropCamY || 0;
+    this._drawTintedNebulaLayer(
+      ctx,
+      `rgb(${primaryRgb[0]}, ${primaryRgb[1]}, ${primaryRgb[2]})`,
+      0.19,
+      camX * 0.00004 + now * 0.004,
+      camY * 0.00004 - now * 0.006
+    );
+    this._drawTintedNebulaLayer(
+      ctx,
+      `rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]})`,
+      0.11,
+      camX * 0.00007 - now * 0.005 + 0.37,
+      camY * 0.00007 - now * 0.008 + 0.51
+    );
+
+    // Subtle parallax stars drifting cleanly across deep space
+    ctx.save();
+    for (let i = 0; i < this.galaxyStars.length; i++) {
+      const s = this.galaxyStars[i];
+      const sx = wrapCoord(s.nx * w - camX * s.parallax, w);
+      const sy = wrapCoord(s.ny * h - camY * s.parallax + now * s.driftY, h);
+      const twinkle = 0.65 + 0.35 * Math.sin(now * 2.0 + s.phase);
+      ctx.globalAlpha = s.baseAlpha * twinkle;
+      ctx.fillStyle = s.color;
+      ctx.fillRect(sx, sy, s.size, s.size);
+    }
+    ctx.restore();
   }
 }
 

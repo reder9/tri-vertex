@@ -1,0 +1,241 @@
+/* Modern Dark-Slate & Glassmorphism Theme for Sunny Mini Mart (matches Sunny Squeeze) */
+:root {
+  --bg0: #0a1020;
+  --bg1: #111a30;
+  --panel: #161f36;
+  --panel2: #1e2a47;
+  --panel3: #27365a;
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #eef2ff;
+  --muted: #9aa8c7;
+  --lemon: #fcd34d;
+  --green: #4ade80;
+  --blue: #38bdf8;
+  --red: #fb7185;
+}
+
+html {
+  font-size: clamp(14px, min(2.35vh, 1.5vw), 24px);
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+  color: var(--text) !important;
+  background: var(--bg0) !important;
+}
+
+h1, h2, h3, .mart-title, .modal-title, .money-val, .stat-pill-val {
+  font-family: 'Outfit', 'Inter', sans-serif !important;
+}
+
+/* Focus ring for Xbox / Anbernic */
+button.gp-focus, .hud-btn.gp-focus {
+  outline: 3px solid var(--lemon) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(252, 211, 77, 0.24) !important;
+  transform: translateY(-1px);
+  position: relative;
+  z-index: 5;
+}
+
+/* Top HUD Cards */
+.top-hud {
+  max-width: 1400px !important;
+  gap: 8px !important;
+}
+
+.hud-card {
+  background: rgba(22, 31, 54, 0.88) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  color: var(--text) !important;
+  padding: 7px 13px !important;
+}
+
+.brand-card {
+  background: linear-gradient(180deg, rgba(30, 42, 71, 0.92), rgba(22, 31, 54, 0.92)) !important;
+}
+
+.brand-icon {
+  background: linear-gradient(135deg, #fde68a, #f59e0b) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35) !important;
+  color: #3b2a05 !important;
+}
+
+.mart-title {
+  color: var(--text) !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+}
+
+.mart-tier {
+  color: var(--muted) !important;
+  font-size: 0.72rem !important;
+}
+
+.money-card {
+  background: rgba(74, 222, 128, 0.14) !important;
+  border-color: rgba(74, 222, 128, 0.32) !important;
+}
+
+.money-icon, .money-val {
+  color: var(--green) !important;
+  font-size: 1.15rem !important;
+}
+
+.stat-pill-val {
+  color: var(--text) !important;
+  font-size: 1rem !important;
+}
+
+.hud-btn {
+  background: var(--panel2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.92rem !important;
+  padding: 8px 13px !important;
+}
+
+.hud-btn:hover {
+  background: var(--panel3) !important;
+}
+
+.hud-btn.highlight-marts {
+  background: rgba(56, 189, 248, 0.18) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #7dd3fc !important;
+}
+
+.hud-btn.highlight-tut {
+  background: rgba(252, 211, 77, 0.16) !important;
+  border-color: rgba(252, 211, 77, 0.4) !important;
+  color: var(--lemon) !important;
+}
+
+/* Modals */
+.modal-overlay {
+  background: rgba(4, 8, 18, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.modal-card {
+  background: linear-gradient(180deg, #1a2540, #121a2e) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+  color: var(--text) !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--line) !important;
+}
+
+.modal-title {
+  color: var(--text) !important;
+  font-size: 1.35rem !important;
+}
+
+.marts-modal-sub, .upgrade-modal-sub {
+  color: var(--muted) !important;
+  font-size: 0.92rem !important;
+}
+
+.modal-close-btn {
+  background: var(--panel3) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.upgrade-tab-btn, .tut-tab-btn {
+  background: var(--panel2) !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.95rem !important;
+}
+
+.upgrade-tab-btn.active, .tut-tab-btn.active {
+  background: linear-gradient(180deg, #fde68a, #f5b83d) !important;
+  color: #3b2a05 !important;
+  border-color: transparent !important;
+}
+
+.upgrade-row, .mart-card, .tut-step-card, .contract-card, .decor-card {
+  background: var(--panel2) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+}
+
+.upgrade-name, .mart-name, .tut-step-title {
+  color: var(--text) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1.08rem !important;
+}
+
+.upgrade-desc, .mart-desc, .tut-step-desc {
+  color: var(--muted) !important;
+  font-size: 0.9rem !important;
+}
+
+.upgrade-buy-btn, .mart-btn, .btn-primary {
+  background: linear-gradient(180deg, #6ee7a0, #22c55e) !important;
+  color: #052e16 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 3px 0 #15803d !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.95rem !important;
+}
+
+/* Bottom Xbox Controller Legend (visible when gamepad connected) */
+.xb-legend {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 5px 14px;
+  background: rgba(7, 12, 24, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+body.gamepad-active .xb-legend {
+  display: inline-flex;
+}
+
+.xb-pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: #334155;
+  margin-right: 4px;
+}
+
+.xb-a { background: #16a34a; }
+.xb-b { background: #dc2626; }
+.xb-x { background: #2563eb; }
+.xb-y { background: #eab308; color: #1f2937; }

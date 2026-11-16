@@ -321,6 +321,8 @@ class MiniMartGame {
       btnUpgrades: document.getElementById('btn-upgrades'),
       btnPause: document.getElementById('btn-pause'),
       btnResume: document.getElementById('btn-resume'),
+      btnZoomToggle: document.getElementById('btn-zoom-toggle'),
+      btnZoomLabel: document.getElementById('btn-zoom-label'),
       btnMusic: document.getElementById('btn-music'),
       btnSfx: document.getElementById('btn-sfx'),
       joystickContainer: document.getElementById('joystick-container'),
@@ -687,15 +689,46 @@ class MiniMartGame {
   }
 
   setupResize() {
+    this.zoomPresets = [
+      { id: 'normal', label: 'Standard (1.0x)', factor: 1.0 },
+      { id: 'close', label: 'Handheld Close (1.45x)', factor: 1.45 },
+      { id: 'extra', label: 'Extra Close (1.8x)', factor: 1.8 }
+    ];
+    const savedZoom = localStorage.getItem('minimart_zoom_preset');
+    const savedIdx = this.zoomPresets.findIndex(z => z.id === savedZoom);
+    this.zoomPresetIdx = savedIdx >= 0 ? savedIdx : 0;
+    this.zoomUserCustomized = savedIdx >= 0;
+
+    this.updateViewScale = () => {
+      const preset = (this.zoomPresets && this.zoomPresets[this.zoomPresetIdx]) || { factor: 1.0, label: 'Standard (1.0x)' };
+      const baseScale = Math.max(1.05, Math.min(1.45, Math.min(this.viewportWidth / 760, this.viewportHeight / 500)));
+      this.viewScale = baseScale * preset.factor;
+      if (this.ui && this.ui.btnZoomLabel) {
+        this.ui.btnZoomLabel.textContent = `Camera Zoom: ${preset.label}`;
+      }
+    };
+
     const handleResize = () => {
       this.viewportWidth = window.innerWidth;
       this.viewportHeight = window.innerHeight;
       this.canvas.width = this.viewportWidth;
       this.canvas.height = this.viewportHeight;
-      this.viewScale = Math.max(0.58, Math.min(1.0, Math.min(this.viewportWidth / 1180, this.viewportHeight / 760)));
+      this.updateViewScale();
     };
     window.addEventListener('resize', handleResize);
     handleResize();
+  }
+
+  cycleZoomPreset(step = 1, showToast = true) {
+    if (!this.zoomPresets || !this.zoomPresets.length) return;
+    this.zoomPresetIdx = (this.zoomPresetIdx + step + this.zoomPresets.length) % this.zoomPresets.length;
+    this.zoomUserCustomized = true;
+    const preset = this.zoomPresets[this.zoomPresetIdx];
+    localStorage.setItem('minimart_zoom_preset', preset.id);
+    if (this.updateViewScale) this.updateViewScale();
+    if (showToast && this.showRemoteToast) {
+      this.showRemoteToast('Camera Zoom', preset.label, '#0284c7');
+    }
   }
 
   setupInputs() {
@@ -821,6 +854,7 @@ class MiniMartGame {
 
     if (this.ui.btnPause) this.ui.btnPause.addEventListener('click', () => this.togglePause());
     if (this.ui.btnResume) this.ui.btnResume.addEventListener('click', () => this.togglePause());
+    if (this.ui.btnZoomToggle) this.ui.btnZoomToggle.addEventListener('click', () => this.cycleZoomPreset(1, false));
     if (this.ui.btnUpgrades) this.ui.btnUpgrades.addEventListener('click', () => this.openUpgrades());
     if (this.ui.btnMarts) this.ui.btnMarts.addEventListener('click', () => this.toggleMartsModal());
     if (this.ui.btnCloseMarts) this.ui.btnCloseMarts.addEventListener('click', () => this.closeMartsModal());
@@ -874,39 +908,48 @@ class MiniMartGame {
 
   pollGamepad(dt) {
     if (!navigator.getGamepads) return;
-    const gamepads = navigator.getGamepads();
-    if (!gamepads) return;
+    const rawPads = navigator.getGamepads();
+    const pads = Array.from(rawPads || []).filter(p => p && p.connected);
 
-    let gp = null;
-    for (let i = 0; i < gamepads.length; i++) {
-      if (gamepads[i] && gamepads[i].connected) {
-        gp = gamepads[i];
-        break;
-      }
-    }
-
-    if (!gp) {
+    document.body.classList.toggle('gamepad-active', pads.length > 0);
+    if (pads.length === 0) {
       this.input.gamepadConnected = false;
       return;
     }
 
+    const wasGamepadConnected = this.input.gamepadConnected;
     this.input.gamepadConnected = true;
+    if (!wasGamepadConnected && !this.zoomUserCustomized && this.zoomPresetIdx === 0) {
+      this.zoomPresetIdx = 1; // Auto-enable Handheld Close (1.45x) for Anbernic / controller play
+      if (this.updateViewScale) this.updateViewScale();
+    }
 
-    const isJustPressed = (idx) => {
-      const down = gp.buttons[idx] && (gp.buttons[idx].pressed || gp.buttons[idx].value > 0.5);
-      const was = !!this.prevGamepadButtons[idx];
-      return down && !was;
-    };
+    const btnDown = (idx) => pads.some(gp => gp.buttons[idx] && (gp.buttons[idx].pressed || gp.buttons[idx].value > 0.45));
+    const isJustPressed = (idx) => btnDown(idx) && !this.prevGamepadButtons[idx];
 
-    let lx = gp.axes[0] || 0;
-    let ly = gp.axes[1] || 0;
-    if (gp.buttons[12] && gp.buttons[12].pressed) ly = -1;
-    if (gp.buttons[13] && gp.buttons[13].pressed) ly = 1;
-    if (gp.buttons[14] && gp.buttons[14].pressed) lx = -1;
-    if (gp.buttons[15] && gp.buttons[15].pressed) lx = 1;
+    let lx = 0, ly = 0, rStickY = 0;
+    for (const gp of pads) {
+      const a = gp.axes || [];
+      if (Math.abs(a[0] || 0) > Math.abs(lx)) lx = a[0] || 0;
+      if (Math.abs(a[1] || 0) > Math.abs(ly)) ly = a[1] || 0;
+      if (Math.abs(a[6] || 0) > 0.45) lx = a[6];
+      if (Math.abs(a[7] || 0) > 0.45) ly = a[7];
+      if (a[3] !== undefined && Math.abs(a[3]) > 0.25) rStickY = a[3];
+      if (a[9] !== undefined && Math.abs(a[9]) <= 1.05) {
+        const v = a[9];
+        if (v < -0.7 || v > 0.85) ly = -1;
+        else if (v > -0.15 && v < 0.45) ly = 1;
+        if (v > 0.45 && v <= 1.05) lx = -1;
+        else if (v > -0.7 && v < -0.15) lx = 1;
+      }
+    }
+    if (btnDown(12)) ly = -1;
+    if (btnDown(13)) ly = 1;
+    if (btnDown(14)) lx = -1;
+    if (btnDown(15)) lx = 1;
 
-    // Check if any overlay modal is open (Upgrades, Franchise Marts, Tutorial, Pause)
-    const openModal = [this.ui.martsModal, this.ui.upgradeModal, this.ui.tutorialModal, this.ui.pauseModal]
+    // Check if any overlay modal is open in top-most visual order (Pause -> Tutorial -> Marts -> Upgrades)
+    const openModal = [this.ui.pauseModal, this.ui.tutorialModal, this.ui.martsModal, this.ui.upgradeModal]
       .find(m => m && !m.classList.contains('hidden'));
 
     if (openModal) {
@@ -914,10 +957,16 @@ class MiniMartGame {
       this.input.gamepadMoveY = 0;
       this.input.gamepadMoveMagnitude = 0;
 
-      const btns = Array.from(openModal.querySelectorAll('button:not([disabled]):not(.icon-only)'))
+      if (rStickY !== 0) {
+        const scroller = openModal.querySelector('.modal-body, .upgrade-list, .marts-list, .tut-list') || openModal.querySelector('.modal-card');
+        if (scroller) scroller.scrollTop += rStickY * 460 * dt;
+      }
+
+      const btns = Array.from(openModal.querySelectorAll('button:not([disabled]):not(.icon-only), a.hud-btn'))
         .filter(b => b.offsetParent !== null);
       this.modalNavCooldown = Math.max(0, (this.modalNavCooldown || 0) - dt);
       if (this.modalFocusIdx === undefined) this.modalFocusIdx = 0;
+      if (this.modalFocusIdx >= btns.length) this.modalFocusIdx = Math.max(0, btns.length - 1);
 
       if (btns.length > 0 && this.modalNavCooldown <= 0) {
         let dir = 0;
@@ -925,14 +974,22 @@ class MiniMartGame {
         else if (ly < -0.45 || lx < -0.45 || isJustPressed(12) || isJustPressed(14)) dir = -1;
         if (dir !== 0) {
           this.modalFocusIdx = (this.modalFocusIdx + dir + btns.length) % btns.length;
-          this.modalNavCooldown = 0.18;
+          this.modalNavCooldown = 0.17;
           this.rumble(20, 0.15, 0.08);
         }
       }
       btns.forEach((b, i) => {
         if (i === (this.modalFocusIdx % Math.max(1, btns.length))) {
           b.classList.add('gp-focus');
-          if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          const scroller = b.closest('.modal-body, .upgrade-list, .marts-list, .tut-list, .modal-card');
+          if (scroller) {
+            const sr = scroller.getBoundingClientRect();
+            const nr = b.getBoundingClientRect();
+            if (nr.top < sr.top + 36) scroller.scrollTop += nr.top - (sr.top + 36);
+            else if (nr.bottom > sr.bottom - 36) scroller.scrollTop += nr.bottom - (sr.bottom - 36);
+          } else if (b.scrollIntoView) {
+            b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }
         } else {
           b.classList.remove('gp-focus');
         }
@@ -975,10 +1032,16 @@ class MiniMartGame {
         if (window.miniMartAudio) window.miniMartAudio.resume();
         this.player.triggerTurbo();
       }
+
+      if (isJustPressed(4)) {
+        this.cycleZoomPreset(-1, true);
+      } else if (isJustPressed(5)) {
+        this.cycleZoomPreset(1, true);
+      }
     }
 
     if (isJustPressed(2)) {
-      this.openUpgrades();
+      this.toggleUpgrades();
     }
 
     if (isJustPressed(3)) {
@@ -986,14 +1049,14 @@ class MiniMartGame {
     }
 
     if (isJustPressed(1)) {
-      if (this.ui.martsModal && !this.ui.martsModal.classList.contains('hidden')) {
-        this.closeMartsModal();
+      if (this.ui.pauseModal && !this.ui.pauseModal.classList.contains('hidden')) {
+        this.togglePause();
       } else if (this.ui.tutorialModal && !this.ui.tutorialModal.classList.contains('hidden')) {
         this.closeTutorialModal();
+      } else if (this.ui.martsModal && !this.ui.martsModal.classList.contains('hidden')) {
+        this.closeMartsModal();
       } else if (this.ui.upgradeModal && !this.ui.upgradeModal.classList.contains('hidden')) {
-        this.ui.upgradeModal.classList.add('hidden');
-      } else if (this.state === 'paused') {
-        this.togglePause();
+        this.closeUpgrades();
       }
     }
 
@@ -1002,11 +1065,15 @@ class MiniMartGame {
     }
 
     if (isJustPressed(9)) {
-      this.togglePause();
+      if (openModal && openModal !== this.ui.pauseModal) {
+        this.closeOtherModals(null);
+      } else {
+        this.togglePause();
+      }
     }
 
     for (let i = 0; i < 17; i++) {
-      this.prevGamepadButtons[i] = gp.buttons[i] ? (gp.buttons[i].pressed || gp.buttons[i].value > 0.5) : false;
+      this.prevGamepadButtons[i] = btnDown(i);
     }
   }
 
@@ -1027,10 +1094,31 @@ class MiniMartGame {
     }
   }
 
+  closeOtherModals(except = null) {
+    if (except !== this.ui.martsModal && this.ui.martsModal && !this.ui.martsModal.classList.contains('hidden')) {
+      this.ui.martsModal.classList.add('hidden');
+      this.busTriggerLock = true;
+    }
+    if (except !== this.ui.upgradeModal && this.ui.upgradeModal && !this.ui.upgradeModal.classList.contains('hidden')) {
+      this.ui.upgradeModal.classList.add('hidden');
+    }
+    if (except !== this.ui.tutorialModal && this.ui.tutorialModal && !this.ui.tutorialModal.classList.contains('hidden')) {
+      this.ui.tutorialModal.classList.add('hidden');
+    }
+    if (except !== this.ui.pauseModal && this.ui.pauseModal && !this.ui.pauseModal.classList.contains('hidden')) {
+      this.ui.pauseModal.classList.add('hidden');
+      this.state = 'playing';
+    }
+  }
+
   togglePause() {
     this.state = this.state === 'playing' ? 'paused' : 'playing';
     if (this.ui.pauseModal) {
       if (this.state === 'paused') {
+        this.closeOtherModals(this.ui.pauseModal);
+        this.modalFocusIdx = 0;
+        this.modalNavCooldown = 0.14;
+        if (this.updateViewScale) this.updateViewScale();
         this.ui.pauseModal.classList.remove('hidden');
       } else {
         this.ui.pauseModal.classList.add('hidden');
@@ -1042,6 +1130,9 @@ class MiniMartGame {
   openUpgrades() {
     if (this.ui.upgradeModal) {
       if (window.miniMartAudio) window.miniMartAudio.playBlip();
+      this.closeOtherModals(this.ui.upgradeModal);
+      this.modalFocusIdx = 0;
+      this.modalNavCooldown = 0.14;
       this.ui.upgradeModal.classList.remove('hidden');
       this.updateUpgradeModal();
     }
@@ -1531,6 +1622,9 @@ class MiniMartGame {
   openMartsModal() {
     if (this.ui.martsModal) {
       if (window.miniMartAudio) window.miniMartAudio.playBlip();
+      this.closeOtherModals(this.ui.martsModal);
+      this.modalFocusIdx = 0;
+      this.modalNavCooldown = 0.14;
       this.ui.martsModal.classList.remove('hidden');
       this.renderMartsList();
     }
@@ -1714,15 +1808,16 @@ class MiniMartGame {
 
   // --- TUTORIAL & MILESTONE SYSTEM ---
   progressTutorial(questId, amount = 1) {
-    if (this.activeTutorialIdx >= this.tutorialQuests.length) return;
-    const q = this.tutorialQuests[this.activeTutorialIdx];
-    if (!q || q.id !== questId || q.isDone) return;
+    if (!this.tutorialQuests || !this.tutorialQuests.length) return;
+    const q = this.tutorialQuests.find(t => t && t.id === questId && !t.isDone);
+    if (!q) return;
 
     q.current = Math.min(q.target, (q.current || 0) + amount);
     if (q.current >= q.target) {
       this.completeTutorialQuest(q);
     } else {
       this.updateTutorialUI();
+      this.renderTutorialList();
     }
   }
 
@@ -1783,6 +1878,9 @@ class MiniMartGame {
   openTutorialModal() {
     if (this.ui.tutorialModal) {
       if (window.miniMartAudio) window.miniMartAudio.playBlip();
+      this.closeOtherModals(this.ui.tutorialModal);
+      this.modalFocusIdx = 0;
+      this.modalNavCooldown = 0.14;
       this.ui.tutorialModal.classList.remove('hidden');
       this.renderTutorialList();
     }
@@ -1967,7 +2065,7 @@ class MiniMartGame {
     const scale = this.viewScale || 1;
     this.camera.targetX = this.player.x - (this.viewportWidth / scale) / 2;
     this.camera.targetY = this.player.y - (this.viewportHeight / scale) / 2;
-    const camLerp = Math.min(1.0, dt * 7.5);
+    const camLerp = Math.min(1.0, dt * 9.5);
     this.camera.x += (this.camera.targetX - this.camera.x) * camLerp;
     this.camera.y += (this.camera.targetY - this.camera.y) * camLerp;
 
