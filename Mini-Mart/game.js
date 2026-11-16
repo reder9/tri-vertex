@@ -1912,14 +1912,26 @@ class MiniMartGame {
       this.ui.goalBadge.innerText = '5/5 DONE';
       this.ui.goalBadge.style.background = '#16a34a';
       this.ui.activeGoalText.innerText = 'All milestones finished! You are a Master Mart Tycoon!';
-      if (this.ui.floatingGoalBox) this.ui.floatingGoalBox.classList.remove('has-pending');
+      if (this.ui.floatingGoalBox) {
+        this.ui.floatingGoalBox.classList.remove('has-pending');
+        this.ui.floatingGoalBox.classList.add('is-hidden');
+      }
+      if (this.ui.btnTutorial) {
+        this.ui.btnTutorial.classList.remove('highlight-tut');
+      }
       return;
     }
 
     const q = this.tutorialQuests[this.activeTutorialIdx];
     this.ui.goalBadge.innerText = `${this.activeTutorialIdx + 1}/5`;
     this.ui.goalBadge.style.background = '#0ea5e9';
-    if (this.ui.floatingGoalBox) this.ui.floatingGoalBox.classList.add('has-pending');
+    if (this.ui.floatingGoalBox) {
+      this.ui.floatingGoalBox.classList.remove('is-hidden');
+      this.ui.floatingGoalBox.classList.add('has-pending');
+    }
+    if (this.ui.btnTutorial) {
+      this.ui.btnTutorial.classList.add('highlight-tut');
+    }
     if (q.target > 1) {
       this.ui.activeGoalText.innerText = `${q.title}: ${q.desc} (${q.current || 0}/${q.target})`;
     } else {

@@ -169,49 +169,135 @@ button.gp-focus, .hud-btn.gp-focus {
   box-shadow: none !important;
 }
 
-.upgrade-tab-btn, .tut-tab-btn {
+.up-tab-btn, .upgrade-tab-btn, .tut-tab-btn {
   background: var(--panel2) !important;
-  color: var(--muted) !important;
-  border: 1px solid var(--line) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 10px !important;
   box-shadow: none !important;
   font-family: 'Outfit', sans-serif !important;
-  font-size: 0.95rem !important;
+  font-size: 0.92rem !important;
+  font-weight: 700 !important;
 }
 
-.upgrade-tab-btn.active, .tut-tab-btn.active {
-  background: linear-gradient(180deg, #fde68a, #f5b83d) !important;
-  color: #3b2a05 !important;
+.up-tab-btn.active, .upgrade-tab-btn.active, .tut-tab-btn.active {
+  background: linear-gradient(180deg, #4ade80, #22c55e) !important;
+  color: #052e16 !important;
   border-color: transparent !important;
 }
 
-.upgrade-row, .mart-card, .tut-step-card, .contract-card, .decor-card {
+.upgrade-section-title {
+  background: rgba(252, 211, 77, 0.14) !important;
+  border: 1px solid rgba(252, 211, 77, 0.35) !important;
+  color: var(--lemon) !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+}
+
+.upgrade-item, .upgrade-row, .mart-location-card, .mart-card, .tut-task-card, .tut-step-card, .contract-card, .decor-card {
   background: var(--panel2) !important;
-  border: 1px solid var(--line) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 14px !important;
-  box-shadow: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
   color: var(--text) !important;
 }
 
-.upgrade-name, .mart-name, .tut-step-title {
-  color: var(--text) !important;
+.mart-location-card.current {
+  border-color: rgba(74, 222, 128, 0.6) !important;
+  background: linear-gradient(180deg, rgba(20, 46, 38, 0.95), rgba(22, 31, 54, 0.95)) !important;
+}
+
+.mart-location-card.unlocked:not(.current) {
+  border-color: rgba(56, 189, 248, 0.55) !important;
+  background: linear-gradient(180deg, rgba(18, 40, 66, 0.95), rgba(22, 31, 54, 0.95)) !important;
+}
+
+.mart-location-card.locked {
+  background: rgba(18, 25, 44, 0.88) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+.tut-task-card.active-step {
+  border-color: rgba(252, 211, 77, 0.6) !important;
+  background: linear-gradient(180deg, rgba(46, 38, 20, 0.95), rgba(24, 31, 54, 0.95)) !important;
+}
+
+.tut-task-card.done {
+  border-color: rgba(74, 222, 128, 0.45) !important;
+  background: linear-gradient(180deg, rgba(18, 44, 34, 0.9), rgba(22, 31, 54, 0.9)) !important;
+}
+
+.upgrade-name, .mart-card-title, .mart-name, .tut-task-title, .tut-step-title {
+  color: #ffffff !important;
   font-family: 'Outfit', sans-serif !important;
-  font-size: 1.08rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
 }
 
-.upgrade-desc, .mart-desc, .tut-step-desc {
-  color: var(--muted) !important;
-  font-size: 0.9rem !important;
+.tut-task-card.done .tut-task-title {
+  color: #4ade80 !important;
 }
 
-.upgrade-buy-btn, .mart-btn, .btn-primary {
+.upgrade-sub {
+  color: #38bdf8 !important;
+}
+
+.upgrade-desc, .mart-card-desc, .mart-desc, .tut-subtitle, .tut-task-desc, .tut-step-desc {
+  color: #cbd5e1 !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+}
+
+.tut-task-reward {
+  color: var(--lemon) !important;
+}
+
+.mart-tag, .mart-stat-pill {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #e2e8f0 !important;
+}
+
+.mart-stat-pill.good {
+  background: rgba(22, 163, 74, 0.25) !important;
+  border-color: rgba(74, 222, 128, 0.45) !important;
+  color: #86efac !important;
+}
+
+.mart-stat-pill.warn {
+  background: rgba(217, 119, 6, 0.25) !important;
+  border-color: rgba(252, 211, 77, 0.45) !important;
+  color: #fde047 !important;
+}
+
+.mart-stat-pill.alert {
+  background: rgba(220, 38, 38, 0.25) !important;
+  border-color: rgba(248, 113, 113, 0.45) !important;
+  color: #fca5a5 !important;
+}
+
+.upgrade-btn, .upgrade-buy-btn, .mart-btn, .btn-primary {
   background: linear-gradient(180deg, #6ee7a0, #22c55e) !important;
   color: #052e16 !important;
   border: none !important;
   border-radius: 10px !important;
   box-shadow: 0 3px 0 #15803d !important;
+  text-shadow: none !important;
   font-family: 'Outfit', sans-serif !important;
-  font-size: 0.95rem !important;
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+}
+
+.upgrade-btn.cannot-afford {
+  background: #334155 !important;
+  color: #94a3b8 !important;
+  box-shadow: 0 3px 0 #1e293b !important;
+}
+
+.upgrade-btn.maxed {
+  background: linear-gradient(180deg, #fde68a, #f59e0b) !important;
+  color: #3b2a05 !important;
+  box-shadow: 0 3px 0 #b45309 !important;
 }
 
 /* Bottom Xbox Controller Legend (visible when gamepad connected) */
@@ -348,6 +434,10 @@ body.gamepad-active .xb-legend {
 
 .goal-all-btn:hover {
   background: rgba(56, 189, 248, 0.28);
+}
+
+#floating-goal-box.is-hidden {
+  display: none !important;
 }
 
 #floating-goal-box.is-collapsed {

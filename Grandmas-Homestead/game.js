@@ -6162,6 +6162,7 @@
       // 5. Active Quest Tracker HUD
       const questBox = document.getElementById('floatingQuestBox');
       const questBadge = document.getElementById('questCountBadge');
+      const btnTutorial = document.getElementById('btnTutorial');
       const activeQuestElem = document.getElementById('activeQuestText');
       if (activeQuestElem) {
         const doneCount = this.quests.filter(q => q.isDone).length;
@@ -6177,14 +6178,22 @@
             questBadge.textContent = `${activeIdx + 1}/${this.quests.length}`;
             questBadge.style.background = '#d97706';
           }
-          if (questBox) questBox.classList.add('has-pending');
+          if (questBox) {
+            questBox.classList.remove('is-hidden');
+            questBox.classList.add('has-pending');
+          }
+          if (btnTutorial) btnTutorial.classList.add('highlight');
         } else {
           activeQuestElem.textContent = 'All homestead milestones completed! Enjoy your bountiful farm.';
           if (questBadge) {
             questBadge.textContent = `${doneCount}/${this.quests.length}`;
             questBadge.style.background = '#15803d';
           }
-          if (questBox) questBox.classList.remove('has-pending');
+          if (questBox) {
+            questBox.classList.remove('has-pending');
+            questBox.classList.add('is-hidden');
+          }
+          if (btnTutorial) btnTutorial.classList.remove('highlight');
         }
       }
     }

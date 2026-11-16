@@ -351,6 +351,10 @@ body {
   background: #6d3f22;
 }
 
+#floatingQuestBox.is-hidden {
+  display: none !important;
+}
+
 #floatingQuestBox.is-collapsed {
   padding: 5px 10px;
   max-width: none;
