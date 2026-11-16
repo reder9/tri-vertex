@@ -1378,6 +1378,26 @@
       document.getElementById('btnShop')?.addEventListener('click', () => this.openShopModal());
       document.getElementById('btnCraft')?.addEventListener('click', () => this.openCraftingModal());
       document.getElementById('btnTutorial')?.addEventListener('click', () => this.openTutorialModal());
+      const questBox = document.getElementById('floatingQuestBox');
+      if (questBox) {
+        this.initFloatingQuestState();
+        questBox.addEventListener('click', (e) => {
+          if (e.target.closest('#btnQuestCollapse') || e.target.closest('#btnQuestAll')) return;
+          if (questBox.classList.contains('is-collapsed')) {
+            this.setFloatingQuestExpanded(true);
+          } else {
+            this.openTutorialModal();
+          }
+        });
+      }
+      document.getElementById('btnQuestCollapse')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.setFloatingQuestExpanded(false);
+      });
+      document.getElementById('btnQuestAll')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openTutorialModal();
+      });
       document.getElementById('btnGrandma')?.addEventListener('click', () => this.talkToGrandma());
       document.getElementById('btnSleep')?.addEventListener('click', () => this.sleepAndAdvanceDay());
       document.getElementById('btnAudio')?.addEventListener('click', () => this.toggleAudio());
@@ -6140,18 +6160,51 @@
       }
 
       // 5. Active Quest Tracker HUD
+      const questBox = document.getElementById('floatingQuestBox');
+      const questBadge = document.getElementById('questCountBadge');
       const activeQuestElem = document.getElementById('activeQuestText');
       if (activeQuestElem) {
-        const activeQuest = this.quests.find(q => !q.isDone);
+        const doneCount = this.quests.filter(q => q.isDone).length;
+        const activeIdx = this.quests.findIndex(q => !q.isDone);
+        const activeQuest = activeIdx >= 0 ? this.quests[activeIdx] : null;
         if (activeQuest) {
           let progress = '';
           if (activeQuest.target) {
             progress = ` (${activeQuest.current || 0}/${activeQuest.target})`;
           }
           activeQuestElem.textContent = `${activeQuest.title}${progress}: ${activeQuest.desc}`;
+          if (questBadge) {
+            questBadge.textContent = `${activeIdx + 1}/${this.quests.length}`;
+            questBadge.style.background = '#d97706';
+          }
+          if (questBox) questBox.classList.add('has-pending');
         } else {
           activeQuestElem.textContent = 'All homestead milestones completed! Enjoy your bountiful farm.';
+          if (questBadge) {
+            questBadge.textContent = `${doneCount}/${this.quests.length}`;
+            questBadge.style.background = '#15803d';
+          }
+          if (questBox) questBox.classList.remove('has-pending');
         }
+      }
+    }
+
+    initFloatingQuestState() {
+      const questBox = document.getElementById('floatingQuestBox');
+      if (!questBox) return;
+      let savedPref = null;
+      try { savedPref = localStorage.getItem('homestead_quest_expanded'); } catch (_) {}
+      const isSmall = window.innerWidth <= 920 || window.innerHeight <= 620;
+      const expanded = savedPref !== null ? savedPref === '1' : !isSmall;
+      this.setFloatingQuestExpanded(expanded, false);
+    }
+
+    setFloatingQuestExpanded(expanded, persist = true) {
+      const questBox = document.getElementById('floatingQuestBox');
+      if (!questBox) return;
+      questBox.classList.toggle('is-collapsed', !expanded);
+      if (persist) {
+        try { localStorage.setItem('homestead_quest_expanded', expanded ? '1' : '0'); } catch (_) {}
       }
     }
 

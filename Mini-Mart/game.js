@@ -330,6 +330,8 @@ class MiniMartGame {
       floatingGoalBox: document.getElementById('floating-goal-box'),
       activeGoalText: document.getElementById('active-goal-text'),
       goalBadge: document.getElementById('goal-badge'),
+      btnGoalCollapse: document.getElementById('btn-goal-collapse'),
+      btnGoalAll: document.getElementById('btn-goal-all'),
       tutorialModal: document.getElementById('tutorial-modal'),
       tutorialList: document.getElementById('tutorial-list'),
       btnTutorial: document.getElementById('btn-tutorial'),
@@ -885,7 +887,30 @@ class MiniMartGame {
     }
 
     if (this.ui.btnTutorial) this.ui.btnTutorial.addEventListener('click', () => this.toggleTutorialModal());
-    if (this.ui.floatingGoalBox) this.ui.floatingGoalBox.addEventListener('click', () => this.openTutorialModal());
+    if (this.ui.floatingGoalBox) {
+      // Collapse by default on smaller screens so it stays out of the way until tapped
+      this.initFloatingGoalState();
+      this.ui.floatingGoalBox.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-goal-collapse') || e.target.closest('#btn-goal-all')) return;
+        if (this.ui.floatingGoalBox.classList.contains('is-collapsed')) {
+          this.setFloatingGoalExpanded(true);
+        } else {
+          this.openTutorialModal();
+        }
+      });
+    }
+    if (this.ui.btnGoalCollapse) {
+      this.ui.btnGoalCollapse.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.setFloatingGoalExpanded(false);
+      });
+    }
+    if (this.ui.btnGoalAll) {
+      this.ui.btnGoalAll.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openTutorialModal();
+      });
+    }
     if (this.ui.btnCloseTutorial) this.ui.btnCloseTutorial.addEventListener('click', () => this.closeTutorialModal());
     if (this.ui.btnTutorialOk) this.ui.btnTutorialOk.addEventListener('click', () => this.closeTutorialModal());
 
@@ -1864,18 +1889,37 @@ class MiniMartGame {
     }
   }
 
+  initFloatingGoalState() {
+    if (!this.ui.floatingGoalBox) return;
+    let savedPref = null;
+    try { savedPref = localStorage.getItem('minimart_goal_expanded'); } catch (_) {}
+    const isSmall = window.innerWidth <= 920 || window.innerHeight <= 620;
+    const expanded = savedPref !== null ? savedPref === '1' : !isSmall;
+    this.setFloatingGoalExpanded(expanded, false);
+  }
+
+  setFloatingGoalExpanded(expanded, persist = true) {
+    if (!this.ui.floatingGoalBox) return;
+    this.ui.floatingGoalBox.classList.toggle('is-collapsed', !expanded);
+    if (persist) {
+      try { localStorage.setItem('minimart_goal_expanded', expanded ? '1' : '0'); } catch (_) {}
+    }
+  }
+
   updateTutorialUI() {
     if (!this.ui.activeGoalText || !this.ui.goalBadge) return;
     if (this.activeTutorialIdx >= this.tutorialQuests.length) {
       this.ui.goalBadge.innerText = '5/5 DONE';
       this.ui.goalBadge.style.background = '#16a34a';
       this.ui.activeGoalText.innerText = 'All milestones finished! You are a Master Mart Tycoon!';
+      if (this.ui.floatingGoalBox) this.ui.floatingGoalBox.classList.remove('has-pending');
       return;
     }
 
     const q = this.tutorialQuests[this.activeTutorialIdx];
     this.ui.goalBadge.innerText = `${this.activeTutorialIdx + 1}/5`;
     this.ui.goalBadge.style.background = '#0ea5e9';
+    if (this.ui.floatingGoalBox) this.ui.floatingGoalBox.classList.add('has-pending');
     if (q.target > 1) {
       this.ui.activeGoalText.innerText = `${q.title}: ${q.desc} (${q.current || 0}/${q.target})`;
     } else {

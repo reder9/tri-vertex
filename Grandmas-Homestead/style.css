@@ -275,11 +275,111 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: #cbd5e1;
   margin-bottom: 4px;
+}
+
+.quest-alert-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #facc15;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.9);
+  display: none;
+  flex-shrink: 0;
+  animation: questPulse 1.6s ease-in-out infinite;
+}
+
+#floatingQuestBox.has-pending .quest-alert-dot {
+  display: inline-block;
+}
+
+@keyframes questPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.65; }
+}
+
+.quest-count-badge {
+  background: #d97706;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.quest-close-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid rgba(215, 168, 110, 0.45);
+  background: rgba(93, 64, 55, 0.6);
+  color: #fef08a;
+  cursor: pointer;
+}
+
+.quest-close-btn:hover {
+  background: rgba(215, 168, 110, 0.25);
+  color: #ffffff;
+}
+
+.quest-footer-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.quest-all-btn {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #d7a86e;
+  background: #4e2d18;
+  color: #fef08a;
+  cursor: pointer;
+}
+
+.quest-all-btn:hover {
+  background: #6d3f22;
+}
+
+#floatingQuestBox.is-collapsed {
+  padding: 5px 10px;
+  max-width: none;
+  border-radius: 4px;
+}
+
+#floatingQuestBox.is-collapsed .quest-header-row {
+  margin-bottom: 0;
+}
+
+#floatingQuestBox.is-collapsed #activeQuestText,
+#floatingQuestBox.is-collapsed .quest-footer-row,
+#floatingQuestBox.is-collapsed .quest-close-btn {
+  display: none;
+}
+
+@media (max-width: 720px), (max-height: 580px) {
+  #floatingQuestBox {
+    top: 8px;
+    left: 8px;
+    max-width: 240px;
+    padding: 6px 10px;
+  }
+  #floatingQuestBox.is-collapsed {
+    padding: 4px 8px;
+  }
+  #activeQuestText {
+    font-size: 0.76rem;
+  }
 }
 
 #activeQuestText {

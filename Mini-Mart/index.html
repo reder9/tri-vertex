@@ -137,17 +137,26 @@
       <span id="event-banner-sub" class="event-banner-sub">+50% Tips!</span>
     </div>
 
-    <!-- Floating Active Goal Milestone Banner -->
-    <div id="floating-goal-box" title="Click to view Mini Mart Tutorial & Quests (Hotkey T / Xbox View)">
+    <!-- Collapsible Active Goal Indicator / Card -->
+    <div id="floating-goal-box" class="is-collapsed" title="Click to view active milestone">
       <div class="goal-header-row">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <span id="goal-alert-dot" class="goal-alert-dot" aria-hidden="true"></span>
+        <svg class="goal-book-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
         </svg>
-        <span class="goal-label">STORE GOAL</span>
+        <span class="goal-label">GOAL</span>
         <span id="goal-badge" class="goal-badge">1/5</span>
+        <button type="button" id="btn-goal-collapse" class="goal-close-btn" title="Collapse" aria-label="Collapse tutorial banner">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div id="active-goal-text">Loading milestone...</div>
+      <div class="goal-footer-row">
+        <button type="button" id="btn-goal-all" class="goal-all-btn">All Tasks</button>
+      </div>
     </div>
 
     <!-- Non-blocking Live Activity Toast Banner (Remote Marts & Pickup Orders) -->
