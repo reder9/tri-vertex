@@ -2629,26 +2629,44 @@ const Sprites = {
 
   drawFishingMinigameBar(ctx, playerX, playerY, fishing) {
     if (!fishing || fishing.phase !== 'REELING') return;
-    const barW = 144;
+    const barW = 152;
     const barH = 20;
     const canvasW = ctx.canvas ? ctx.canvas.width : 800;
     const bx = Math.max(12, Math.min(canvasW - barW - 12, playerX + 16 - barW / 2));
     const by = Math.max(28, playerY - 40);
+    const rarity = (fishing.fish && fishing.fish.rarity) || 'Common';
+
+    let frameBorder = '#94a3b8';
+    let labelColor = '#e2e8f0';
+    let tierLabel = 'COMMON';
+    if (rarity === 'Uncommon') {
+      frameBorder = '#34d399';
+      labelColor = '#6ee7b7';
+      tierLabel = 'UNCOMMON • FASTER';
+    } else if (rarity === 'Rare') {
+      frameBorder = '#c084fc';
+      labelColor = '#e9d5ff';
+      tierLabel = 'RARE • QUICK!';
+    } else if (rarity === 'Legendary') {
+      frameBorder = '#facc15';
+      labelColor = '#fef08a';
+      tierLabel = 'LEGENDARY!';
+    }
 
     ctx.save();
     // Outer frame
     ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-    ctx.strokeStyle = '#facc15';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = frameBorder;
+    ctx.lineWidth = rarity === 'Legendary' ? 2.6 : 2;
     ctx.beginPath();
     ctx.roundRect(bx - 6, by - 19, barW + 12, barH + 26, 8);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#fef08a';
+    ctx.fillStyle = labelColor;
     ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`STOP IN GREEN! (${fishing.attemptsLeft} ${fishing.attemptsLeft === 1 ? 'try' : 'tries'})`, bx + barW / 2, by - 5);
+    ctx.fillText(`${tierLabel} (${fishing.attemptsLeft} ${fishing.attemptsLeft === 1 ? 'try' : 'tries'})`, bx + barW / 2, by - 5);
 
     // Track
     ctx.fillStyle = '#334155';

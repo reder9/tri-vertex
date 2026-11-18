@@ -814,9 +814,15 @@ button.gp-focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin-top: 4px;
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+}
+
+.hotbar-icon-wrap svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.7));
 }
 
 .slot-item-name {
@@ -1431,6 +1437,11 @@ body.input-touch .mobile-controls-layer {
     height: 44px;
     padding: 2px;
   }
+  .hotbar-icon-wrap {
+    width: 28px;
+    height: 28px;
+    margin-top: 0;
+  }
   .slot-item-name {
     display: none;
   }
@@ -1652,26 +1663,39 @@ body.input-touch .mobile-controls-layer {
     gap: 4px;
     overflow-x: visible;
     overflow-y: auto;
-    max-height: 92px;
+    max-height: 108px;
     padding: 1px 0;
   }
   .hotbar-slot {
     width: 100%;
-    height: 40px;
+    height: 48px;
+    padding: 2px 3px;
+  }
+  .hotbar-icon-wrap {
+    width: 25px;
+    height: 25px;
+    margin-top: 0;
+  }
+  .slot-item-name {
+    display: block !important;
+    font-size: 0.56rem;
+    line-height: 1.05;
+    max-width: 100%;
+    margin-top: 1px;
   }
   .backpack-hotbar-btn {
     height: auto;
-    min-height: 40px;
+    min-height: 48px;
     min-width: 54px;
     padding: 4px 7px;
   }
 
   /* Keep virtual joystick & action buttons clear of 2-row vertical hotbar */
   .virtual-joystick-wrap {
-    bottom: calc(122px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(136px + env(safe-area-inset-bottom, 0px));
   }
   .mobile-action-buttons {
-    bottom: calc(122px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(136px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Modals & Lists scroll vertically only (never side-to-side) */

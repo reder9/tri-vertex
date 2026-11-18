@@ -22,15 +22,15 @@
   };
 
   const FISH_DEFS = {
-    sunfish: { id: 'sunfish', name: 'Sunfish', sellPrice: 42, rarity: 'Common', difficulty: 0.7, locations: ['farm', 'city'], desc: 'Golden freshwater sunfish found in calm docks and canals.' },
-    bass: { id: 'bass', name: 'Largemouth Bass', sellPrice: 75, rarity: 'Common', difficulty: 0.95, locations: ['farm', 'city'], desc: 'Feisty lake bass that darts across deep eddies.' },
-    trout: { id: 'trout', name: 'Brook Trout', sellPrice: 95, rarity: 'Uncommon', difficulty: 1.1, locations: ['city', 'farm'], desc: 'Silver mountain trout thriving in cool canal currents.' },
-    catfish: { id: 'catfish', name: 'Whiskered Catfish', sellPrice: 145, rarity: 'Rare', difficulty: 1.3, locations: ['farm'], desc: 'Heavy bottom-dweller that loves rainy lakeside mornings.' },
-    koi: { id: 'koi', name: 'Oakhaven Koi', sellPrice: 220, rarity: 'Rare', difficulty: 1.45, locations: ['city', 'farm'], desc: 'Gem-scaled ornamental carp prized by city collectors.' },
-    legend_carp: { id: 'legend_carp', name: 'Emperor Hazel Carp', sellPrice: 480, rarity: 'Legendary', difficulty: 1.75, locations: ['farm'], desc: 'Ancient golden giant rumored to guard Lake Hazel.' },
-    snapper: { id: 'snapper', name: 'Crimson Snapper', sellPrice: 115, rarity: 'Common', difficulty: 1.0, locations: ['harbor'], desc: 'Bright reef snapper caught off Oakhaven Harbor Pier.' },
-    halibut: { id: 'halibut', name: 'Harbor Halibut', sellPrice: 210, rarity: 'Rare', difficulty: 1.4, locations: ['harbor'], desc: 'Flat ocean floor dweller feeding beside deep pilings.' },
-    seahorse: { id: 'seahorse', name: 'Gilded Seahorse', sellPrice: 360, rarity: 'Legendary', difficulty: 1.55, locations: ['harbor'], desc: 'Shimmering golden coastal treasure from Southern Ocean tides.' }
+    sunfish: { id: 'sunfish', name: 'Sunfish', sellPrice: 42, rarity: 'Common', difficulty: 0.52, locations: ['farm', 'city'], desc: 'Golden freshwater sunfish found in calm docks and canals.' },
+    bass: { id: 'bass', name: 'Largemouth Bass', sellPrice: 75, rarity: 'Common', difficulty: 0.64, locations: ['farm', 'city'], desc: 'Feisty lake bass that darts across deep eddies.' },
+    trout: { id: 'trout', name: 'Brook Trout', sellPrice: 110, rarity: 'Uncommon', difficulty: 1.32, locations: ['city', 'farm'], desc: 'Swift mountain trout thriving in cool canal currents.' },
+    catfish: { id: 'catfish', name: 'Whiskered Catfish', sellPrice: 165, rarity: 'Rare', difficulty: 1.65, locations: ['farm'], desc: 'Heavy bottom-dweller that loves rainy lakeside mornings.' },
+    koi: { id: 'koi', name: 'Oakhaven Koi', sellPrice: 235, rarity: 'Rare', difficulty: 1.76, locations: ['city', 'farm'], desc: 'Gem-scaled ornamental carp prized by city collectors.' },
+    legend_carp: { id: 'legend_carp', name: 'Emperor Hazel Carp', sellPrice: 520, rarity: 'Legendary', difficulty: 2.35, locations: ['farm'], desc: 'Ancient golden giant rumored to guard Lake Hazel.' },
+    snapper: { id: 'snapper', name: 'Crimson Snapper', sellPrice: 115, rarity: 'Common', difficulty: 0.64, locations: ['harbor'], desc: 'Bright reef snapper caught off Oakhaven Harbor Pier.' },
+    halibut: { id: 'halibut', name: 'Harbor Halibut', sellPrice: 195, rarity: 'Uncommon', difficulty: 1.38, locations: ['harbor'], desc: 'Flat ocean floor dweller feeding beside deep pilings.' },
+    seahorse: { id: 'seahorse', name: 'Gilded Seahorse', sellPrice: 410, rarity: 'Legendary', difficulty: 2.15, locations: ['harbor'], desc: 'Shimmering golden coastal treasure from Southern Ocean tides.' }
   };
 
   const FORAGE_DEFS = {
@@ -3077,11 +3077,17 @@
       this.player.toolAction = 'fishing_rod';
       this.player.toolTimer = 0.4;
 
+      const hookedFish = this.rollFishCatch(ty * TILE_SIZE);
       const waitTime = this.player.hasProRod
         ? (1.0 + Math.random() * 1.1)
         : (1.3 + Math.random() * 1.5);
-      const targetWidth = this.player.hasProRod ? 0.38 : 0.30;
-      const targetStart = 0.22 + Math.random() * (0.56 - targetWidth);
+      const rarity = hookedFish ? hookedFish.rarity : 'Common';
+      let baseWidth = 0.36;
+      if (rarity === 'Uncommon') baseWidth = 0.26;
+      else if (rarity === 'Rare') baseWidth = 0.21;
+      else if (rarity === 'Legendary') baseWidth = 0.17;
+      const targetWidth = Math.min(0.44, baseWidth + (this.player.hasProRod ? 0.06 : 0));
+      const targetStart = 0.2 + Math.random() * (0.6 - targetWidth);
 
       this.fishing = {
         phase: 'WAITING',
@@ -3096,7 +3102,7 @@
         targetStart: targetStart,
         targetWidth: targetWidth,
         attemptsLeft: this.player.hasProRod ? 3 : 2,
-        fish: this.rollFishCatch(ty * TILE_SIZE),
+        fish: hookedFish,
         bobTime: 0
       };
 
@@ -3117,10 +3123,10 @@
       const candidates = Object.values(FISH_DEFS).filter(f => f.locations.includes(loc));
 
       const weighted = candidates.map(f => {
-        let w = 10;
-        if (f.rarity === 'Uncommon') w = 5 * rodBonus;
-        else if (f.rarity === 'Rare') w = 2.6 * rodBonus * rainBonus;
-        else if (f.rarity === 'Legendary') w = 0.85 * rodBonus * rainBonus;
+        let w = 14;
+        if (f.rarity === 'Uncommon') w = 4.6 * rodBonus;
+        else if (f.rarity === 'Rare') w = 1.8 * rodBonus * rainBonus;
+        else if (f.rarity === 'Legendary') w = 0.72 * rodBonus * rainBonus;
         return { fish: f, weight: w };
       });
 
@@ -5731,26 +5737,77 @@
       const id = item.id || '';
       const type = item.type || '';
       if (id === 'hoe') {
-        return `<svg viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 16 8"/><path d="m14 6 5 1-2 4-4-2Z" fill="#64748b" stroke="#475569"/></svg>`;
+        const blade = (this.player && this.player.hasGoldHoe) ? '#facc15' : ((this.player && this.player.hasCopperHoe) ? '#fb923c' : '#e2e8f0');
+        const bladeDark = (this.player && this.player.hasGoldHoe) ? '#a16207' : ((this.player && this.player.hasCopperHoe) ? '#9a3412' : '#475569');
+        return `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 19 16 7" stroke="#451a03" stroke-width="4.2"/>
+          <path d="M5 19 16 7" stroke="#f59e0b" stroke-width="2.4"/>
+          <path d="m14 4 6 5-3 5-2.5-1.5 1.5-3.2-3.2-2.6Z" fill="${blade}" stroke="${bladeDark}" stroke-width="1.5"/>
+          <path d="M16 14h5" stroke="#92400e" stroke-width="1.6"/>
+        </svg>`;
       }
       if (id === 'watering_can') {
-        return `<svg viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><rect x="7" y="9" width="10" height="10" rx="2" fill="#38bdf8"/><path d="M7 11c-3 0-4-2-4-2"/><path d="M17 12l4-3"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>`;
+        const canFill = (this.player && this.player.hasGoldCan) ? '#facc15' : ((this.player && this.player.waterCapacity >= 40) ? '#fb923c' : '#38bdf8');
+        const canDark = (this.player && this.player.hasGoldCan) ? '#a16207' : ((this.player && this.player.waterCapacity >= 40) ? '#9a3412' : '#0369a1');
+        return `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 9V6.5a3.5 3.5 0 0 1 7 0V9" stroke="${canDark}" stroke-width="2.6"/>
+          <path d="M8 9V6.5a3.5 3.5 0 0 1 7 0V9" stroke="#e0f2fe" stroke-width="1.2"/>
+          <rect x="6.5" y="9" width="10" height="10" rx="2.2" fill="${canFill}" stroke="${canDark}" stroke-width="1.7"/>
+          <path d="M6.5 11.5C3.5 11.5 3 14 5.5 15.5" stroke="${canDark}" stroke-width="2"/>
+          <path d="m16.5 14 4.5-4.5" stroke="${canFill}" stroke-width="2.8"/>
+          <path d="m16.5 14 4.5-4.5" stroke="${canDark}" stroke-width="1.3"/>
+          <circle cx="21.5" cy="12.5" r="1.1" fill="#7dd3fc"/>
+          <circle cx="20.5" cy="15.5" r="1" fill="#bae6fd"/>
+        </svg>`;
       }
       if (id === 'scythe') {
-        return `<svg viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2.2" stroke-linecap="round"><path d="M6 20 16 6"/><path d="M16 6c4 0 5 3 3 6-2-2-4-2-6-2" fill="#cbd5e1" stroke="#475569"/></svg>`;
+        const blade = (this.player && this.player.hasCopperScythe) ? '#fb923c' : '#f8fafc';
+        const edge = (this.player && this.player.hasCopperScythe) ? '#9a3412' : '#475569';
+        return `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4c-5.5 0-10.5 2.5-12.5 7 3.5-2.2 7.5-2.4 11.2-1.2Z" fill="${blade}" stroke="${edge}" stroke-width="1.6"/>
+          <path d="M16 4v16" stroke="#451a03" stroke-width="4"/>
+          <path d="M16 4v16" stroke="#f59e0b" stroke-width="2.2"/>
+          <path d="M13.5 13h3.5" stroke="#fde68a" stroke-width="2"/>
+        </svg>`;
       }
       if (id === 'axe') {
-        return `<svg viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2.2" stroke-linecap="round"><path d="M6 20 17 7"/><path d="M13 5c3 0 6 2 6 5l-4 2-3-4Z" fill="#94a3b8" stroke="#475569"/></svg>`;
+        return `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 19 16 7" stroke="#451a03" stroke-width="4.2"/>
+          <path d="M5 19 16 7" stroke="#f59e0b" stroke-width="2.4"/>
+          <path d="M12.5 5.5 17 3.5c3 2.5 3.5 7.5 1 10.5l-4.5-2.5Z" fill="#e2e8f0" stroke="#334155" stroke-width="1.6"/>
+          <path d="M17.2 4.5c1.8 2.2 2 6.2.4 8.5" stroke="#ffffff" stroke-width="1.4"/>
+        </svg>`;
       }
       if (id === 'pickaxe') {
-        return `<svg viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2.2" stroke-linecap="round"><path d="M6 20 16 8"/><path d="M10 5c4-1 8 1 10 5l-3 1c-2-2-4-3-7-3Z" fill="#94a3b8" stroke="#475569"/></svg>`;
+        const tip = (this.player && this.player.hasSteelPickaxe) ? '#bae6fd' : '#e2e8f0';
+        const tipDark = (this.player && this.player.hasSteelPickaxe) ? '#0369a1' : '#334155';
+        return `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 7v14" stroke="#451a03" stroke-width="4.2"/>
+          <path d="M12 7v14" stroke="#f59e0b" stroke-width="2.4"/>
+          <path d="M3 10.5C6.5 4.8 17.5 4.8 21 10.5l-2.5 1c-2.6-2.8-10.4-2.8-13 0Z" fill="${tip}" stroke="${tipDark}" stroke-width="1.6"/>
+          <rect x="10" y="5.5" width="4" height="3.2" rx="0.8" fill="#94a3b8" stroke="${tipDark}" stroke-width="1.2"/>
+        </svg>`;
       }
       if (id === 'fishing_rod' || id === 'pro_rod') {
-        const stroke = (id === 'pro_rod' || (this.player && this.player.hasProRod)) ? '#0284c7' : '#a16207';
-        return `<svg viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round"><path d="M4 20Q10 7 18 4"/><path d="M18 4v9" stroke="#e2e8f0" stroke-width="1.4"/><circle cx="18" cy="15" r="2.2" fill="#ef4444" stroke="#ffffff" stroke-width="1"/></svg>`;
+        const isPro = id === 'pro_rod' || (this.player && this.player.hasProRod);
+        const pole = isPro ? '#38bdf8' : '#fbbf24';
+        const poleDark = isPro ? '#0c4a6e' : '#78350f';
+        return `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20Q8 7 18 4" stroke="${poleDark}" stroke-width="4"/>
+          <path d="M4 20Q8 7 18 4" stroke="${pole}" stroke-width="2.2"/>
+          <circle cx="7.2" cy="15.2" r="2.2" fill="#e2e8f0" stroke="#334155" stroke-width="1.3"/>
+          <path d="M18 4v8.5" stroke="#f8fafc" stroke-width="1.5"/>
+          <circle cx="18" cy="15" r="2.8" fill="#ef4444" stroke="#ffffff" stroke-width="1.3"/>
+          <path d="M15.4 15.2a2.6 2.6 0 0 0 5.2 0Z" fill="#ffffff"/>
+        </svg>`;
       }
       if (id.endsWith('_seed') || type === 'seed') {
-        return `<svg viewBox="0 0 24 24" fill="none"><rect x="6" y="4" width="12" height="16" rx="2.5" fill="#fef3c7" stroke="#b45309" stroke-width="1.8"/><circle cx="12" cy="11" r="3" fill="#4ade80"/><path d="M12 11v4" stroke="#15803d" stroke-width="1.6"/></svg>`;
+        const cropKey = id.replace('_seed', '');
+        const dotCol = (cropKey === 'carrot' || cropKey === 'pumpkin') ? '#f97316'
+          : (cropKey === 'tomato' || cropKey === 'strawberry') ? '#ef4444'
+          : (cropKey === 'corn' || cropKey === 'wheat' || cropKey === 'starfruit') ? '#facc15'
+          : (cropKey === 'blueberry') ? '#3b82f6' : '#4ade80';
+        return `<svg viewBox="0 0 24 24" fill="none"><rect x="5.5" y="3.5" width="13" height="17" rx="2.5" fill="#fef3c7" stroke="#b45309" stroke-width="1.8"/><path d="M5.5 7.5h13" stroke="#d97706" stroke-width="1.3"/><circle cx="12" cy="13" r="3.4" fill="${dotCol}" stroke="#78350f" stroke-width="1.2"/><path d="M12 9.5c-1.5-1.5-2.5-1-2.5-1s1 2 2.5 2 2.5-2 2.5-2-1-.5-2.5 1Z" fill="#16a34a"/></svg>`;
       }
       if (FISH_DEFS[id] || type === 'fish') {
         const fill = id === 'legend_carp' ? '#f59e0b' : (id === 'koi' ? '#fb7185' : '#38bdf8');
