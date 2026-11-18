@@ -19,6 +19,51 @@ class SoundEngine {
     this.bgmTargetVolume = 0.14;
     this.bgmCurrentVolume = 0;
     this.bgmFadeTimer = null;
+    this._pausedForBackground = false;
+    this._resumeMusicOnVisible = false;
+    this._bindVisibilityLifecycle();
+  }
+
+  _bindVisibilityLifecycle() {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    const onHide = () => this.pauseForBackground();
+    const onShow = () => {
+      if (!document.hidden) this.resumeFromBackground();
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) onHide();
+      else onShow();
+    });
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', onShow);
+  }
+
+  pauseForBackground() {
+    if (this._pausedForBackground) return;
+    this._pausedForBackground = true;
+    this._resumeMusicOnVisible = !this.isMuted && !!(this.bgm && !this.bgm.paused);
+    if (this.bgmFadeTimer) {
+      clearInterval(this.bgmFadeTimer);
+      this.bgmFadeTimer = null;
+    }
+    if (this.bgm) {
+      this.bgm.pause();
+    }
+    if (this.ctx && this.ctx.state === 'running') {
+      this.ctx.suspend().catch(() => {});
+    }
+  }
+
+  resumeFromBackground() {
+    if (!this._pausedForBackground) return;
+    this._pausedForBackground = false;
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+    if (this._resumeMusicOnVisible && !this.isMuted) {
+      this._resumeMusicOnVisible = false;
+      this.startAmbientBeat();
+    }
   }
 
   init() {

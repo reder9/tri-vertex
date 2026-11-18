@@ -1351,17 +1351,6 @@
         }, { passive: false });
       }
 
-      const btnMobileEat = document.getElementById('btnMobileEat');
-      if (btnMobileEat) {
-        const triggerEat = (e) => {
-          if (e.cancelable) e.preventDefault();
-          this.setInputMode('touch');
-          this.quickEatFood();
-        };
-        btnMobileEat.addEventListener('click', triggerEat);
-        btnMobileEat.addEventListener('touchstart', triggerEat, { passive: false });
-      }
-
       this.canvas.addEventListener('touchstart', (e) => {
         this.setInputMode('touch');
         const rect = this.canvas.getBoundingClientRect();
@@ -1421,6 +1410,12 @@
       const mobileDrawer = document.getElementById('mobileHeaderDrawer');
       if (btnMobileMenu && mobileDrawer) {
         const setDrawerOpen = (open) => {
+          if (open) {
+            const headerEl = document.getElementById('gameHeader');
+            if (headerEl) {
+              mobileDrawer.style.top = `${Math.round(headerEl.getBoundingClientRect().bottom + 4)}px`;
+            }
+          }
           mobileDrawer.classList.toggle('hidden', !open);
           btnMobileMenu.setAttribute('aria-expanded', open ? 'true' : 'false');
         };
@@ -5347,7 +5342,7 @@
 
       container.innerHTML = `
         <p style="font-size:0.86rem;color:#475569;margin-bottom:10px;">Store extra seeds, crops, ores, and meals safely on your homestead.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="chest-split-grid">
           <div>
             <div style="font-weight:800;color:#0f172a;font-size:0.85rem;margin-bottom:6px;">Backpack (Deposit 1)</div>
             <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;">

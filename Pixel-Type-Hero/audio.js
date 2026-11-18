@@ -18,6 +18,48 @@ class TypeHeroAudio {
       440.00, 392.00, 440.00, 523.25,
       698.46, 587.33, 523.25, 440.00
     ];
+    this._pausedForBackground = false;
+    this._resumeMusicOnVisible = false;
+    this._bindVisibilityLifecycle();
+  }
+
+  _bindVisibilityLifecycle() {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    const onHide = () => this.pauseForBackground();
+    const onShow = () => {
+      if (!document.hidden) this.resumeFromBackground();
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) onHide();
+      else onShow();
+    });
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', onShow);
+  }
+
+  pauseForBackground() {
+    if (this._pausedForBackground) return;
+    this._pausedForBackground = true;
+    this._resumeMusicOnVisible = !this.isMuted && this.musicEnabled && !!this.musicTimer;
+    if (this.musicTimer) {
+      clearInterval(this.musicTimer);
+      this.musicTimer = null;
+    }
+    if (this.ctx && this.ctx.state === 'running') {
+      this.ctx.suspend().catch(() => {});
+    }
+  }
+
+  resumeFromBackground() {
+    if (!this._pausedForBackground) return;
+    this._pausedForBackground = false;
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+    if (this._resumeMusicOnVisible && !this.isMuted && this.musicEnabled) {
+      this._resumeMusicOnVisible = false;
+      this.startMusic();
+    }
   }
 
   init() {
