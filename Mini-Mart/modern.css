@@ -465,3 +465,143 @@ body.gamepad-active .xb-legend {
     padding: 4px 9px !important;
   }
 }
+
+/* Mobile Header Menu Drawer (declutters top HUD on phones & handhelds) */
+.mobile-menu-btn {
+  display: none !important;
+}
+
+.mobile-header-drawer {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 56px);
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+  z-index: 65;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(126px, 1fr));
+  gap: 8px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
+}
+
+.mobile-header-drawer.hidden {
+  display: none !important;
+}
+
+.drawer-menu-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 9px 12px;
+  min-height: 40px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(30, 42, 71, 0.92);
+  color: var(--text);
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.1s ease;
+  touch-action: manipulation;
+}
+
+.drawer-menu-item:active {
+  transform: scale(0.97);
+}
+
+.drawer-menu-item.drawer-tut {
+  background: linear-gradient(180deg, rgba(66, 51, 14, 0.95), rgba(40, 31, 10, 0.95));
+  border-color: rgba(252, 211, 77, 0.45);
+  color: #fde68a;
+}
+
+.drawer-menu-item.is-off {
+  opacity: 0.56;
+}
+
+.drawer-menu-item.drawer-hub-link {
+  grid-column: 1 / -1;
+  justify-content: center;
+  background: rgba(22, 31, 54, 0.95);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+@media (max-width: 960px), (max-height: 580px) and (orientation: landscape) {
+  .brand-card {
+    display: none !important;
+  }
+  .mobile-nested-btn {
+    display: none !important;
+  }
+  .mobile-menu-btn {
+    display: inline-flex !important;
+  }
+  .top-hud {
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  .hud-stats-cluster {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .top-actions {
+    width: auto !important;
+    flex-wrap: nowrap !important;
+    gap: 5px !important;
+    flex-shrink: 0;
+  }
+  .hud-card {
+    padding: 5px 9px !important;
+    border-radius: 11px !important;
+    gap: 5px !important;
+  }
+  .money-val {
+    font-size: 0.96rem !important;
+  }
+  .stat-pill-val {
+    font-size: 0.84rem !important;
+  }
+  .hud-btn {
+    padding: 6px 10px !important;
+    min-height: 36px !important;
+    font-size: 0.78rem !important;
+    border-radius: 10px !important;
+  }
+  .hud-btn span {
+    display: inline !important;
+  }
+  .remote-toast-container {
+    top: 58px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hud-btn:not(.mobile-menu-btn) {
+    padding: 6px 8px !important;
+    min-width: 36px !important;
+  }
+  .hud-btn:not(.mobile-menu-btn) span {
+    display: none !important;
+  }
+  .hud-card {
+    padding: 4px 7px !important;
+  }
+  .money-val {
+    font-size: 0.88rem !important;
+  }
+  .stat-pill-val {
+    font-size: 0.78rem !important;
+  }
+}

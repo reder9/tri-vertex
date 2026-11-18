@@ -638,8 +638,9 @@ class MiniMartPlayer {
       this.targetTilt = -normX * 0.22;
     } else {
       this.isMoving = false;
-      this.vx *= 0.7;
-      this.vy *= 0.7;
+      const stopDamp = Math.pow(0.7, Math.min(4, dt * 60));
+      this.vx *= stopDamp;
+      this.vy *= stopDamp;
       this.targetTilt = 0;
     }
 

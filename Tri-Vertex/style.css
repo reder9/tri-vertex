@@ -1465,6 +1465,16 @@ html, body {
 /* =====================================================================
    PAUSE & GAMEOVER MODALS
    ===================================================================== */
+.pause-modal,
+.gameover-modal {
+  align-items: center;
+  text-align: center;
+}
+
+.pause-modal .modal-header {
+  justify-content: center;
+}
+
 .pause-stats {
   display: flex;
   flex-direction: column;
@@ -2417,46 +2427,74 @@ body:not(.state-playing) .touch-controls-layer {
   }
 
   /* Upgrade Cards in Mobile Landscape */
+  .screen-overlay {
+    padding: max(8px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  }
+
   .upgrade-modal {
-    padding: 8px 12px;
+    width: min(94vw, 760px);
+    max-width: 760px;
+    max-height: 92dvh;
+    margin: auto;
+    padding: 10px 14px;
+    align-items: center;
+  }
+
+  .upgrade-modal .modal-header {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+
+  .upgrade-modal .modal-header .ui-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .upgrade-modal .modal-header h2 {
-    font-size: 13px;
+    font-size: 14px;
+    letter-spacing: 1px;
   }
 
   .upgrade-modal .modal-sub {
-    font-size: 9px;
-    margin-bottom: 4px;
+    font-size: 10px;
+    text-align: center;
+    margin-bottom: 8px;
   }
 
   .upgrade-cards {
-    display: flex;
-    flex-direction: row;
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 3px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: center;
+    align-items: stretch;
+    gap: 8px;
     width: 100%;
+    overflow-x: visible;
+    padding-bottom: 0;
   }
 
   .up-card {
-    min-width: 140px;
-    max-width: 195px;
-    padding: 8px 8px;
-    gap: 4px;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    padding: 8px 6px;
+    gap: 3px;
+    border-radius: 10px;
   }
 
   .up-tags-row {
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     gap: 3px;
   }
 
   .up-rarity-tag,
   .up-tier-tag,
   .up-unlock-tag {
-    font-size: 7px;
+    font-size: 7.5px;
     padding: 2px 5px;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.5px;
   }
 
   .up-header {
@@ -2498,8 +2536,144 @@ body:not(.state-playing) .touch-controls-layer {
   }
 
   .up-choose-btn {
-    padding: 4px 8px;
+    padding: 5px 8px;
+    font-size: 8.5px;
+    letter-spacing: 1px;
+  }
+
+  .up-choose-btn .ui-icon {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* Pause & Game Over Modals in Mobile Landscape (Fit Center Without Scroll) */
+  .pause-modal {
+    width: min(92vw, 520px);
+    max-width: 520px;
+    max-height: 92dvh;
+    margin: auto;
+    padding: 12px 16px;
+  }
+
+  .pause-modal .modal-header {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .pause-modal .modal-header .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .pause-modal .modal-header h2 {
+    font-size: 16px;
+    letter-spacing: 1.4px;
+  }
+
+  .pause-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 6px 0 12px 0;
+  }
+
+  .stat-item {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .stat-val {
+    font-size: 13px;
+  }
+
+  .pause-actions {
+    gap: 8px;
+    width: 100%;
+  }
+
+  .pause-actions .cta-button,
+  .pause-actions .secondary-button {
+    padding: 7px 12px;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    gap: 5px;
+  }
+
+  .pause-actions .ui-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  .gameover-modal {
+    width: min(94vw, 620px);
+    max-width: 620px;
+    max-height: 92dvh;
+    margin: auto;
+    padding: 12px 16px;
+  }
+
+  .gameover-skull {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 4px;
+  }
+
+  .destroyed-triangle {
+    border-left-width: 13px;
+    border-right-width: 13px;
+    border-bottom-width: 22px;
+  }
+
+  .gameover-title {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    line-height: 1.15;
+  }
+
+  .gameover-sub {
+    font-size: 11px;
+    margin: 2px 0 8px 0;
+  }
+
+  .debrief-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .debrief-box {
+    padding: 6px 6px;
+    gap: 2px;
+  }
+
+  .debrief-lbl {
     font-size: 8px;
+    letter-spacing: 0.6px;
+  }
+
+  .debrief-val {
+    font-size: 14px;
+  }
+
+  .high-score-badge {
+    padding: 4px 12px;
+    font-size: 10.5px;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .high-score-badge .ui-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  .restart-cta {
+    padding: 8px 18px;
+    font-size: 11px;
+    letter-spacing: 1.2px;
   }
 }
 

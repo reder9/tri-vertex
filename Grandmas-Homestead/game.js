@@ -1415,6 +1415,37 @@
       document.getElementById('btnGrandma')?.addEventListener('click', () => this.talkToGrandma());
       document.getElementById('btnSleep')?.addEventListener('click', () => this.sleepAndAdvanceDay());
       document.getElementById('btnAudio')?.addEventListener('click', () => this.toggleAudio());
+
+      // Mobile Nested Header Menu Drawer
+      const btnMobileMenu = document.getElementById('btnMobileHeaderMenu');
+      const mobileDrawer = document.getElementById('mobileHeaderDrawer');
+      if (btnMobileMenu && mobileDrawer) {
+        const setDrawerOpen = (open) => {
+          mobileDrawer.classList.toggle('hidden', !open);
+          btnMobileMenu.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+        btnMobileMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setDrawerOpen(mobileDrawer.classList.contains('hidden'));
+        });
+        mobileDrawer.querySelectorAll('.drawer-action-btn[data-trigger-btn]').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-trigger-btn');
+            if (targetId && targetId !== 'btnAudio') {
+              setDrawerOpen(false);
+            }
+            document.getElementById(targetId)?.click();
+          });
+        });
+        document.addEventListener('click', (e) => {
+          if (!mobileDrawer.classList.contains('hidden') &&
+              !mobileDrawer.contains(e.target) &&
+              !btnMobileMenu.contains(e.target)) {
+            setDrawerOpen(false);
+          }
+        });
+      }
       document.getElementById('btnHelpGuide')?.addEventListener('click', () => this.openHelpGuideModal());
       document.getElementById('btnTravel')?.addEventListener('click', () => {
         if (this.isInteriorLocation(this.currentLocation)) {
@@ -1821,7 +1852,7 @@
 
     // --- Game Loop ---
     loop(currentTime) {
-      const dt = (currentTime - this.lastTime) / 1000;
+      const dt = Math.min(0.05, Math.max(0, (currentTime - this.lastTime) / 1000));
       this.lastTime = currentTime;
 
       this.update(dt);
@@ -1945,8 +1976,9 @@
       }
 
       if (isMoving && !this.player.inBed) {
-        const nextX = this.player.x + dx * moveSpeed;
-        const nextY = this.player.y + dy * moveSpeed;
+        const frameScale = dt * 60;
+        const nextX = this.player.x + dx * moveSpeed * frameScale;
+        const nextY = this.player.y + dy * moveSpeed * frameScale;
 
         let moved = false;
         // Collision check
@@ -6091,6 +6123,10 @@
       const btn = document.getElementById('btnAudio');
       if (btn) {
         btn.classList.toggle('muted', isMuted);
+      }
+      const drawerLbl = document.getElementById('drawerAudioLabel');
+      if (drawerLbl) {
+        drawerLbl.textContent = isMuted ? 'Sound: Off' : 'Sound: On';
       }
       this.showToast(isMuted ? 'Sound muted.' : 'Sound & Cozy Music enabled!');
     }
