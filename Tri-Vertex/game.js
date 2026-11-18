@@ -14,6 +14,9 @@ class GameEngine {
     this.height = this.arenaHeight;
     this.viewportWidth = window.innerWidth || 1920;
     this.viewportHeight = window.innerHeight || 1080;
+    this.screenWidth = this.viewportWidth;
+    this.screenHeight = this.viewportHeight;
+    this.worldScale = 1.0;
     this.camera = { x: 0, y: 0, targetX: 0, targetY: 0 };
     this.scale = 1.0;
     this.dpr = 1.0;
@@ -183,7 +186,12 @@ class GameEngine {
 
   init() {
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+    const handleViewportChange = () => {
+      this.resize();
+      if (this.updateOrientationLock) this.updateOrientationLock();
+    };
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', () => setTimeout(handleViewportChange, 120));
     this.initGalaxyBackdrop();
 
     // Bind event listeners
@@ -199,15 +207,22 @@ class GameEngine {
   }
 
   resize() {
-    this.viewportWidth = window.innerWidth || 1920;
-    this.viewportHeight = window.innerHeight || 1080;
+    this.screenWidth = window.innerWidth || 1920;
+    this.screenHeight = window.innerHeight || 1080;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
+    // Zoom out gently on short landscape phones so arena FOV matches desktop view (~720px tall logical view)
+    this.worldScale = (this.screenHeight < 700)
+      ? Math.max(0.56, Math.min(1, this.screenHeight / 720))
+      : 1.0;
+    this.viewportWidth = this.screenWidth / this.worldScale;
+    this.viewportHeight = this.screenHeight / this.worldScale;
+
     // Physical canvas buffer scaling for high-resolution Retina & OLED displays
-    this.canvas.width = Math.round(this.viewportWidth * this.dpr);
-    this.canvas.height = Math.round(this.viewportHeight * this.dpr);
-    this.canvas.style.width = `${this.viewportWidth}px`;
-    this.canvas.style.height = `${this.viewportHeight}px`;
+    this.canvas.width = Math.round(this.screenWidth * this.dpr);
+    this.canvas.height = Math.round(this.screenHeight * this.dpr);
+    this.canvas.style.width = `${this.screenWidth}px`;
+    this.canvas.style.height = `${this.screenHeight}px`;
 
     // World arena boundaries remain expansive (3200 x 2400) & toroidally wrapped
     this.width = this.arenaWidth;
@@ -295,20 +310,30 @@ class GameEngine {
     });
 
     window.addEventListener('mousemove', (e) => {
-      // Ignore micro-vibrations from controller rumble or desk bumps while playing with gamepad
+      // Ignore synthetic mouse events from mobile taps or controller rumble bumps
+      if (this.input.lastTouchTime && (performance.now() - this.input.lastTouchTime) < 1500) {
+        return;
+      }
+      if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) {
+        return;
+      }
       const moveDelta = Math.hypot(e.movementX || 0, e.movementY || 0);
       if (this.input.gamepadConnected && moveDelta < 3.5) {
         return;
       }
+      const isCoarsePrimary = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
       this.input.usingGamepadCursor = false;
-      this.input.usingMouse = true;
-      if (this.input.touchControlsActive && moveDelta > 2.5) {
-        this.setTouchControlsActive(false);
+      if (!isCoarsePrimary) {
+        this.input.usingMouse = true;
+        if (this.input.touchControlsActive && moveDelta > 4 && !this.isMobileDevice()) {
+          this.setTouchControlsActive(false);
+        }
       }
       const rect = this.canvas.getBoundingClientRect();
-      // Translate screen pointer to arena world coordinates via camera offset
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
+      const ws = this.worldScale || 1;
+      // Translate screen pointer to logical world camera coordinates
+      const cx = (e.clientX - rect.left) / ws;
+      const cy = (e.clientY - rect.top) / ws;
       this.input.cursorX = cx;
       this.input.cursorY = cy;
       this.input.mouseX = cx + this.camera.x;
@@ -487,15 +512,31 @@ class GameEngine {
     });
   }
 
+  isTouchCapable() {
+    const coarse = window.matchMedia && (
+      window.matchMedia('(pointer: coarse)').matches ||
+      window.matchMedia('(any-pointer: coarse)').matches
+    );
+    return !!(coarse || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+  }
+
+  isMobileDevice() {
+    if (!this.isTouchCapable()) return false;
+    const sw = window.screen ? Math.min(window.screen.width || 9999, window.screen.height || 9999) : 9999;
+    const vw = Math.min(window.innerWidth || 9999, window.innerHeight || 9999);
+    return Math.min(sw, vw) <= 950;
+  }
+
   setupTouchControls() {
     if (!this.ui.touchControls) return;
 
-    // Only enable touch controls automatically when primary input is coarse touch (phones/tablets/handhelds)
-    const hasTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    // Enable touch controls automatically on touch-capable devices unless a physical gamepad is active
+    const hasTouch = this.isTouchCapable();
     this.setTouchControlsActive(hasTouch);
 
-    // Audio unlock on user touch interaction anywhere
+    // Audio unlock & synthetic-mousemove timestamp on user touch interaction
     const unlockAudio = () => {
+      this.input.lastTouchTime = performance.now();
       if (window.soundEngine) {
         window.soundEngine.init();
         window.soundEngine.resume();
@@ -562,6 +603,8 @@ class GameEngine {
       }
       if (this.ui.joystickBase) {
         this.ui.joystickBase.classList.remove('active');
+        this.ui.joystickBase.style.left = '';
+        this.ui.joystickBase.style.top = '';
         this.ui.joystickBase.style.transform = '';
       }
       this.input.touchMoveX = 0;
@@ -769,13 +812,13 @@ class GameEngine {
 
     // Detect device type to activate optimal tab & avoid covering RG556/handheld screens if gamepad active
     const connectedPads = navigator.getGamepads ? Array.from(navigator.getGamepads()).some(g => g && g.connected) : false;
-    const isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const hasTouch = this.isTouchCapable();
     if (connectedPads) {
       this.input.gamepadConnected = true;
       this.setTouchControlsActive(false);
       const gpBtn = document.getElementById('tab-btn-gamepad');
       if (gpBtn) gpBtn.click();
-    } else if (isCoarsePointer) {
+    } else if (hasTouch) {
       this.setTouchControlsActive(true);
       const touchBtn = document.getElementById('tab-btn-touch');
       if (touchBtn) touchBtn.click();
@@ -783,6 +826,7 @@ class GameEngine {
 
     // Touch event listener on canvas/touch zones restores touch controls cleanly if user switches from handheld controls to touch
     window.addEventListener('touchstart', (e) => {
+      this.input.lastTouchTime = performance.now();
       if (e.target && e.target.closest && e.target.closest('#btn-touch-toggle')) return;
       this.input.usingMouse = false;
       if (!this.input.touchControlsActive && !this.input.gamepadConnected) {
@@ -805,6 +849,29 @@ class GameEngine {
     if (this.ui.btnModalRotate) {
       this.ui.btnModalRotate.addEventListener('click', handleFullscreenToggle);
       this.ui.btnModalRotate.addEventListener('touchstart', handleFullscreenToggle, { passive: false });
+    }
+    if (this.ui.btnOrientationRotate) {
+      this.ui.btnOrientationRotate.addEventListener('click', handleFullscreenToggle);
+      this.ui.btnOrientationRotate.addEventListener('touchstart', handleFullscreenToggle, { passive: false });
+    }
+
+    this.updateOrientationLock();
+  }
+
+  updateOrientationLock() {
+    if (!this.ui.orientationPrompt) return;
+    const isPortrait = (window.innerHeight || 0) > (window.innerWidth || 0);
+    const mustRotate = this.isMobileDevice() && isPortrait;
+
+    if (mustRotate) {
+      this.ui.orientationPrompt.classList.remove('hidden');
+      if (this.state === 'playing') {
+        this.pausedByOrientation = true;
+        this.pauseGame();
+      }
+    } else {
+      this.ui.orientationPrompt.classList.add('hidden');
+      this.pausedByOrientation = false;
     }
   }
 
@@ -1280,12 +1347,11 @@ class GameEngine {
 
   startGame() {
     this.state = 'playing';
+    document.body.classList.add('state-playing');
     this.wave = 1;
     this.smoothedWave = 1;
     this.waveTimer = 0;
-    if (this.ui.orientationPrompt) {
-      this.ui.orientationPrompt.classList.add('hidden');
-    }
+    this.updateOrientationLock();
     this.enemiesDefeated = 0;
     this.totalScore = 0;
 
@@ -1320,6 +1386,7 @@ class GameEngine {
 
   pauseGame() {
     this.state = 'paused';
+    document.body.classList.remove('state-playing');
     document.getElementById('pause-wave').innerText = this.wave;
     document.getElementById('pause-kills').innerText = this.enemiesDefeated;
     document.getElementById('pause-score').innerText = this.player.score;
@@ -1331,6 +1398,7 @@ class GameEngine {
 
   resumeGame() {
     this.state = 'playing';
+    document.body.classList.add('state-playing');
     this.ui.screenPause.classList.add('hidden');
     this.lastTime = performance.now();
     if (window.soundEngine && window.soundEngine.setMusicState) {
@@ -1340,6 +1408,7 @@ class GameEngine {
 
   returnToMainMenu() {
     this.state = 'start';
+    document.body.classList.remove('state-playing');
     if (window.soundEngine && window.soundEngine.setMusicState) {
       window.soundEngine.setMusicState('menu');
     }
@@ -1365,6 +1434,7 @@ class GameEngine {
 
   gameOver() {
     this.state = 'gameover';
+    document.body.classList.remove('state-playing');
 
     const finalScore = this.player.score;
     if (finalScore > this.highScore) {
@@ -1402,6 +1472,7 @@ class GameEngine {
       this.timeDilation = 1.0;
       this.isLevelingUp = false;
       this.state = 'upgrade';
+      document.body.classList.remove('state-playing');
       const titleEl = document.getElementById('upgrade-modal-title');
       if (titleEl && this.player) {
         titleEl.innerText = `LEVEL UP! // REACHED LEVEL ${this.player.level}`;
@@ -1686,6 +1757,7 @@ class GameEngine {
         this.showToast('AUGMENT EQUIPPED', `${up.title}${tierText}`, '#00ff88');
         this.ui.screenUpgrade.classList.add('hidden');
         this.state = 'playing';
+        document.body.classList.add('state-playing');
         this.lastTime = performance.now();
       });
 
@@ -2271,6 +2343,10 @@ class GameEngine {
       }
     }
 
+    if (this.ui.touchBtnDash) {
+      this.ui.touchBtnDash.classList.toggle('on-cooldown', (this.player.dashCooldown || 0) > 0);
+    }
+
     // Cooldown sweeps on weapon slots
     const mSlotCd = document.getElementById(`cd-melee-${this.player.activeMeleeIndex}`);
     if (mSlotCd && this.player.equippedMelee) {
@@ -2290,9 +2366,10 @@ class GameEngine {
   draw() {
     this.ctx.save();
 
-    // High-DPI DPR Canvas Transform
+    // High-DPI DPR + Desktop-Parity Logical Arena Scale Transform
     const dpr = this.dpr || 1;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ws = this.worldScale || 1;
+    this.ctx.setTransform(dpr * ws, 0, 0, dpr * ws, 0, 0);
 
     // Screen shake transform (screen space)
     const sx = this.shakeMag > 0 ? (Math.random() - 0.5) * this.shakeMag : 0;
@@ -2430,8 +2507,9 @@ class GameEngine {
     // Restore World Camera Transform
     this.ctx.restore();
 
-    // Draw Screen-Space Offscreen Threat Radar Indicators & Tactical Minimap
+    // Draw Threat Radar Indicators in logical viewport, then Minimap in crisp screen pixels
     this.drawThreatRadar();
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawMinimap();
 
     this.ctx.restore();
@@ -2491,11 +2569,13 @@ class GameEngine {
 
   drawMinimap() {
     if (!this.player || this.state !== 'playing') return;
-    const isCompact = this.viewportWidth <= 820 || this.viewportHeight <= 560;
-    const mapW = isCompact ? 88 : 118;
-    const mapH = isCompact ? 66 : 88;
+    const sw = this.screenWidth || this.viewportWidth;
+    const sh = this.screenHeight || this.viewportHeight;
+    const isCompact = sw <= 950 || sh <= 580;
+    const mapW = isCompact ? 82 : 118;
+    const mapH = isCompact ? 60 : 88;
     const x0 = 12;
-    const y0 = isCompact ? 76 : 98; // Tucked directly below compact top-left Vitals panel
+    const y0 = isCompact ? 46 : 98; // Tucked directly below compact top-left Vitals panel
     const cx = x0 + mapW / 2;
     const cy = y0 + mapH / 2;
     const scaleX = mapW / this.arenaWidth;

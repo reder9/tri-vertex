@@ -31,6 +31,7 @@ body {
   color: #2b1d0c;
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   display: flex;
   flex-direction: column;
@@ -230,6 +231,7 @@ body {
 /* --- Canvas Area --- */
 #canvasContainer {
   flex: 1;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   background-color: #1a2f15;
@@ -402,22 +404,57 @@ body {
   );
   border-top: 4px solid #1b0f07;
   box-shadow: inset 0 2px 0 #6d4c41;
-  padding: 8px 16px 12px;
+  padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  z-index: 10;
+  gap: 5px;
+  z-index: 20;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.mobile-active-item-bar {
+  display: none;
+  font-family: var(--font-pixel);
+  font-size: 0.85rem;
+  color: #fef08a;
+  background: rgba(20, 11, 5, 0.72);
+  border: 1.5px solid #8d6e63;
+  border-radius: 999px;
+  padding: 1px 10px;
+  letter-spacing: 0.3px;
+}
+
+.hotbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
 }
 
 #hotbarSlots {
   display: flex;
+  align-items: center;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px 2px;
+  max-width: 100%;
+}
+
+#hotbarSlots::-webkit-scrollbar {
+  display: none;
 }
 
 .hotbar-slot {
   width: 72px;
   height: 60px;
+  flex-shrink: 0;
   background: #4e342e;
   border: 3px solid #23140b;
   border-radius: 2px;
@@ -428,11 +465,36 @@ body {
   padding: 4px;
   position: relative;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow:
     inset 0 2px 0 #795548,
     inset 0 -2px 0 #2d1a0f,
     0 3px 0 #140a04;
   transition: transform 0.08s steps(2);
+}
+
+.backpack-hotbar-btn {
+  height: 60px;
+  min-width: 56px;
+  padding: 4px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: #4a2e2b;
+  border: 2px solid #8d6e63;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+.backpack-btn-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fef08a;
+  line-height: 1;
 }
 
 .hotbar-slot:hover {
@@ -1169,7 +1231,8 @@ button.gp-focus {
   }
 }
 
-body.input-gamepad .mobile-controls-layer {
+body.input-gamepad .mobile-controls-layer,
+body.modal-open .mobile-controls-layer {
   display: none !important;
 }
 
@@ -1179,24 +1242,24 @@ body.input-touch .mobile-controls-layer {
 
 .virtual-joystick-wrap {
   position: absolute;
-  bottom: 85px;
-  left: 20px;
-  width: 96px;
-  height: 96px;
-  background: rgba(30, 41, 59, 0.45);
-  border: 3px solid rgba(255, 255, 255, 0.35);
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  width: 92px;
+  height: 92px;
+  background: rgba(30, 41, 59, 0.52);
+  border: 3px solid rgba(255, 255, 255, 0.42);
   border-radius: 50%;
   pointer-events: auto;
   touch-action: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
 .virtual-joystick-knob {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   background: #4ade80;
   border: 3px solid #14532d;
   border-radius: 50%;
@@ -1206,17 +1269,18 @@ body.input-touch .mobile-controls-layer {
 
 .mobile-action-buttons {
   position: absolute;
-  bottom: 85px;
-  right: 20px;
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
   pointer-events: auto;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 10px;
 }
 
 .mobile-action-btn {
-  width: 62px;
-  height: 62px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: #15803d;
   border: 3px solid #86efac;
@@ -1225,12 +1289,22 @@ body.input-touch .mobile-controls-layer {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   font-family: inherit;
-  font-size: 0.65rem;
+  font-size: 0.64rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 0 #14532d, 0 6px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 0 #14532d, 0 6px 16px rgba(0, 0, 0, 0.45);
   touch-action: manipulation;
+}
+
+.mobile-action-btn.action-eat {
+  width: 50px;
+  height: 50px;
+  background: #b45309;
+  border-color: #fde047;
+  box-shadow: 0 4px 0 #78350f, 0 6px 14px rgba(0, 0, 0, 0.45);
+  font-size: 0.6rem;
 }
 
 .mobile-action-btn:active {
@@ -1238,115 +1312,181 @@ body.input-touch .mobile-controls-layer {
   box-shadow: 0 2px 0 #14532d;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 960px) {
   #gameHeader {
+    height: auto;
+    min-height: 44px;
     flex-wrap: wrap;
-    padding: 6px 10px;
+    padding: 4px calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
+    gap: 4px 8px;
+  }
+  .hud-meters {
     gap: 6px;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
-  .brand-section span {
+  .hud-meters::-webkit-scrollbar,
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
+  .hud-badge, .stat-bar-container {
+    padding: 2px 7px;
     font-size: 0.85rem;
+    flex-shrink: 0;
   }
-  .status-pill {
-    padding: 3px 8px;
+  .stat-bar {
+    width: 58px;
+    height: 9px;
+  }
+  .stat-label {
+    min-width: auto;
     font-size: 0.72rem;
   }
   .header-actions {
     gap: 4px;
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    padding-bottom: 1px;
   }
   .btn-header {
     padding: 4px 8px;
-    font-size: 0.72rem;
+    font-size: 0.82rem;
+    flex-shrink: 0;
   }
   #gameFooter {
-    padding: 6px 8px;
+    padding: 4px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 3px;
+  }
+  .mobile-active-item-bar {
+    display: inline-block;
   }
   .gamepad-hint-row {
     display: none;
+  }
+  .hotbar-row {
+    gap: 6px;
+  }
+  #hotbarSlots {
+    max-width: calc(100vw - 76px);
+    gap: 5px;
+  }
+  .hotbar-slot {
+    width: 44px;
+    height: 44px;
+    padding: 2px;
+  }
+  .slot-item-name {
+    display: none;
+  }
+  .backpack-hotbar-btn {
+    height: 44px;
+    min-width: 50px;
+    padding: 3px 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand-section {
+    display: none;
+  }
+  #gameHeader .btn-header span {
+    display: none;
+  }
+  .backpack-btn-label {
+    display: inline !important;
+    font-size: 0.64rem;
   }
   .hotbar-slot {
     width: 42px;
     height: 42px;
   }
-}
-
-@media (max-width: 480px) {
-  .brand-section {
-    display: none;
-  }
-  .btn-header span {
-    display: none;
-  }
-  .status-pill span {
-    font-size: 0.68rem;
-  }
-  .hotbar-slot {
-    width: 36px;
-    height: 36px;
-  }
-  #btnOpenBackpack {
-    height: 44px !important;
-    padding: 2px 8px !important;
+  .backpack-hotbar-btn {
+    height: 42px;
+    min-width: 48px;
+    padding: 2px 7px;
   }
 }
 
 /* Compact Landscape Handheld (Anbernic RG556 ~915x515 / Horizontal Phones) */
 @media (max-height: 580px) and (orientation: landscape) {
   #gameHeader {
-    padding: 4px calc(10px + env(safe-area-inset-right, 0px)) 4px calc(10px + env(safe-area-inset-left, 0px));
+    height: auto;
+    min-height: 38px;
+    flex-wrap: nowrap;
+    padding: 3px calc(8px + env(safe-area-inset-right, 0px)) 3px calc(8px + env(safe-area-inset-left, 0px));
     gap: 6px;
   }
   .farm-title {
-    font-size: 0.58rem;
+    font-size: 0.56rem;
+  }
+  .location-badge {
+    display: none;
   }
   .hud-meters {
-    gap: 6px;
+    gap: 5px;
   }
   .hud-badge, .stat-bar-container {
-    padding: 2px 7px;
-    font-size: 0.74rem;
+    padding: 2px 6px;
+    font-size: 0.78rem;
   }
   .stat-bar {
-    width: 64px;
-    height: 9px;
+    width: 54px;
+    height: 8px;
   }
   .btn-header {
-    padding: 4px 8px;
-    font-size: 0.72rem;
+    padding: 3px 7px;
+    font-size: 0.76rem;
   }
   #gameFooter {
-    padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+    padding: 3px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+    gap: 2px;
+  }
+  .mobile-active-item-bar {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0 8px;
   }
   .gamepad-hint-row {
-    font-size: 0.66rem;
-    margin-bottom: 2px;
+    display: none;
   }
   .hotbar-slot {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
   }
-  #btnOpenBackpack {
+  .slot-item-name {
+    display: none;
+  }
+  .backpack-hotbar-btn {
     height: 40px !important;
-    padding: 2px 10px !important;
+    min-width: 48px;
+    padding: 2px 8px !important;
   }
   .virtual-joystick-wrap {
-    bottom: 62px;
-    left: calc(14px + env(safe-area-inset-left, 0px));
-    width: 78px;
-    height: 78px;
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    width: 76px;
+    height: 76px;
   }
   .virtual-joystick-knob {
     width: 34px;
     height: 34px;
   }
   .mobile-action-buttons {
-    bottom: 62px;
-    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
   }
   .mobile-action-btn {
     width: 52px;
     height: 52px;
-    font-size: 0.6rem;
+    font-size: 0.58rem;
+  }
+  .mobile-action-btn.action-eat {
+    width: 44px;
+    height: 44px;
+    font-size: 0.54rem;
   }
   .modal-card {
     max-height: 92dvh;

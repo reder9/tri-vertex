@@ -270,51 +270,61 @@ class Player {
     this.prevTargetAngle = targetAngle;
     const isSpinningFast = spinAngularVelocity > 2.8; // > ~160 deg/sec
 
-    // Smart Soft Aim-Assist ONLY when actively playing with Gamepad (never alters Mouse Cursor aim)
-    if (input.gamepadConnected && !input.usingMouse && game && game.enemies && isRangedFiring && !isSpinningFast) {
+    // Smart Soft Aim-Assist for Gamepad & Touch (never alters Mouse Cursor aim)
+    const canTouchAutoTarget = input.touchControlsActive && !input.usingMouse && isRangedFiring;
+    const canGamepadAssist = input.gamepadConnected && !input.usingMouse && isRangedFiring && !isSpinningFast;
+    if ((canGamepadAssist || canTouchAutoTarget) && game && game.enemies) {
       this.aimReticleActive = true;
-      const maxLockDist = 750;
-      const maxConeAngle = 0.42; // ~24 degrees cone
+      const maxLockDist = (!input.touchDragAiming && canTouchAutoTarget && !input.gamepadConnected) ? 620 : 750;
+      const maxConeAngle = (!input.touchDragAiming && canTouchAutoTarget && !input.gamepadConnected) ? Math.PI : 0.48;
       let bestCandidate = null;
       let bestScore = Infinity;
 
       for (let i = 0; i < game.enemies.length; i++) {
         const enemy = game.enemies[i];
-        if (!enemy || enemy.hp <= 0 || enemy.isDying) continue;
+        if (!enemy || enemy.health <= 0 || enemy.isDying) continue;
 
-        const dx = enemy.x - this.x;
-        const dy = enemy.y - this.y;
-        const distToShip = Math.hypot(dx, dy);
-        if (distToShip > maxLockDist || distToShip < 20) continue;
+        const dVec = toroidalDelta(this.x, this.y, enemy.x, enemy.y);
+        const distToShip = Math.hypot(dVec.dx, dVec.dy);
+        if (distToShip > maxLockDist || distToShip < 16) continue;
 
-        const angToEnemy = Math.atan2(dy, dx);
+        const angToEnemy = Math.atan2(dVec.dy, dVec.dx);
         const angDiff = Math.abs(normalizeAngle(angToEnemy - rawTargetAngle));
-        const distFromCursor = Math.hypot(enemy.x - input.mouseX, enemy.y - input.mouseY);
+        const dCursor = toroidalDelta(input.mouseX, input.mouseY, enemy.x, enemy.y);
+        const distFromCursor = Math.hypot(dCursor.dx, dCursor.dy);
 
         if (angDiff <= maxConeAngle || distFromCursor < 85) {
-          const score = angDiff * 2.0 + (distToShip / maxLockDist) * 0.8 + (distFromCursor / 200) * 0.6;
+          const score = (!input.touchDragAiming && canTouchAutoTarget && !input.gamepadConnected)
+            ? (distToShip / maxLockDist) * 1.4 + angDiff * 0.25
+            : angDiff * 2.0 + (distToShip / maxLockDist) * 0.8 + (distFromCursor / 200) * 0.6;
           if (score < bestScore) {
             bestScore = score;
-            bestCandidate = enemy;
+            bestCandidate = { enemy, dx: dVec.dx, dy: dVec.dy };
           }
         }
       }
 
       if (bestCandidate) {
         // Haptic feedback tick when snapping onto a newly acquired hostile shape
-        if (this.lockedEnemy !== bestCandidate) {
-          this.lockedEnemy = bestCandidate;
+        if (this.lockedEnemy !== bestCandidate.enemy) {
+          this.lockedEnemy = bestCandidate.enemy;
           if (game.rumble) {
             game.rumble(35, 0.22, 0.12);
           }
         }
 
-        // Smart soft magnetism blend: smoothly draw firing arc towards target center
-        const enemyAng = Math.atan2(bestCandidate.y - this.y, bestCandidate.x - this.x);
+        // Blend toward acquired target cleanly (instant lock on tap-fire, gentle magnetism on stick drag)
+        const enemyAng = Math.atan2(bestCandidate.dy, bestCandidate.dx);
         const isSeekers = this.equippedRanged && this.equippedRanged.id === 'seekers';
-        const magnetStrength = isSeekers ? 0.28 : 0.65;
+        const magnetStrength = (!input.touchDragAiming && canTouchAutoTarget && !input.gamepadConnected)
+          ? 0.92
+          : (isSeekers ? 0.28 : 0.65);
         const offset = normalizeAngle(enemyAng - rawTargetAngle);
         targetAngle = rawTargetAngle + offset * magnetStrength;
+        if (canTouchAutoTarget && !input.touchDragAiming) {
+          input.mouseX = this.x + Math.cos(targetAngle) * 260;
+          input.mouseY = this.y + Math.sin(targetAngle) * 260;
+        }
       } else {
         this.lockedEnemy = null;
       }

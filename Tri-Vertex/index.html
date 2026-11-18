@@ -570,6 +570,23 @@
       </div>
     </div>
 
+    <!-- Mobile & Tablet Sideways Orientation Blocker Overlay -->
+    <div id="orientation-prompt" class="orientation-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="orientation-title">
+      <div class="orientation-card">
+        <div class="orientation-icon-wrap" aria-hidden="true">
+          <svg class="ui-icon orientation-tilt-icon" viewBox="0 0 24 24"><use href="#icon-landscape"></use></svg>
+        </div>
+        <h2 id="orientation-title" class="orientation-title">ROTATE PHONE SIDEWAYS</h2>
+        <p class="orientation-desc">
+          Tri-Vertex plays in horizontal widescreen mode so the arena and controls match the desktop layout.
+        </p>
+        <button id="btn-orientation-rotate" class="btn-hero-deploy orientation-btn" type="button">
+          <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-maximize"></use></svg>
+          <span>LOCK LANDSCAPE</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Mobile & Tablet Touch Controls Overlay -->
     <div id="touch-controls" class="touch-controls-layer hidden">
       <!-- Left Zone: Movement Thumbstick -->

@@ -1341,15 +1341,29 @@
       if (btnMobileUse) {
         btnMobileUse.addEventListener('click', (e) => {
           e.preventDefault();
+          this.setInputMode('touch');
           this.interactFacingTile();
         });
         btnMobileUse.addEventListener('touchstart', (e) => {
           if (e.cancelable) e.preventDefault();
+          this.setInputMode('touch');
           this.interactFacingTile();
         }, { passive: false });
       }
 
+      const btnMobileEat = document.getElementById('btnMobileEat');
+      if (btnMobileEat) {
+        const triggerEat = (e) => {
+          if (e.cancelable) e.preventDefault();
+          this.setInputMode('touch');
+          this.quickEatFood();
+        };
+        btnMobileEat.addEventListener('click', triggerEat);
+        btnMobileEat.addEventListener('touchstart', triggerEat, { passive: false });
+      }
+
       this.canvas.addEventListener('touchstart', (e) => {
+        this.setInputMode('touch');
         const rect = this.canvas.getBoundingClientRect();
         const touch = e.touches[0];
         const scaleX = rect.width ? (this.canvas.width / rect.width) : 1;
@@ -1818,6 +1832,9 @@
 
     // --- Update Logic ---
     update(dt) {
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.toggle('modal-open', !!document.querySelector('.game-modal.active'));
+      }
       // 1. Advance Time
       this.timeMinutes += dt * 6 * this.timeScale;
       if (this.timeMinutes >= 24 * 60) {
@@ -6150,13 +6167,25 @@
         }
         hotbarContainer.innerHTML = hotbarHtml;
 
-        // Bind hotbar slot clicks
+        // Bind hotbar slot clicks & keep selected slot scrolled into view on compact phones
         hotbarContainer.querySelectorAll('.hotbar-slot').forEach(slot => {
           slot.addEventListener('click', () => {
             const slotIdx = parseInt(slot.getAttribute('data-slot'));
             this.selectHotbarSlot(slotIdx);
           });
         });
+        const activeSlotEl = hotbarContainer.querySelector('.hotbar-slot.active');
+        if (activeSlotEl && typeof activeSlotEl.scrollIntoView === 'function') {
+          activeSlotEl.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+        }
+      }
+
+      const activeBar = document.getElementById('mobileActiveItemBar');
+      if (activeBar) {
+        const curItem = this.inventory[this.activeSlot];
+        activeBar.textContent = curItem
+          ? `${curItem.name}${curItem.count > 1 ? ` (x${curItem.count})` : ''}`
+          : `Empty Slot ${this.activeSlot + 1}`;
       }
 
       // 5. Active Quest Tracker HUD
