@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tome of Fusions — Object + Animal Monster Collector</title>
+  <style>
+    :root {
+      --bg-deep: #0f1419;
+      --bg-panel: #182028;
+      --bg-card: #212c37;
+      --border-gold: #d4a656;
+      --border-soft: #334354;
+      --text-main: #f3efe6;
+      --text-muted: #9fb0c0;
+      --accent-amber: #f5b942;
+      --accent-emerald: #38c172;
+      --accent-sky: #4aa8ff;
+      --accent-rose: #f25f5c;
+      --accent-violet: #a875ff;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-serif: Georgia, 'Times New Roman', serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1d2834 0%, #0b0f14 100%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+
+    /* Top HUD Bar */
+    .game-shell {
+      width: 100%;
+      max-width: 1040px;
+      background: var(--bg-panel);
+      border: 2px solid var(--border-soft);
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: linear-gradient(90deg, #151c24, #1e2834);
+      border-bottom: 1px solid var(--border-soft);
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #d4a656, #8f6321);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #15181c;
+      box-shadow: 0 2px 8px rgba(212, 166, 86, 0.35);
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--accent-amber);
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .hud-stats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .pill svg {
+      width: 15px;
+      height: 15px;
+      color: var(--accent-amber);
+    }
+
+    .hud-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid var(--border-soft);
+      background: var(--bg-card);
+      color: var(--text-main);
+      padding: 7px 12px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #2b3947;
+      border-color: var(--accent-amber);
+      transform: translateY(-1px);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e0a943, #b97d1c);
+      border-color: #f3c46b;
+      color: #16181c;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f0b852, #c98a23);
+      border-color: #ffe09e;
+    }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #2fb364, #1e8246);
+      border-color: #54d988;
+      color: #ffffff;
+    }
+
+    .btn-emerald:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3ac773, #249651);
+    }
+
+    .btn-rose {
+      background: linear-gradient(135deg, #e2514e, #b5322f);
+      border-color: #ff827f;
+      color: #ffffff;
+    }
+
+    .btn-sky {
+      background: linear-gradient(135deg, #3996ee, #206bb8);
+      border-color: #70b8ff;
+      color: #ffffff;
+    }
+
+    .btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Main Stage */
+    .stage-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #0b0e12;
+      overflow: hidden;
+    }
+
+    canvas#worldCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* Quest Banner */
+    .quest-banner {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(15, 20, 25, 0.88);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(212, 166, 86, 0.55);
+      border-radius: 10px;
+      padding: 8px 12px;
+      max-width: 340px;
+      pointer-events: none;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    }
+
+    .quest-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-amber);
+      font-weight: 700;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .quest-text {
+      font-size: 0.85rem;
+      line-height: 1.35;
+      color: var(--text-main);
+    }
+
+    /* Interact Prompt */
+    .interact-hint {
+      position: absolute;
+      bottom: 96px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 20, 25, 0.92);
+      border: 1px solid var(--accent-amber);
+      color: var(--accent-amber);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    .interact-hint.visible {
+      display: inline-flex;
+      animation: bounceHint 1.2s infinite ease-in-out;
+    }
+
+    @keyframes bounceHint {
+      0%, 100% { transform: translate(-50%, 0); }
+      50% { transform: translate(-50%, -4px); }
+    }
+
+    /* Mobile / Touch Controls */
+    .touch-controls {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 42px);
+      grid-template-rows: repeat(3, 42px);
+      gap: 4px;
+      z-index: 6;
+      opacity: 0.82;
+    }
+
+    .dpad-btn {
+      background: rgba(24, 32, 40, 0.85);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .dpad-btn:active {
+      background: var(--accent-amber);
+      color: #121519;
+    }
+
+    .dpad-empty {
+      pointer-events: none;
+    }
+
+    /* Dialogue Overlay */
+    .dialogue-box {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 760px;
+      background: rgba(18, 24, 32, 0.96);
+      border: 2px solid var(--border-gold);
+      border-radius: 14px;
+      padding: 16px 20px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .dialogue-box.visible {
+      display: flex;
+      animation: slideUp 0.18s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translate(-50%, 14px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .dialogue-speaker {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+      color: var(--accent-amber);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dialogue-text {
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      font-family: var(--font-serif);
+    }
+
+    .dialogue-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Battle Arena Overlay */
+    .battle-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #132520 0%, #1d362d 55%, #121921 100%);
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px 22px;
+      z-index: 25;
+    }
+
+    .battle-overlay.visible {
+      display: flex;
+    }
+
+    .battle-arena {
+      position: relative;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 16px;
+      padding: 6px 12px;
+    }
+
+    .combatant-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    .combatant-slot.enemy {
+      order: 2;
+      align-self: start;
+      margin-top: 8px;
+    }
+
+    .combatant-slot.player {
+      order: 1;
+      align-self: end;
+      margin-bottom: 4px;
+    }
+
+    .stat-plate {
+      width: 100%;
+      max-width: 280px;
+      background: rgba(17, 23, 30, 0.92);
+      border: 1.5px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+    }
+
+    .plate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .plate-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .plate-lvl {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent-amber);
+    }
+
+    .plate-types {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+
+    .type-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #2b3847;
+      color: #d6e2ef;
+      letter-spacing: 0.4px;
+    }
+
+    .hp-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #0d1217;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #2b3744;
+    }
+
+    .hp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38c172, #6ee79d);
+      transition: width 0.35s ease, background 0.35s ease;
+    }
+
+    .hp-bar-fill.low {
+      background: linear-gradient(90deg, #e5534b, #ff857d);
+    }
+
+    .hp-bar-fill.mid {
+      background: linear-gradient(90deg, #e0a943, #fbd376);
+    }
+
+    .hp-numbers {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .monster-stage-art {
+      width: 144px;
+      height: 144px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      animation: floatIdle 2.2s ease-in-out infinite;
+    }
+
+    .monster-stage-art.hit {
+      animation: hitShake 0.35s ease;
+    }
+
+    .monster-stage-art.lunge-right {
+      animation: lungeRight 0.28s ease;
+    }
+
+    .monster-stage-art.lunge-left {
+      animation: lungeLeft 0.28s ease;
+    }
+
+    @keyframes floatIdle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes hitShake {
+      0%, 100% { transform: translateX(0); filter: brightness(1); }
+      25% { transform: translateX(-8px); filter: brightness(2.2); }
+      50% { transform: translateX(8px); filter: brightness(2.2); }
+      75% { transform: translateX(-5px); }
+    }
+
+    @keyframes lungeRight {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(36px, -16px) scale(1.06); }
+    }
+
+    @keyframes lungeLeft {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-36px, 16px) scale(1.06); }
+    }
+
+    .battle-controls {
+      background: rgba(15, 20, 27, 0.95);
+      border: 1.5px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: 1.2fr 1.5fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .battle-log {
+      background: #10161e;
+      border: 1px solid #263340;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      font-family: var(--font-serif);
+    }
+
+    .battle-menu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Modals (Grimoire, Fusion Lab, Party, Confirm) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 10, 14, 0.78);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 60;
+    }
+
+    .modal-backdrop.visible {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 780px;
+      max-height: 88vh;
+      background: var(--bg-panel);
+      border: 2px solid var(--border-gold);
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalIn 0.18s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 14px 18px;
+      background: linear-gradient(90deg, #19222c, #24303e);
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent-amber);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-body {
+      padding: 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 12px;
+    }
+
+    .dex-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s ease;
+    }
+
+    .dex-card.discovered {
+      border-color: rgba(212, 166, 86, 0.55);
+    }
+
+    .dex-card.undiscovered {
+      opacity: 0.55;
+      filter: grayscale(0.8);
+    }
+
+    .dex-formula {
+      font-size: 0.74rem;
+      color: var(--accent-amber);
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .fusion-lab-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .fusion-column {
+      background: #131a22;
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fusion-column h4 {
+      margin: 0 0 4px 0;
+      font-size: 0.85rem;
+      color: var(--accent-amber);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .ingredient-btn {
+      width: 100%;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .ingredient-btn.selected {
+      border-color: var(--accent-amber);
+      background: rgba(245, 185, 66, 0.16);
+    }
+
+    /* Toast */
+    .toast-stack {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 80;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(20, 27, 35, 0.96);
+      border: 1.5px solid var(--border-gold);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Footer Controls Legend */
+    .footer-bar {
+      padding: 8px 16px;
+      background: #121820;
+      border-top: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    kbd {
+      background: #232f3c;
+      border: 1px solid #3c4d5e;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.74rem;
+      color: var(--text-main);
+      font-family: monospace;
+    }
+
+    @media (max-width: 720px) {
+      .battle-controls {
+        grid-template-columns: 1fr;
+      }
+      .fusion-lab-grid {
+        grid-template-columns: 1fr;
+      }
+      .monster-stage-art {
+        width: 104px;
+        height: 104px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-shell">
+    <!-- Top HUD -->
+    <div class="top-bar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+            <path d="M9 8h6"/>
+            <path d="M12 5v6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">Tome of Fusions</div>
+          <div class="brand-sub" id="zoneLabel">The Whispering Library</div>
+        </div>
+      </div>
+
+      <div class="hud-stats">
+        <div class="pill" title="Discovered Fusions in your Grimoire">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          <span id="dexCount">0 / 10</span>
+        </div>
+        <div class="pill" title="Binding Pages for capturing wild monsters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Pages: <span id="pageCount">5</span>
+        </div>
+        <div class="pill" title="Dewdrop Potions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          Potions: <span id="potionCount">3</span>
+        </div>
+      </div>
+
+      <div class="hud-actions">
+        <button class="btn" id="btnGrimoire" disabled title="Open your Field Grimoire (B)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Grimoire
+        </button>
+        <button class="btn" id="btnParty" disabled title="View & reorder your Monster Party (P)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Party (<span id="partyCount">0</span>)
+        </button>
+        <button class="btn btn-primary" id="btnFusionLab" disabled title="Combine Objects + Animal Spirits (F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Fuse
+        </button>
+        <button class="btn" id="btnSound" title="Toggle Sound">
+          <svg id="soundIconOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        </button>
+        <button class="btn" id="btnReset" title="Start a New Adventure">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Game Viewport -->
+    <div class="stage-wrap">
+      <canvas id="worldCanvas" width="960" height="540"></canvas>
+
+      <!-- Current Objective -->
+      <div class="quest-banner">
+        <div class="quest-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Current Goal
+        </div>
+        <div class="quest-text" id="questText">Walk to the glowing pedestal and pick up the strange book.</div>
+      </div>
+
+      <!-- Interact Prompt -->
+      <button class="interact-hint" id="interactHint" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span id="interactText">Press E or Click to Interact</span>
+      </button>
+
+      <!-- Touch D-Pad -->
+      <div class="touch-controls" aria-label="Movement controls">
+        <div class="dpad-empty"></div>
+        <button class="dpad-btn" data-dir="up" aria-label="Move Up">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <div class="dpad-empty"></div>
+        <button class="dpad-btn" data-dir="left" aria-label="Move Left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="dpad-btn" id="dpadAction" aria-label="Interact">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/></svg>
+        </button>
+        <button class="dpad-btn" data-dir="right" aria-label="Move Right">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="dpad-empty"></div>
+        <button class="dpad-btn" data-dir="down" aria-label="Move Down">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="dpad-empty"></div>
+      </div>
+
+      <!-- Dialogue Box -->
+      <div class="dialogue-box" id="dialogueBox" role="dialog" aria-live="polite">
+        <div class="dialogue-speaker" id="dialogueSpeaker">Teacher</div>
+        <div class="dialogue-text" id="dialogueText">...</div>
+        <div class="dialogue-actions" id="dialogueActions"></div>
+      </div>
+
+      <!-- Battle Overlay -->
+      <div class="battle-overlay" id="battleOverlay">
+        <div class="battle-arena">
+          <!-- Player Monster -->
+          <div class="combatant-slot player">
+            <div class="monster-stage-art" id="playerArt"></div>
+            <div class="stat-plate">
+              <div class="plate-header">
+                <span class="plate-name" id="playerMonName">Forkat</span>
+                <span class="plate-lvl" id="playerMonLvl">Lv. 1</span>
+              </div>
+              <div class="plate-types" id="playerMonTypes"></div>
+              <div class="hp-bar-bg">
+                <div class="hp-bar-fill" id="playerHpBar" style="width: 100%"></div>
+              </div>
+              <div class="hp-numbers">
+                <span id="playerHpText">30 / 30 HP</span>
+                <span id="playerXpText">XP 0 / 25</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enemy Monster -->
+          <div class="combatant-slot enemy">
+            <div class="stat-plate">
+              <div class="plate-header">
+                <span class="plate-name" id="enemyMonName">Wild Creature</span>
+                <span class="plate-lvl" id="enemyMonLvl">Lv. 1</span>
+              </div>
+              <div class="plate-types" id="enemyMonTypes"></div>
+              <div class="hp-bar-bg">
+                <div class="hp-bar-fill" id="enemyHpBar" style="width: 100%"></div>
+              </div>
+              <div class="hp-numbers">
+                <span id="enemyHpText">28 / 28 HP</span>
+                <span id="enemyTag">Wild Fusion</span>
+              </div>
+            </div>
+            <div class="monster-stage-art" id="enemyArt"></div>
+          </div>
+        </div>
+
+        <div class="battle-controls">
+          <div class="battle-log" id="battleLog">A wild fusion appeared!</div>
+          <div class="battle-menu" id="battleMenu"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Legend -->
+    <div class="footer-bar">
+      <div>
+        Move: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>Arrows</kbd> &nbsp;|&nbsp;
+        Interact: <kbd>E</kbd> / <kbd>Space</kbd> &nbsp;|&nbsp;
+        Grimoire: <kbd>B</kbd> &nbsp;|&nbsp;
+        Fuse: <kbd>F</kbd>
+      </div>
+      <div>
+        Objects + Animals combine into living Fusions — Battle, Capture &amp; Discover all 10!
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Stylized Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">Modal</div>
+        <button class="btn" id="modalCloseBtn" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Close
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script>
+    // =========================================================================
+    // 1. AUDIO SYNTH (Web Audio API - zero external dependencies)
+    // =========================================================================
+    const Sound = (() => {
+      let ctx = null;
+      let muted = false;
+
+      function ensureCtx() {
+        if (!ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) ctx = new AudioCtx();
+        }
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+      }
+
+      function tone(freq, dur = 0.09, type = 'triangle', vol = 0.1, delay = 0) {
+        if (muted) return;
+        ensureCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime + delay;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + dur);
+      }
+
+      return {
+        toggle() {
+          muted = !muted;
+          return !muted;
+        },
+        isMuted() { return muted; },
+        blip() { tone(520, 0.05, 'sine', 0.06); },
+        pickup() {
+          tone(440, 0.08, 'triangle', 0.1, 0);
+          tone(660, 0.12, 'triangle', 0.1, 0.07);
+          tone(880, 0.18, 'triangle', 0.1, 0.15);
+        },
+        hit() {
+          tone(180, 0.1, 'sawtooth', 0.12, 0);
+          tone(110, 0.12, 'square', 0.09, 0.04);
+        },
+        capture() {
+          tone(523.25, 0.1, 'triangle', 0.1, 0);
+          tone(659.25, 0.1, 'triangle', 0.1, 0.1);
+          tone(783.99, 0.12, 'triangle', 0.1, 0.2);
+          tone(1046.5, 0.24, 'triangle', 0.12, 0.32);
+        },
+        heal() {
+          tone(587, 0.1, 'sine', 0.09, 0);
+          tone(784, 0.16, 'sine', 0.09, 0.09);
+        },
+        step() { tone(140, 0.03, 'sine', 0.03); }
+      };
+    })();
+
+    // =========================================================================
+    // 2. MONSTER & FUSION DATABASE (Object + Animal = Fusion Monster)
+    // =========================================================================
+    const TYPE_COLORS = {
+      Steel: '#94a3b8',
+      Beast: '#e08b4f',
+      Light: '#f6d55c',
+      Bug: '#7bc950',
+      Water: '#4aa8ff',
+      Ceramic: '#e2dcd0',
+      Time: '#a875ff',
+      Sky: '#7dd3fc',
+      Trickster: '#f472b6',
+      Arcane: '#c084fc',
+      Fire: '#fb7185',
+      Sound: '#34d399'
+    };
+
+    const TYPE_ADVANTAGE = {
+      Steel: ['Ceramic', 'Time'],
+      Fire: ['Bug', 'Steel', 'Ceramic'],
+      Water: ['Fire', 'Beast'],
+      Light: ['Arcane', 'Bug'],
+      Sky: ['Bug', 'Sound'],
+      Time: ['Water', 'Trickster'],
+      Arcane: ['Beast', 'Time'],
+      Sound: ['Sky', 'Ceramic'],
+      Beast: ['Trickster', 'Light']
+    };
+
+    const MONSTER_SPECIES = [
+      {
+        id: 'forkat',
+        name: 'Forkat',
+        object: 'Fork',
+        animal: 'Cat',
+        types: ['Steel', 'Beast'],
+        baseHp: 32, baseAtk: 11, baseDef: 8, baseSpd: 12,
+        desc: 'A nimble feline whose whiskers are gleaming silver tines and whose tail ends in a three-pronged fork.',
+        moves: [
+          { name: 'Tine Scratch', type: 'Steel', power: 10 },
+          { name: 'Silver Pounce', type: 'Beast', power: 13 },
+          { name: 'Cutlery Parry', type: 'Steel', power: 8, heal: 5 },
+          { name: 'Four-Prong Fury', type: 'Steel', power: 17 }
+        ]
+      },
+      {
+        id: 'lampmoth',
+        name: 'Lampmoth',
+        object: 'Lamp',
+        animal: 'Moth',
+        types: ['Light', 'Bug'],
+        baseHp: 28, baseAtk: 10, baseDef: 7, baseSpd: 13,
+        desc: 'A gentle moth with warm pleated lampshade wings and a brass pull-chain that sparks when tugged.',
+        moves: [
+          { name: 'Dazzle Flicker', type: 'Light', power: 10 },
+          { name: 'Wing Gust', type: 'Bug', power: 12 },
+          { name: 'Warm Glow', type: 'Light', power: 0, heal: 9 }
+        ]
+      },
+      {
+        id: 'teaturtle',
+        name: 'Teaturtle',
+        object: 'Teapot',
+        animal: 'Turtle',
+        types: ['Water', 'Ceramic'],
+        baseHp: 38, baseAtk: 9, baseDef: 13, baseSpd: 6,
+        desc: 'A sturdy tortoise wearing a hand-painted porcelain teapot shell. Puffs chamomile steam when startled.',
+        moves: [
+          { name: 'Scalding Spout', type: 'Water', power: 12 },
+          { name: 'Porcelain Bash', type: 'Ceramic', power: 11 },
+          { name: 'Herbal Steep', type: 'Water', power: 0, heal: 10 }
+        ]
+      },
+      {
+        id: 'clockowl',
+        name: 'Clockowl',
+        object: 'Clock',
+        animal: 'Owl',
+        types: ['Time', 'Sky'],
+        baseHp: 34, baseAtk: 12, baseDef: 10, baseSpd: 11,
+        desc: 'A wise nocturnal owl with brass gear feathers and a ticking Roman-numeral dial on its chest.',
+        moves: [
+          { name: 'Pendulum Peck', type: 'Time', power: 12 },
+          { name: 'Chime Echo', type: 'Sky', power: 14 },
+          { name: 'Tick-Tock Gust', type: 'Time', power: 16 }
+        ]
+      },
+      {
+        id: 'keyfox',
+        name: 'Keyfox',
+        object: 'Key',
+        animal: 'Fox',
+        types: ['Steel', 'Trickster'],
+        baseHp: 30, baseAtk: 13, baseDef: 8, baseSpd: 14,
+        desc: 'A sly woodland fox with a golden skeleton-key tail that can unlock hidden hollows.',
+        moves: [
+          { name: 'Lockpick Dash', type: 'Trickster', power: 12 },
+          { name: 'Keyring Whirl', type: 'Steel', power: 14 },
+          { name: 'Master Bite', type: 'Steel', power: 16 }
+        ]
+      },
+      {
+        id: 'umbrellajelly',
+        name: 'Umbrellajelly',
+        object: 'Umbrella',
+        animal: 'Jellyfish',
+        types: ['Water', 'Sky'],
+        baseHp: 33, baseAtk: 11, baseDef: 9, baseSpd: 10,
+        desc: 'Drifts through misty woods beneath a translucent ribbed canopy, trailing glowing raindrop ribbons.',
+        moves: [
+          { name: 'Canopy Float', type: 'Sky', power: 11 },
+          { name: 'Static Sting', type: 'Water', power: 14 },
+          { name: 'Monsoon Spin', type: 'Water', power: 16 }
+        ]
+      },
+      {
+        id: 'bookbat',
+        name: 'Bookbat',
+        object: 'Book',
+        animal: 'Bat',
+        types: ['Arcane', 'Sky'],
+        baseHp: 29, baseAtk: 12, baseDef: 8, baseSpd: 13,
+        desc: 'A library-born bat whose leather-bound wings flutter with parchment pages.',
+        moves: [
+          { name: 'Paper Cut', type: 'Arcane', power: 11 },
+          { name: 'Ink Blot', type: 'Arcane', power: 13 },
+          { name: 'Sonic Bookmark', type: 'Sky', power: 15 }
+        ]
+      },
+      {
+        id: 'compashound',
+        name: 'Compashound',
+        object: 'Compass',
+        animal: 'Hound',
+        types: ['Steel', 'Beast'],
+        baseHp: 35, baseAtk: 12, baseDef: 10, baseSpd: 11,
+        desc: 'A loyal tracker hound with a brass compass dial collar and a magnetic nose.',
+        moves: [
+          { name: 'True North Fang', type: 'Beast', power: 13 },
+          { name: 'Magnetic Howl', type: 'Steel', power: 12 },
+          { name: 'Trailblazer', type: 'Beast', power: 16 }
+        ]
+      },
+      {
+        id: 'candlemander',
+        name: 'Candlemander',
+        object: 'Candle',
+        animal: 'Salamander',
+        types: ['Fire', 'Beast'],
+        baseHp: 31, baseAtk: 14, baseDef: 8, baseSpd: 11,
+        desc: 'A cheerful wax-scaled salamander whose tail tip burns with a steady, cozy flame.',
+        moves: [
+          { name: 'Wax Splash', type: 'Fire', power: 11 },
+          { name: 'Ember Tail', type: 'Fire', power: 14 },
+          { name: 'Bright Blaze', type: 'Fire', power: 17 }
+        ]
+      },
+      {
+        id: 'belltoad',
+        name: 'Belltoad',
+        object: 'Bell',
+        animal: 'Toad',
+        types: ['Sound', 'Water'],
+        baseHp: 36, baseAtk: 10, baseDef: 11, baseSpd: 8,
+        desc: 'A plump pond toad with a polished brass bell for a throat sac that rings like chimes.',
+        moves: [
+          { name: 'Resonant Croak', type: 'Sound', power: 12 },
+          { name: 'Clang Leap', type: 'Sound', power: 14 },
+          { name: 'Tidal Chime', type: 'Water', power: 15 }
+        ]
+      }
+    ];
+
+    function getSpecies(id) {
+      return MONSTER_SPECIES.find(s => s.id === id);
+    }
+
+    // =========================================================================
+    // 3. CUSTOM SVG ARTWORK GENERATOR FOR EACH OBJECT + ANIMAL FUSION
+    // =========================================================================
+    function renderMonsterSVG(speciesId, size = 120) {
+      const arts = {
+        forkat: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="forkSilver" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#e2e8f0"/>
+                <stop offset="100%" stop-color="#94a3b8"/>
+              </linearGradient>
+            </defs>
+            <!-- Fork Tail -->
+            <path d="M80 78 Q106 68 102 36" fill="none" stroke="url(#forkSilver)" stroke-width="6" stroke-linecap="round"/>
+            <path d="M96 36 L94 20 M102 36 L102 18 M108 36 L110 20" stroke="#f1f5f9" stroke-width="3.5" stroke-linecap="round"/>
+            <!-- Cat Body -->
+            <ellipse cx="58" cy="78" rx="26" ry="20" fill="#f59e0b"/>
+            <ellipse cx="58" cy="82" rx="15" ry="12" fill="#fef3c7"/>
+            <!-- Paws -->
+            <ellipse cx="42" cy="96" rx="7" ry="5" fill="#d97706"/>
+            <ellipse cx="72" cy="96" rx="7" ry="5" fill="#d97706"/>
+            <!-- Head -->
+            <circle cx="52" cy="48" r="22" fill="#f59e0b"/>
+            <!-- Ears -->
+            <polygon points="34,34 30,14 48,26" fill="#d97706"/>
+            <polygon points="70,34 74,14 56,26" fill="#d97706"/>
+            <polygon points="36,31 33,19 45,27" fill="#fbcfe8"/>
+            <polygon points="68,31 71,19 59,27" fill="#fbcfe8"/>
+            <!-- Eyes & Nose -->
+            <circle cx="44" cy="46" r="3.8" fill="#1e293b"/>
+            <circle cx="60" cy="46" r="3.8" fill="#1e293b"/>
+            <circle cx="45" cy="44.8" r="1.3" fill="#ffffff"/>
+            <circle cx="61" cy="44.8" r="1.3" fill="#ffffff"/>
+            <polygon points="50,52 54,52 52,55" fill="#f43f5e"/>
+            <!-- Silver Fork-Tine Whiskers -->
+            <path d="M32 48 L12 43 M32 52 L10 52 M32 56 L14 60" stroke="#e2e8f0" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M72 48 L92 43 M72 52 L94 52 M72 56 L90 60" stroke="#e2e8f0" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>`,
+        lampmoth: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Lampshade Wings -->
+            <path d="M58 54 L18 32 L12 72 L58 68 Z" fill="#fde68a" stroke="#d97706" stroke-width="3"/>
+            <path d="M62 54 L102 32 L108 72 L62 68 Z" fill="#fde68a" stroke="#d97706" stroke-width="3"/>
+            <line x1="36" y1="42" x2="32" y2="70" stroke="#f59e0b" stroke-width="2"/>
+            <line x1="84" y1="42" x2="88" y2="70" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Glowing Bulb Body -->
+            <ellipse cx="60" cy="68" rx="14" ry="22" fill="#fef08a" stroke="#ca8a04" stroke-width="2.5"/>
+            <rect x="53" y="88" width="14" height="8" rx="2" fill="#94a3b8"/>
+            <!-- Head & Pull-Chain Antennae -->
+            <circle cx="60" cy="42" r="12" fill="#78350f"/>
+            <circle cx="55" cy="41" r="2.5" fill="#fef08a"/>
+            <circle cx="65" cy="41" r="2.5" fill="#fef08a"/>
+            <path d="M55 31 Q48 16 42 18" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="3 2"/>
+            <circle cx="42" cy="18" r="3" fill="#fbbf24"/>
+            <path d="M65 31 Q72 16 78 18" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="3 2"/>
+            <circle cx="78" cy="18" r="3" fill="#fbbf24"/>
+          </svg>`,
+        teaturtle: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Steam -->
+            <path d="M22 44 Q18 34 25 28" fill="none" stroke="#e0f2fe" stroke-width="3" stroke-linecap="round"/>
+            <path d="M30 40 Q28 30 34 24" fill="none" stroke="#e0f2fe" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Legs -->
+            <ellipse cx="42" cy="92" rx="9" ry="7" fill="#34d399"/>
+            <ellipse cx="78" cy="92" rx="9" ry="7" fill="#34d399"/>
+            <!-- Porcelain Teapot Shell -->
+            <path d="M34 78 Q34 40 62 40 Q90 40 90 78 Z" fill="#f8fafc" stroke="#38bdf8" stroke-width="3"/>
+            <path d="M44 62 Q62 72 80 62" fill="none" stroke="#38bdf8" stroke-width="3"/>
+            <!-- Lid -->
+            <ellipse cx="62" cy="40" rx="14" ry="5" fill="#38bdf8"/>
+            <circle cx="62" cy="33" r="4" fill="#f8fafc" stroke="#38bdf8" stroke-width="2"/>
+            <!-- Handle -->
+            <path d="M88 52 Q106 52 104 68 Q102 78 88 76" fill="none" stroke="#f8fafc" stroke-width="5"/>
+            <!-- Spout / Turtle Head -->
+            <path d="M36 62 L18 54 L20 66 L36 74 Z" fill="#34d399"/>
+            <circle cx="25" cy="59" r="2.6" fill="#0f172a"/>
+          </svg>`,
+        clockowl: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Gear Wings -->
+            <ellipse cx="26" cy="68" rx="14" ry="22" fill="#92400e"/>
+            <ellipse cx="94" cy="68" rx="14" ry="22" fill="#92400e"/>
+            <!-- Body -->
+            <ellipse cx="60" cy="68" rx="28" ry="30" fill="#b45309"/>
+            <!-- Clock Face Chest -->
+            <circle cx="60" cy="72" r="19" fill="#fef3c7" stroke="#d97706" stroke-width="3"/>
+            <line x1="60" y1="72" x2="60" y2="59" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="60" y1="72" x2="70" y2="76" stroke="#b91c1c" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="60" cy="72" r="2.5" fill="#1e293b"/>
+            <!-- Owl Head & Horns -->
+            <polygon points="34,36 28,18 46,28" fill="#78350f"/>
+            <polygon points="86,36 92,18 74,28" fill="#78350f"/>
+            <circle cx="48" cy="40" r="10" fill="#fef3c7" stroke="#78350f" stroke-width="2"/>
+            <circle cx="72" cy="40" r="10" fill="#fef3c7" stroke="#78350f" stroke-width="2"/>
+            <circle cx="48" cy="40" r="4" fill="#1e293b"/>
+            <circle cx="72" cy="40" r="4" fill="#1e293b"/>
+            <polygon points="56,45 64,45 60,52" fill="#f59e0b"/>
+          </svg>`,
+        keyfox: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Skeleton Key Tail -->
+            <path d="M76 80 L104 52" stroke="#facc15" stroke-width="7" stroke-linecap="round"/>
+            <circle cx="106" cy="50" r="9" fill="none" stroke="#facc15" stroke-width="4.5"/>
+            <path d="M92 64 L98 70 M98 58 L104 64" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
+            <!-- Body -->
+            <ellipse cx="56" cy="78" rx="24" ry="18" fill="#ea580c"/>
+            <ellipse cx="52" cy="80" rx="12" ry="11" fill="#ffedd5"/>
+            <!-- Head -->
+            <polygon points="32,48 52,32 72,48 52,64" fill="#ea580c"/>
+            <polygon points="34,36 30,14 48,30" fill="#c2410c"/>
+            <polygon points="70,36 74,14 56,30" fill="#facc15"/>
+            <circle cx="45" cy="46" r="3" fill="#1e293b"/>
+            <circle cx="59" cy="46" r="3" fill="#1e293b"/>
+            <circle cx="52" cy="56" r="3" fill="#1e293b"/>
+          </svg>`,
+        umbrellajelly: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Tentacles -->
+            <path d="M40 58 Q34 80 42 100" fill="none" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round"/>
+            <path d="M54 60 Q50 84 56 106" fill="none" stroke="#bae6fd" stroke-width="4" stroke-linecap="round"/>
+            <path d="M68 60 Q74 84 68 106" fill="none" stroke="#bae6fd" stroke-width="4" stroke-linecap="round"/>
+            <path d="M82 58 Q88 80 80 100" fill="none" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round"/>
+            <!-- Umbrella Handle -->
+            <path d="M60 56 L60 92 Q60 100 68 100" fill="none" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round"/>
+            <!-- Canopy -->
+            <path d="M20 58 Q60 14 100 58 Q85 52 72 58 Q60 52 48 58 Q35 52 20 58 Z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="2.5"/>
+            <line x1="60" y1="26" x2="60" y2="18" stroke="#e0f2fe" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="50" cy="45" r="3" fill="#0f172a"/>
+            <circle cx="70" cy="45" r="3" fill="#0f172a"/>
+          </svg>`,
+        bookbat: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Book Wings -->
+            <path d="M54 54 L14 34 L18 74 L54 68 Z" fill="#7c3aed" stroke="#ddd6fe" stroke-width="2.5"/>
+            <path d="M66 54 L106 34 L102 74 L66 68 Z" fill="#7c3aed" stroke="#ddd6fe" stroke-width="2.5"/>
+            <line x1="26" y1="44" x2="46" y2="54" stroke="#f5f3ff" stroke-width="2"/>
+            <line x1="24" y1="54" x2="46" y2="60" stroke="#f5f3ff" stroke-width="2"/>
+            <line x1="94" y1="44" x2="74" y2="54" stroke="#f5f3ff" stroke-width="2"/>
+            <line x1="96" y1="54" x2="74" y2="60" stroke="#f5f3ff" stroke-width="2"/>
+            <!-- Bat Body -->
+            <ellipse cx="60" cy="64" rx="16" ry="22" fill="#4c1d95"/>
+            <polygon points="48,44 42,24 56,38" fill="#4c1d95"/>
+            <polygon points="72,44 78,24 64,38" fill="#4c1d95"/>
+            <circle cx="54" cy="54" r="3" fill="#fde047"/>
+            <circle cx="66" cy="54" r="3" fill="#fde047"/>
+            <path d="M55 62 L57 66 L59 62 M61 62 L63 66 L65 62" fill="#ffffff"/>
+          </svg>`,
+        compashound: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <ellipse cx="56" cy="78" rx="26" ry="18" fill="#64748b"/>
+            <circle cx="46" cy="48" r="20" fill="#64748b"/>
+            <ellipse cx="32" cy="50" rx="7" ry="14" fill="#475569"/>
+            <ellipse cx="62" cy="50" rx="7" ry="14" fill="#475569"/>
+            <!-- Compass Dial Collar -->
+            <circle cx="52" cy="72" r="13" fill="#fef3c7" stroke="#d97706" stroke-width="3"/>
+            <polygon points="52,61 55,72 52,83 49,72" fill="#ef4444"/>
+            <circle cx="42" cy="45" r="3" fill="#0f172a"/>
+            <circle cx="52" cy="45" r="3" fill="#0f172a"/>
+            <polygon points="36,52 46,52 41,58" fill="#ef4444"/>
+          </svg>`,
+        candlemander: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Flame Tail -->
+            <path d="M84 74 Q102 68 100 48" fill="none" stroke="#fef3c7" stroke-width="8" stroke-linecap="round"/>
+            <path d="M100 46 Q92 32 100 20 Q108 32 100 46 Z" fill="#fb7185"/>
+            <path d="M100 44 Q96 36 100 28 Q104 36 100 44 Z" fill="#fde047"/>
+            <!-- Wax Body -->
+            <ellipse cx="56" cy="78" rx="28" ry="16" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/>
+            <circle cx="38" cy="58" r="17" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/>
+            <circle cx="32" cy="54" r="3" fill="#1e293b"/>
+            <circle cx="44" cy="54" r="3" fill="#1e293b"/>
+            <path d="M34 64 Q38 68 42 64" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>`,
+        belltoad: `
+          <svg width="${size}" height="${size}" viewBox="0 0 120 120">
+            <!-- Toad Legs -->
+            <ellipse cx="32" cy="88" rx="12" ry="8" fill="#10b981"/>
+            <ellipse cx="88" cy="88" rx="12" ry="8" fill="#10b981"/>
+            <!-- Body -->
+            <ellipse cx="60" cy="72" rx="30" ry="24" fill="#34d399"/>
+            <!-- Brass Bell Throat -->
+            <path d="M44 68 Q60 58 76 68 L80 86 L40 86 Z" fill="#fbbf24" stroke="#b45309" stroke-width="2.5"/>
+            <circle cx="60" cy="88" r="4.5" fill="#78350f"/>
+            <!-- Eyes -->
+            <circle cx="46" cy="46" r="9" fill="#34d399"/>
+            <circle cx="74" cy="46" r="9" fill="#34d399"/>
+            <circle cx="46" cy="46" r="4" fill="#0f172a"/>
+            <circle cx="74" cy="46" r="4" fill="#0f172a"/>
+          </svg>`
+      };
+      return arts[speciesId] || arts.forkat;
+    }
+
+    // =========================================================================
+    // 4. GAME STATE & SAVE/LOAD
+    // =========================================================================
+    const SAVE_KEY = 'tome_of_fusions_v1';
+
+    function createMonsterInstance(speciesId, level = 1) {
+      const sp = getSpecies(speciesId);
+      const scale = 1 + (level - 1) * 0.18;
+      const maxHp = Math.round(sp.baseHp * scale);
+      return {
+        uid: Math.random().toString(36).slice(2, 9),
+        speciesId,
+        name: sp.name,
+        level,
+        xp: 0,
+        nextXp: level * 25,
+        hp: maxHp,
+        maxHp,
+        atk: Math.round(sp.baseAtk * scale),
+        def: Math.round(sp.baseDef * scale),
+        spd: Math.round(sp.baseSpd * scale)
+      };
+    }
+
+    const DEFAULT_STATE = () => ({
+      scene: 'library', // 'library' | 'woods'
+      playerX: 480,
+      playerY: 420,
+      facing: 'up',
+      questStage: 0,
+      // 0: pick up strange book
+      // 1: talk to teacher about the blank book
+      // 2: exit library to the woods
+      // 3: walk into woods & encounter Forkat!
+      // 4: explore, battle, capture & fuse all 10!
+      hasBook: false,
+      teacherTalked: false,
+      metForkat: false,
+      discovered: [],
+      party: [],
+      storage: [],
+      pages: 5,
+      potions: 3,
+      objects: ['Fork'],
+      spirits: ['Cat']
+    });
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) return { ...DEFAULT_STATE(), ...JSON.parse(raw) };
+      } catch (e) {}
+      return DEFAULT_STATE();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 5. UI HELPERS (Toast, Dialogue, Modal - No native alerts!)
+    // =========================================================================
+    const el = {
+      canvas: document.getElementById('worldCanvas'),
+      zoneLabel: document.getElementById('zoneLabel'),
+      questText: document.getElementById('questText'),
+      dexCount: document.getElementById('dexCount'),
+      pageCount: document.getElementById('pageCount'),
+      potionCount: document.getElementById('potionCount'),
+      partyCount: document.getElementById('partyCount'),
+      btnGrimoire: document.getElementById('btnGrimoire'),
+      btnParty: document.getElementById('btnParty'),
+      btnFusionLab: document.getElementById('btnFusionLab'),
+      btnSound: document.getElementById('btnSound'),
+      btnReset: document.getElementById('btnReset'),
+      interactHint: document.getElementById('interactHint'),
+      interactText: document.getElementById('interactText'),
+      dialogueBox: document.getElementById('dialogueBox'),
+      dialogueSpeaker: document.getElementById('dialogueSpeaker'),
+      dialogueText: document.getElementById('dialogueText'),
+      dialogueActions: document.getElementById('dialogueActions'),
+      battleOverlay: document.getElementById('battleOverlay'),
+      modalBackdrop: document.getElementById('modalBackdrop'),
+      modalTitle: document.getElementById('modalTitle'),
+      modalBody: document.getElementById('modalBody'),
+      modalCloseBtn: document.getElementById('modalCloseBtn'),
+      toastStack: document.getElementById('toastStack')
+    };
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5b942" stroke-width="2.4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>${msg}</span>`;
+      el.toastStack.appendChild(t);
+      setTimeout(() => t.remove(), 3200);
+    }
+
+    let dialogueActive = false;
+    function showDialogue(speaker, text, buttons = [{ label: 'Continue', primary: true }]) {
+      dialogueActive = true;
+      el.dialogueSpeaker.textContent = speaker;
+      el.dialogueText.textContent = text;
+      el.dialogueActions.innerHTML = '';
+      buttons.forEach(b => {
+        const btn = document.createElement('button');
+        btn.className = `btn ${b.primary ? 'btn-primary' : ''}`;
+        btn.textContent = b.label;
+        btn.onclick = () => {
+          Sound.blip();
+          hideDialogue();
+          if (b.onClick) b.onClick();
+        };
+        el.dialogueActions.appendChild(btn);
+      });
+      el.dialogueBox.classList.add('visible');
+    }
+
+    function hideDialogue() {
+      dialogueActive = false;
+      el.dialogueBox.classList.remove('visible');
+    }
+
+    function openModal(title, htmlContent) {
+      el.modalTitle.textContent = title;
+      el.modalBody.innerHTML = htmlContent;
+      el.modalBackdrop.classList.add('visible');
+    }
+
+    function closeModal() {
+      el.modalBackdrop.classList.remove('visible');
+    }
+
+    el.modalCloseBtn.onclick = closeModal;
+    el.modalBackdrop.onclick = (e) => {
+      if (e.target === el.modalBackdrop) closeModal();
+    };
+
+    function updateHUD() {
+      el.zoneLabel.textContent = state.scene === 'library' ? 'The Whispering Library' : 'The Whispering Woods';
+      el.dexCount.textContent = `${state.discovered.length} / ${MONSTER_SPECIES.length}`;
+      el.pageCount.textContent = state.pages;
+      el.potionCount.textContent = state.potions;
+      el.partyCount.textContent = state.party.length;
+      el.btnGrimoire.disabled = !state.hasBook;
+      el.btnParty.disabled = state.party.length === 0;
+      el.btnFusionLab.disabled = !state.metForkat;
+
+      const quests = [
+        'Walk to the glowing pedestal and pick up the strange book.',
+        'The book is blank! Walk over and ask your Teacher about it.',
+        'Go through the Library exit door to the Whispering Woods.',
+        'Explore the Whispering Woods to find a mysterious creature!',
+        'Battle, capture, and fuse Objects + Animals to fill your Grimoire!'
+      ];
+      el.questText.textContent = quests[Math.min(state.questStage, quests.length - 1)];
+    }
+
+    // =========================================================================
+    // 6. WORLD MAP, COLLISIONS & INTERACTABLES
+    // =========================================================================
+    const ctx = el.canvas.getContext('2d');
+    const W = 960, H = 540;
+
+    // Library Objects
+    const LIBRARY_WALLS = [
+      { x: 0, y: 0, w: 960, h: 68 },      // North wall
+      { x: 0, y: 0, w: 48, h: 540 },      // West wall
+      { x: 912, y: 0, w: 48, h: 540 },    // East wall
+      { x: 0, y: 492, w: 410, h: 48 },    // South-left wall
+      { x: 550, y: 492, w: 410, h: 48 },  // South-right wall
+      { x: 110, y: 120, w: 180, h: 56 },  // Bookshelf 1
+      { x: 670, y: 120, w: 180, h: 56 },  // Bookshelf 2
+      { x: 110, y: 270, w: 140, h: 56 },  // Bookshelf 3
+      { x: 710, y: 270, w: 140, h: 56 }   // Bookshelf 4
+    ];
+
+    const WOODS_WALLS = [
+      { x: 0, y: 0, w: 960, h: 48 },
+      { x: 0, y: 0, w: 40, h: 540 },
+      { x: 920, y: 0, w: 40, h: 540 },
+      { x: 0, y: 500, w: 960, h: 40 },
+      { x: 150, y: 110, w: 72, h: 64 },   // Pine cluster 1
+      { x: 730, y: 120, w: 72, h: 64 },   // Pine cluster 2
+      { x: 190, y: 360, w: 72, h: 64 }    // Pine cluster 3
+    ];
+
+    const TALL_GRASS = [
+      { x: 300, y: 140, w: 150, h: 100 },
+      { x: 560, y: 260, w: 180, h: 120 },
+      { x: 110, y: 210, w: 130, h: 110 }
+    ];
+
+    function getInteractables() {
+      if (state.scene === 'library') {
+        const list = [
+          {
+            id: 'teacher',
+            x: 480, y: 165, r: 44,
+            label: 'Talk to Teacher',
+            action: interactTeacher
+          },
+          {
+            id: 'exit_door',
+            x: 480, y: 486, r: 48,
+            label: state.teacherTalked ? 'Exit to Whispering Woods' : 'Locked Library Door',
+            action: interactLibraryDoor
+          }
+        ];
+        if (!state.hasBook) {
+          list.push({
+            id: 'book_pedestal',
+            x: 780, y: 220, r: 46,
+            label: 'Pick up Strange Book',
+            action: interactStrangeBook
+          });
+        }
+        return list;
+      } else {
+        return [
+          {
+            id: 'return_library',
+            x: 480, y: 472, r: 46,
+            label: 'Return to Library',
+            action: () => {
+              state.scene = 'library';
+              state.playerX = 480;
+              state.playerY = 420;
+              saveState();
+              updateHUD();
+              showToast('Entered The Whispering Library');
+            }
+          },
+          {
+            id: 'healing_spring',
+            x: 150, y: 455, r: 46,
+            label: 'Drink from Healing Spring',
+            action: () => {
+              state.party.forEach(m => m.hp = m.maxHp);
+              Sound.heal();
+              saveState();
+              showToast('All party monsters restored to full HP!');
+            }
+          },
+          {
+            id: 'fusion_altar',
+            x: 820, y: 420, r: 50,
+            label: 'Open Fusion Altar',
+            action: openFusionModal
+          }
+        ];
+      }
+    }
+
+    // =========================================================================
+    // 7. STORY EVENTS
+    // =========================================================================
+    function interactStrangeBook() {
+      Sound.pickup();
+      state.hasBook = true;
+      state.questStage = 1;
+      saveState();
+      updateHUD();
+      showDialogue(
+        'Strange Book',
+        'You pick up the strange leather-bound book. You flip through the pages... every single page is completely blank, yet the cover hums with a metallic purr!',
+        [{ label: 'Show it to Teacher', primary: true }]
+      );
+    }
+
+    function interactTeacher() {
+      if (!state.hasBook) {
+        showDialogue(
+          'Teacher',
+          'Welcome to the Whispering Library! Notice that glowing pedestal near the eastern shelves? Go pick up that strange book and tell me what you see.',
+          [{ label: 'Will do!', primary: true }]
+        );
+        return;
+      }
+
+      if (!state.teacherTalked) {
+        showDialogue(
+          'You',
+          'What kind of book is this? Every page is completely blank!',
+          [{
+            label: 'Listen to Teacher',
+            primary: true,
+            onClick: () => {
+              showDialogue(
+                'Teacher',
+                'Aha! That is a Field Grimoire of Fusions. It writes itself only when you discover creatures where Objects and Animals combine into one. Go off to the Whispering Woods and find out!',
+                [{
+                  label: 'Okay!',
+                  primary: true,
+                  onClick: () => {
+                    state.teacherTalked = true;
+                    state.questStage = 2;
+                    Sound.pickup();
+                    saveState();
+                    updateHUD();
+                    showToast('The Library Doors are now unlocked!');
+                  }
+                }]
+              );
+            }
+          }]
+        );
+        return;
+      }
+
+      if (state.discovered.length >= MONSTER_SPECIES.length) {
+        showDialogue(
+          'Teacher',
+          'Magnificent! Your Field Grimoire is overflowing with all 10 Object + Animal Fusions. You are a true Fusion Scholar!',
+          [{ label: 'Thank you!', primary: true }]
+        );
+      } else {
+        showDialogue(
+          'Teacher',
+          `You have discovered ${state.discovered.length} of ${MONSTER_SPECIES.length} Fusions so far. Head into the tall grass of the Whispering Woods to battle, capture, and fuse more!`,
+          [{ label: 'Onward!', primary: true }]
+        );
+      }
+    }
+
+    function interactLibraryDoor() {
+      if (!state.teacherTalked) {
+        showDialogue(
+          'Library Door',
+          'You should ask your Teacher about the strange blank book before heading outside.',
+          [{ label: 'Okay', primary: true }]
+        );
+        return;
+      }
+      state.scene = 'woods';
+      state.playerX = 480;
+      state.playerY = 415;
+      if (state.questStage < 3) state.questStage = 3;
+      saveState();
+      updateHUD();
+      showToast('Entered The Whispering Woods!');
+
+      if (!state.metForkat) {
+        setTimeout(() => {
+          triggerForkatEncounter();
+        }, 450);
+      }
+    }
+
+    function triggerForkatEncounter() {
+      state.metForkat = true;
+      state.questStage = 4;
+      Sound.pickup();
+      showDialogue(
+        'Mysterious Creature!',
+        'Out from the mossy ferns leaps a sleek silver-whiskered feline! A shiny Fork and a lively Cat have combined into one — it is a FORKAT!',
+        [{
+          label: 'Bond with Forkat & Write in Book',
+          primary: true,
+          onClick: () => {
+            const forkat = createMonsterInstance('forkat', 2);
+            state.party.push(forkat);
+            if (!state.discovered.includes('forkat')) state.discovered.push('forkat');
+            saveState();
+            updateHUD();
+            showToast('Forkat joined your party! Entry written in Grimoire!');
+            showDialogue(
+              'Field Grimoire',
+              'The blank pages shimmer with golden ink! "Entry #1: Fork + Cat = FORKAT." Now step into the tall grass to battle wild Fusions, capture them with Binding Pages, or use the Fusion Altar!',
+              [{ label: "Let's Battle & Collect!", primary: true }]
+            );
+          }
+        }]
+      );
+    }
+
+    // =========================================================================
+    // 8. TURN-BASED MONSTER BATTLE SYSTEM
+    // =========================================================================
+    let battle = null;
+    let grassSteps = 0;
+
+    function startWildBattle(forcedSpeciesId = null) {
+      if (state.party.length === 0) return;
+      const aliveIdx = state.party.findIndex(m => m.hp > 0);
+      if (aliveIdx === -1) {
+        showToast('All your monsters fainted! Visit the Healing Spring!');
+        return;
+      }
+
+      const pool = MONSTER_SPECIES.filter(s => s.id !== 'forkat');
+      const species = forcedSpeciesId
+        ? getSpecies(forcedSpeciesId)
+        : pool[Math.floor(Math.random() * pool.length)];
+
+      const avgLvl = Math.max(1, Math.round(state.party.reduce((a, b) => a + b.level, 0) / state.party.length));
+      const enemyLvl = Math.max(1, avgLvl + (Math.random() < 0.35 ? 1 : 0));
+      const enemy = createMonsterInstance(species.id, enemyLvl);
+
+      battle = {
+        activeIdx: aliveIdx,
+        enemy,
+        busy: false,
+        mode: 'root' // 'root' | 'moves' | 'switch'
+      };
+
+      el.battleOverlay.classList.add('visible');
+      renderBattle(`A wild ${enemy.name} (${species.object} + ${species.animal}) appeared!`);
+    }
+
+    function renderBattle(logMessage = null) {
+      if (!battle) return;
+      const pMon = state.party[battle.activeIdx];
+      const pSp = getSpecies(pMon.speciesId);
+      const eMon = battle.enemy;
+      const eSp = getSpecies(eMon.speciesId);
+
+      // Player Plate
+      document.getElementById('playerMonName').textContent = pMon.name;
+      document.getElementById('playerMonLvl').textContent = `Lv. ${pMon.level}`;
+      document.getElementById('playerMonTypes').innerHTML = pSp.types
+        .map(t => `<span class="type-badge" style="border:1px solid ${TYPE_COLORS[t] || '#666'}">${t}</span>`).join('');
+      const pPct = Math.max(0, Math.round((pMon.hp / pMon.maxHp) * 100));
+      const pBar = document.getElementById('playerHpBar');
+      pBar.style.width = `${pPct}%`;
+      pBar.className = `hp-bar-fill ${pPct < 25 ? 'low' : pPct < 55 ? 'mid' : ''}`;
+      document.getElementById('playerHpText').textContent = `${pMon.hp} / ${pMon.maxHp} HP`;
+      document.getElementById('playerXpText').textContent = `XP ${pMon.xp} / ${pMon.nextXp}`;
+      document.getElementById('playerArt').innerHTML = renderMonsterSVG(pMon.speciesId, 132);
+
+      // Enemy Plate
+      document.getElementById('enemyMonName').textContent = eMon.name;
+      document.getElementById('enemyMonLvl').textContent = `Lv. ${eMon.level}`;
+      document.getElementById('enemyMonTypes').innerHTML = eSp.types
+        .map(t => `<span class="type-badge" style="border:1px solid ${TYPE_COLORS[t] || '#666'}">${t}</span>`).join('');
+      const ePct = Math.max(0, Math.round((eMon.hp / eMon.maxHp) * 100));
+      const eBar = document.getElementById('enemyHpBar');
+      eBar.style.width = `${ePct}%`;
+      eBar.className = `hp-bar-fill ${ePct < 25 ? 'low' : ePct < 55 ? 'mid' : ''}`;
+      document.getElementById('enemyHpText').textContent = `${eMon.hp} / ${eMon.maxHp} HP`;
+      document.getElementById('enemyTag').textContent = `${eSp.object} + ${eSp.animal}`;
+      document.getElementById('enemyArt').innerHTML = renderMonsterSVG(eMon.speciesId, 132);
+
+      if (logMessage) {
+        document.getElementById('battleLog').textContent = logMessage;
+      }
+
+      const menu = document.getElementById('battleMenu');
+      menu.innerHTML = '';
+
+      if (battle.busy) return;
+
+      if (battle.mode === 'root') {
+        const actions = [
+          { label: 'Fight', cls: 'btn-rose', fn: () => { battle.mode = 'moves'; renderBattle(); } },
+          { label: `Capture (${state.pages})`, cls: 'btn-primary', fn: attemptCapture, disabled: state.pages <= 0 },
+          { label: `Potion (${state.potions})`, cls: 'btn-emerald', fn: usePotion, disabled: state.potions <= 0 || pMon.hp >= pMon.maxHp },
+          { label: 'Switch / Run', cls: 'btn-sky', fn: () => { battle.mode = 'switch'; renderBattle(); } }
+        ];
+        actions.forEach(a => {
+          const btn = document.createElement('button');
+          btn.className = `btn ${a.cls}`;
+          btn.textContent = a.label;
+          btn.disabled = !!a.disabled;
+          btn.onclick = a.fn;
+          menu.appendChild(btn);
+        });
+      } else if (battle.mode === 'moves') {
+        pSp.moves.forEach(mv => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.innerHTML = `<span>${mv.name}</span><span style="font-size:0.7rem;color:${TYPE_COLORS[mv.type]}">${mv.type}</span>`;
+          btn.onclick = () => executePlayerMove(mv);
+          menu.appendChild(btn);
+        });
+        const back = document.createElement('button');
+        back.className = 'btn';
+        back.textContent = 'Back';
+        back.onclick = () => { battle.mode = 'root'; renderBattle(); };
+        menu.appendChild(back);
+      } else if (battle.mode === 'switch') {
+        state.party.forEach((m, idx) => {
+          if (idx === battle.activeIdx || m.hp <= 0) return;
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = `${m.name} (${m.hp}/${m.maxHp})`;
+          btn.onclick = () => {
+            battle.activeIdx = idx;
+            battle.mode = 'root';
+            renderBattle(`Go, ${m.name}!`);
+            setTimeout(enemyTurn, 650);
+          };
+          menu.appendChild(btn);
+        });
+        const runBtn = document.createElement('button');
+        runBtn.className = 'btn btn-rose';
+        runBtn.textContent = 'Run Away';
+        runBtn.onclick = () => endBattle('Escaped safely into the woods.');
+        menu.appendChild(runBtn);
+
+        const back = document.createElement('button');
+        back.className = 'btn';
+        back.textContent = 'Back';
+        back.onclick = () => { battle.mode = 'root'; renderBattle(); };
+        menu.appendChild(back);
+      }
+    }
+
+    function calcDamage(attacker, defender, move) {
+      const defSp = getSpecies(defender.speciesId);
+      let mult = 1.0;
+      const adv = TYPE_ADVANTAGE[move.type] || [];
+      if (defSp.types.some(t => adv.includes(t))) mult = 1.5;
+      const raw = (move.power * (attacker.atk / Math.max(4, defender.def))) * mult;
+      const variance = 0.88 + Math.random() * 0.24;
+      return { dmg: Math.max(2, Math.round(raw * variance)), superEffective: mult > 1 };
+    }
+
+    function executePlayerMove(move) {
+      battle.busy = true;
+      battle.mode = 'root';
+      const pMon = state.party[battle.activeIdx];
+      const eMon = battle.enemy;
+
+      if (move.heal) {
+        pMon.hp = Math.min(pMon.maxHp, pMon.hp + move.heal);
+        Sound.heal();
+      }
+
+      if (move.power > 0) {
+        const { dmg, superEffective } = calcDamage(pMon, eMon, move);
+        eMon.hp = Math.max(0, eMon.hp - dmg);
+        document.getElementById('playerArt').classList.add('lunge-right');
+        document.getElementById('enemyArt').classList.add('hit');
+        Sound.hit();
+        setTimeout(() => {
+          document.getElementById('playerArt').classList.remove('lunge-right');
+          document.getElementById('enemyArt').classList.remove('hit');
+        }, 360);
+        renderBattle(`${pMon.name} used ${move.name}! ${superEffective ? 'Super effective! ' : ''}Dealt ${dmg} damage.`);
+      } else {
+        renderBattle(`${pMon.name} used ${move.name} and restored ${move.heal} HP!`);
+      }
+
+      if (eMon.hp <= 0) {
+        setTimeout(handleVictory, 850);
+      } else {
+        setTimeout(enemyTurn, 900);
+      }
+    }
+
+    function enemyTurn() {
+      if (!battle) return;
+      const pMon = state.party[battle.activeIdx];
+      const eMon = battle.enemy;
+      const eSp = getSpecies(eMon.speciesId);
+      const mv = eSp.moves[Math.floor(Math.random() * eSp.moves.length)];
+
+      if (mv.power > 0) {
+        const { dmg } = calcDamage(eMon, pMon, mv);
+        pMon.hp = Math.max(0, pMon.hp - dmg);
+        document.getElementById('enemyArt').classList.add('lunge-left');
+        document.getElementById('playerArt').classList.add('hit');
+        Sound.hit();
+        setTimeout(() => {
+          document.getElementById('enemyArt').classList.remove('lunge-left');
+          document.getElementById('playerArt').classList.remove('hit');
+        }, 360);
+        renderBattle(`Wild ${eMon.name} used ${mv.name}! Dealt ${dmg} damage.`);
+      } else {
+        eMon.hp = Math.min(eMon.maxHp, eMon.hp + (mv.heal || 6));
+        Sound.heal();
+        renderBattle(`Wild ${eMon.name} used ${mv.name} and healed!`);
+      }
+
+      setTimeout(() => {
+        if (!battle) return;
+        if (pMon.hp <= 0) {
+          const nextAlive = state.party.findIndex(m => m.hp > 0);
+          if (nextAlive === -1) {
+            renderBattle(`${pMon.name} fainted! All your Fusions are out of energy...`);
+            setTimeout(() => {
+              if (!battle) return;
+              state.party.forEach(m => m.hp = m.maxHp);
+              state.scene = 'library';
+              state.playerX = 480;
+              state.playerY = 230;
+              grassSteps = 0;
+              endBattle();
+              showDialogue(
+                'Teacher',
+                'You blacked out in the Whispering Woods and hurried back to the Library! I have healed your Fusions back to full health. Be careful out there and use Dewdrop Potions when your HP gets low!'
+              );
+            }, 1100);
+          } else {
+            battle.activeIdx = nextAlive;
+            battle.busy = false;
+            renderBattle(`${pMon.name} fainted! Go, ${state.party[nextAlive].name}!`);
+          }
+        } else {
+          battle.busy = false;
+          renderBattle();
+        }
+      }, 750);
+    }
+
+    function usePotion() {
+      if (state.potions <= 0) return;
+      state.potions--;
+      const pMon = state.party[battle.activeIdx];
+      pMon.hp = Math.min(pMon.maxHp, pMon.hp + 18);
+      Sound.heal();
+      battle.busy = true;
+      updateHUD();
+      renderBattle(`Used a Dewdrop Potion! ${pMon.name} recovered 18 HP.`);
+      setTimeout(enemyTurn, 900);
+    }
+
+    function attemptCapture() {
+      if (state.pages <= 0) return;
+      state.pages--;
+      battle.busy = true;
+      updateHUD();
+      const eMon = battle.enemy;
+      const eSp = getSpecies(eMon.speciesId);
+      const hpFactor = 1 - (eMon.hp / eMon.maxHp) * 0.72;
+      const chance = Math.min(0.95, 0.35 + hpFactor * 0.55);
+
+      if (Math.random() <= chance) {
+        Sound.capture();
+        if (!state.discovered.includes(eMon.speciesId)) {
+          state.discovered.push(eMon.speciesId);
+        }
+        if (state.party.length < 4) {
+          state.party.push(eMon);
+          showToast(`Captured ${eMon.name}! Added to your party.`);
+        } else {
+          state.storage.push(eMon);
+          showToast(`Captured ${eMon.name}! Sent to Grimoire Storage.`);
+        }
+        // Also unlock its Object & Animal spirit for the Fusion Altar!
+        if (!state.objects.includes(eSp.object)) state.objects.push(eSp.object);
+        if (!state.spirits.includes(eSp.animal)) state.spirits.push(eSp.animal);
+        saveState();
+        updateHUD();
+        renderBattle(`Success! ${eMon.name} was bound into your Field Grimoire!`);
+        setTimeout(() => endBattle(), 1300);
+      } else {
+        Sound.blip();
+        renderBattle(`Oh no! ${eMon.name} slipped free from the Binding Page!`);
+        setTimeout(enemyTurn, 950);
+      }
+    }
+
+    function handleVictory() {
+      const pMon = state.party[battle.activeIdx];
+      const eMon = battle.enemy;
+      const eSp = getSpecies(eMon.speciesId);
+      const gainedXp = 14 + eMon.level * 6;
+      pMon.xp += gainedXp;
+
+      let lvlMsg = '';
+      while (pMon.xp >= pMon.nextXp) {
+        pMon.xp -= pMon.nextXp;
+        pMon.level++;
+        pMon.nextXp = pMon.level * 25;
+        pMon.maxHp += 5;
+        pMon.hp = pMon.maxHp;
+        pMon.atk += 2;
+        pMon.def += 2;
+        pMon.spd += 2;
+        lvlMsg = ` ${pMon.name} leveled up to Lv. ${pMon.level}!`;
+      }
+
+      // Loot drops!
+      if (!state.objects.includes(eSp.object)) state.objects.push(eSp.object);
+      if (!state.spirits.includes(eSp.animal)) state.spirits.push(eSp.animal);
+      if (Math.random() < 0.55) state.pages++;
+      if (Math.random() < 0.35) state.potions++;
+
+      Sound.capture();
+      saveState();
+      updateHUD();
+      renderBattle(`Victory! Gained ${gainedXp} XP & ${eSp.object}/${eSp.animal} essence!${lvlMsg}`);
+      setTimeout(() => endBattle(), 1400);
+    }
+
+    function endBattle(toastMsg = null) {
+      battle = null;
+      el.battleOverlay.classList.remove('visible');
+      saveState();
+      updateHUD();
+      if (toastMsg) showToast(toastMsg);
+    }
+
+    // =========================================================================
+    // 9. MODALS: GRIMOIRE, PARTY & FUSION LAB
+    // =========================================================================
+    function openGrimoireModal() {
+      const cards = MONSTER_SPECIES.map(sp => {
+        const found = state.discovered.includes(sp.id);
+        return `
+          <div class="dex-card ${found ? 'discovered' : 'undiscovered'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <strong style="color:${found ? '#f5b942' : '#9fb0c0'}">${found ? sp.name : '???'}</strong>
+              <span class="dex-formula">${sp.object} + ${sp.animal}</span>
+            </div>
+            <div style="display:flex;justify-content:center;padding:4px 0;">
+              ${found ? renderMonsterSVG(sp.id, 88) : '<div style="width:88px;height:88px;display:flex;align-items:center;justify-content:center;color:#64748b;font-weight:700;font-size:1.6rem;">?</div>'}
+            </div>
+            <div class="plate-types">
+              ${sp.types.map(t => `<span class="type-badge" style="border:1px solid ${TYPE_COLORS[t]}">${t}</span>`).join('')}
+            </div>
+            <div style="font-size:0.78rem;color:#cbd5e1;line-height:1.35;">
+              ${found ? sp.desc : 'Encounter or fuse this Object + Animal pair to record it in your Grimoire.'}
+            </div>
+          </div>
+        `;
+      }).join('');
+      openModal(`Field Grimoire (${state.discovered.length} / ${MONSTER_SPECIES.length})`, `<div class="grid-cards">${cards}</div>`);
+    }
+
+    function openPartyModal() {
+      const all = [...state.party.map((m, i) => ({ m, loc: 'party', i })), ...state.storage.map((m, i) => ({ m, loc: 'storage', i }))];
+      const html = all.map(({ m, loc, i }) => {
+        const sp = getSpecies(m.speciesId);
+        return `
+          <div class="dex-card discovered">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>${m.name} <span style="color:#f5b942;font-size:0.8rem;">Lv.${m.level}</span></strong>
+              <span class="type-badge">${loc === 'party' ? (i === 0 ? 'Lead' : 'Party') : 'Storage'}</span>
+            </div>
+            <div style="display:flex;justify-content:center;">${renderMonsterSVG(m.speciesId, 76)}</div>
+            <div style="font-size:0.78rem;color:#cbd5e1;">HP: ${m.hp}/${m.maxHp} | ATK: ${m.atk} | DEF: ${m.def}</div>
+            ${loc === 'party' && i > 0 ? `<button class="btn btn-primary" onclick="makeLead(${i})">Set as Lead</button>` : ''}
+            ${loc === 'storage' && state.party.length < 4 ? `<button class="btn btn-emerald" onclick="moveToParty(${i})">Add to Party</button>` : ''}
+          </div>
+        `;
+      }).join('');
+      openModal('Your Monster Party & Storage', `<div class="grid-cards">${html}</div>`);
+    }
+
+    window.makeLead = (idx) => {
+      const [chosen] = state.party.splice(idx, 1);
+      state.party.unshift(chosen);
+      saveState();
+      openPartyModal();
+      showToast(`${chosen.name} is now your Lead monster!`);
+    };
+
+    window.moveToParty = (idx) => {
+      if (state.party.length >= 4) return;
+      const [chosen] = state.storage.splice(idx, 1);
+      state.party.push(chosen);
+      saveState();
+      updateHUD();
+      openPartyModal();
+    };
+
+    let selectedObj = null;
+    let selectedSpirit = null;
+
+    function openFusionModal() {
+      selectedObj = state.objects[0] || null;
+      selectedSpirit = state.spirits[0] || null;
+      renderFusionModal();
+    }
+
+    function renderFusionModal() {
+      const objBtns = state.objects.map(o =>
+        `<button class="btn ingredient-btn ${selectedObj === o ? 'selected' : ''}" onclick="selectFusionObj('${o}')"><span>${o}</span><span>Object</span></button>`
+      ).join('');
+      const spiritBtns = state.spirits.map(s =>
+        `<button class="btn ingredient-btn ${selectedSpirit === s ? 'selected' : ''}" onclick="selectFusionSpirit('${s}')"><span>${s}</span><span>Animal</span></button>`
+      ).join('');
+
+      const match = MONSTER_SPECIES.find(sp => sp.object === selectedObj && sp.animal === selectedSpirit);
+      const preview = match
+        ? `<div><strong style="color:#f5b942">${match.name}</strong><div style="font-size:0.78rem;color:#cbd5e1;">${match.object} + ${match.animal}</div></div>`
+        : `<div style="font-size:0.8rem;color:#9fb0c0;">No known fusion for ${selectedObj || '?'} + ${selectedSpirit || '?'}. Try battling more wild Fusions to unlock matching essences!</div>`;
+
+      openModal('Fusion Altar — Combine Object + Animal', `
+        <div style="font-size:0.88rem;color:#cbd5e1;">Combine an <strong>Object</strong> and an <strong>Animal Spirit</strong> you have discovered to create a new Fusion Monster!</div>
+        <div class="fusion-lab-grid">
+          <div class="fusion-column"><h4>Objects (${state.objects.length})</h4>${objBtns}</div>
+          <div style="text-align:center;font-weight:800;font-size:1.3rem;color:#f5b942;">+</div>
+          <div class="fusion-column"><h4>Animal Spirits (${state.spirits.length})</h4>${spiritBtns}</div>
+        </div>
+        <div style="background:#121820;border:1px solid #334354;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          ${preview}
+          <button class="btn btn-primary" ${match ? '' : 'disabled'} onclick="performFusion('${match ? match.id : ''}')">Fuse Into Monster</button>
+        </div>
+      `);
+    }
+
+    window.selectFusionObj = (o) => { selectedObj = o; renderFusionModal(); };
+    window.selectFusionSpirit = (s) => { selectedSpirit = s; renderFusionModal(); };
+    window.performFusion = (speciesId) => {
+      if (!speciesId) return;
+      const mon = createMonsterInstance(speciesId, 2);
+      if (!state.discovered.includes(speciesId)) state.discovered.push(speciesId);
+      if (state.party.length < 4) state.party.push(mon);
+      else state.storage.push(mon);
+      Sound.capture();
+      saveState();
+      updateHUD();
+      closeModal();
+      showToast(`Fused ${mon.name}! Recorded in your Field Grimoire.`);
+    };
+
+    // =========================================================================
+    // 10. CANVAS RENDERING (LIBRARY & WHISPERING WOODS)
+    // =========================================================================
+    let animTick = 0;
+
+    function drawWorld() {
+      animTick++;
+      ctx.clearRect(0, 0, W, H);
+
+      if (state.scene === 'library') {
+        drawLibrary();
+      } else {
+        drawWoods();
+      }
+      drawPlayer();
+    }
+
+    function drawLibrary() {
+      // Warm wooden floor planks
+      ctx.fillStyle = '#3b281c';
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#2d1e14';
+      ctx.lineWidth = 2;
+      for (let y = 68; y < H; y += 28) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+
+      // Grand center rug
+      ctx.fillStyle = '#6e232a';
+      ctx.fillRect(320, 190, 320, 210);
+      ctx.strokeStyle = '#d4a656';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(330, 200, 300, 190);
+
+      // Walls
+      ctx.fillStyle = '#1f1610';
+      LIBRARY_WALLS.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+
+      // Bookshelves with colorful spines
+      const shelves = LIBRARY_WALLS.slice(5);
+      shelves.forEach(s => {
+        ctx.fillStyle = '#5c3a21';
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+        ctx.strokeStyle = '#2d1b0e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(s.x, s.y, s.w, s.h);
+        const colors = ['#e05a47', '#4aa8ff', '#38c172', '#f5b942', '#a875ff'];
+        for (let bx = s.x + 8; bx < s.x + s.w - 14; bx += 14) {
+          ctx.fillStyle = colors[(bx / 14) % colors.length | 0];
+          ctx.fillRect(bx, s.y + 8, 10, 22);
+          ctx.fillRect(bx, s.y + 34, 10, 16);
+        }
+      });
+
+      // Exit Doorway mat
+      ctx.fillStyle = state.teacherTalked ? '#2a5c3a' : '#4a2b2b';
+      ctx.fillRect(410, 492, 140, 48);
+      ctx.fillStyle = '#f5b942';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(state.teacherTalked ? 'TO WOODS' : 'LOCKED', 480, 520);
+
+      // Teacher NPC
+      drawNPC(480, 150, '#4aa8ff', 'Teacher');
+
+      // Strange Book Pedestal
+      ctx.fillStyle = '#785a3c';
+      ctx.fillRect(760, 204, 40, 36);
+      if (!state.hasBook) {
+        const pulse = Math.sin(animTick * 0.08) * 3;
+        ctx.fillStyle = 'rgba(245, 185, 66, 0.25)';
+        ctx.beginPath();
+        ctx.arc(780, 206, 22 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+        // Book icon
+        ctx.fillStyle = '#d4a656';
+        ctx.fillRect(770, 196 + pulse * 0.4, 20, 16);
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillRect(773, 199 + pulse * 0.4, 14, 10);
+      }
+    }
+
+    function drawWoods() {
+      // Forest grass
+      ctx.fillStyle = '#1e3f2b';
+      ctx.fillRect(0, 0, W, H);
+
+      // Dirt path
+      ctx.fillStyle = '#6b533b';
+      ctx.fillRect(430, 120, 100, 380);
+      ctx.fillRect(150, 310, 670, 64);
+
+      // Tall Grass Encounter Patches
+      TALL_GRASS.forEach(g => {
+        ctx.fillStyle = '#163020';
+        ctx.fillRect(g.x, g.y, g.w, g.h);
+        ctx.fillStyle = '#38a169';
+        for (let gx = g.x + 10; gx < g.x + g.w - 10; gx += 18) {
+          for (let gy = g.y + 14; gy < g.y + g.h - 10; gy += 18) {
+            const sway = Math.sin(animTick * 0.06 + gx) * 2;
+            ctx.beginPath();
+            ctx.moveTo(gx, gy);
+            ctx.lineTo(gx - 5 + sway, gy - 12);
+            ctx.lineTo(gx + 4 + sway, gy - 10);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+      });
+
+      // Healing Spring
+      ctx.fillStyle = '#1d4ed8';
+      ctx.beginPath();
+      ctx.ellipse(150, 455, 42, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#60a5fa';
+      ctx.beginPath();
+      ctx.ellipse(148, 452, 28, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e0f2fe';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Healing Spring', 150, 422);
+
+      // Fusion Altar
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(792, 396, 56, 48);
+      ctx.fillStyle = '#f5b942';
+      ctx.beginPath();
+      ctx.arc(820, 416, 12 + Math.sin(animTick * 0.08) * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('Fusion Altar', 820, 386);
+
+      // Return Door
+      ctx.fillStyle = '#5c3a21';
+      ctx.fillRect(430, 496, 100, 44);
+      ctx.fillStyle = '#f5b942';
+      ctx.fillText('TO LIBRARY', 480, 522);
+
+      // Border Trees
+      ctx.fillStyle = '#0f2417';
+      WOODS_WALLS.slice(0, 4).forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+      WOODS_WALLS.slice(4).forEach(t => {
+        ctx.fillStyle = '#3b281c';
+        ctx.fillRect(t.x + 26, t.y + 42, 20, 22);
+        ctx.fillStyle = '#14532d';
+        ctx.beginPath();
+        ctx.arc(t.x + 36, t.y + 28, 32, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawNPC(x, y, robeColor, label) {
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 18, 14, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = robeColor;
+      ctx.fillRect(x - 11, y - 6, 22, 22);
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(x, y - 14, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#f3efe6';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x, y - 30);
+    }
+
+    function drawPlayer() {
+      const { playerX: x, playerY: y } = state;
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 18, 13, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cloak
+      ctx.fillStyle = '#e05a47';
+      ctx.fillRect(x - 10, y - 6, 20, 22);
+      // Head
+      ctx.fillStyle = '#fcd34d';
+      ctx.beginPath();
+      ctx.arc(x, y - 14, 10, 0, Math.PI * 2);
+      ctx.fill();
+      // Eyes
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(x - 4, y - 16, 2.5, 3);
+      ctx.fillRect(x + 2, y - 16, 2.5, 3);
+    }
+
+    // =========================================================================
+    // 11. INPUT & GAME LOOP
+    // =========================================================================
+    const keys = {};
+    const touchDirs = { up: false, down: false, left: false, right: false };
+
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      keys[k] = true;
+      if ((k === 'e' || k === ' ') && !battle && !dialogueActive && !el.modalBackdrop.classList.contains('visible')) {
+        e.preventDefault();
+        triggerNearestInteractable();
+      }
+      if (k === 'b' && state.hasBook && !battle) openGrimoireModal();
+      if (k === 'p' && state.party.length > 0 && !battle) openPartyModal();
+      if (k === 'f' && state.metForkat && !battle) openFusionModal();
+      if (k === 'escape') closeModal();
+    });
+
+    window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+    document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
+      const dir = btn.dataset.dir;
+      const set = (v) => { touchDirs[dir] = v; };
+      btn.addEventListener('pointerdown', () => set(true));
+      btn.addEventListener('pointerup', () => set(false));
+      btn.addEventListener('pointerleave', () => set(false));
+    });
+    document.getElementById('dpadAction').onclick = () => triggerNearestInteractable();
+    el.interactHint.onclick = () => triggerNearestInteractable();
+
+    let nearestInteractable = null;
+
+    function triggerNearestInteractable() {
+      if (nearestInteractable && !dialogueActive && !battle) {
+        nearestInteractable.action();
+      }
+    }
+
+    function collides(nx, ny) {
+      const walls = state.scene === 'library' ? LIBRARY_WALLS : WOODS_WALLS;
+      const r = 13;
+      return walls.some(w => nx + r > w.x && nx - r < w.x + w.w && ny + r > w.y && ny - r < w.y + w.h);
+    }
+
+    function updateLoop() {
+      if (!battle && !dialogueActive && !el.modalBackdrop.classList.contains('visible')) {
+        let dx = 0, dy = 0;
+        if (keys['w'] || keys['arrowup'] || touchDirs.up) dy -= 1;
+        if (keys['s'] || keys['arrowdown'] || touchDirs.down) dy += 1;
+        if (keys['a'] || keys['arrowleft'] || touchDirs.left) dx -= 1;
+        if (keys['d'] || keys['arrowright'] || touchDirs.right) dx += 1;
+
+        if (dx !== 0 || dy !== 0) {
+          const len = Math.hypot(dx, dy);
+          const speed = 3.2;
+          const nx = state.playerX + (dx / len) * speed;
+          const ny = state.playerY + (dy / len) * speed;
+
+          if (!collides(nx, state.playerY)) state.playerX = nx;
+          if (!collides(state.playerX, ny)) state.playerY = ny;
+
+          if (animTick % 14 === 0) Sound.step();
+
+          // Tall Grass Wild Encounters
+          if (state.scene === 'woods' && state.metForkat) {
+            const inGrass = TALL_GRASS.some(g =>
+              state.playerX > g.x && state.playerX < g.x + g.w &&
+              state.playerY > g.y && state.playerY < g.y + g.h
+            );
+            if (inGrass) {
+              grassSteps++;
+              if (grassSteps > 28 && Math.random() < 0.045) {
+                grassSteps = 0;
+                startWildBattle();
+              }
+            }
+          }
+        }
+
+        // Check nearest interactable
+        const list = getInteractables();
+        nearestInteractable = list.find(item => Math.hypot(item.x - state.playerX, item.y - state.playerY) <= item.r) || null;
+        if (nearestInteractable) {
+          el.interactText.textContent = `${nearestInteractable.label} (E)`;
+          el.interactHint.classList.add('visible');
+        } else {
+          el.interactHint.classList.remove('visible');
+        }
+      }
+
+      drawWorld();
+      requestAnimationFrame(updateLoop);
+    }
+
+    // Button Bindings
+    el.btnGrimoire.onclick = openGrimoireModal;
+    el.btnParty.onclick = openPartyModal;
+    el.btnFusionLab.onclick = openFusionModal;
+    el.btnSound.onclick = () => {
+      const on = Sound.toggle();
+      showToast(on ? 'Sound Enabled' : 'Sound Muted');
+    };
+    el.btnReset.onclick = () => {
+      openModal('Start New Adventure?', `
+        <p style="margin:0;color:#cbd5e1;">Are you sure you want to reset your progress and start fresh in the Whispering Library?</p>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button class="btn" onclick="document.getElementById('modalCloseBtn').click()">Cancel</button>
+          <button class="btn btn-rose" onclick="confirmReset()">Reset Game</button>
+        </div>
+      `);
+    };
+
+    window.confirmReset = () => {
+      localStorage.removeItem(SAVE_KEY);
+      state = DEFAULT_STATE();
+      endBattle();
+      closeModal();
+      updateHUD();
+      showToast('Started a brand new adventure!');
+    };
+
+    // Init
+    updateHUD();
+    requestAnimationFrame(updateLoop);
+  </script>
+</body>
+</html>
